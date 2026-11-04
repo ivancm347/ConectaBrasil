@@ -41,6 +41,8 @@ function App() {
   const [authMode, setAuthMode] = useState('signup');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
   const [availableCategories, setAvailableCategories] = useState([]);
   const [businessForm, setBusinessForm] = useState({ name: '', description: '', business_type: 'empresa', phone: '', city: '', state: '', category_id: '' });
   const [logoFile, setLogoFile] = useState(null);
@@ -269,7 +271,14 @@ function App() {
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
     supabase.auth.getSession().then(({ data }) => setAuthUser(data.session?.user || null));
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => setAuthUser(session?.user || null));
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setAuthUser(session?.user || null);
+      if (event === 'PASSWORD_RECOVERY') {
+        setPasswordRecovery(true);
+        setFormMessage('Defina uma nova senha para sua conta.');
+        setFormError('');
+      }
+    });
     supabase.from('categories').select('id,name').eq('active', true).order('name')
       .then(({ data }) => setAvailableCategories(data || []));
     return () => authListener.subscription.unsubscribe();
@@ -315,6 +324,31 @@ function App() {
     if (authUser && !isAdmin) loadOwnerBusinesses();
     else setOwnerBusinesses([]);
   }, [authUser?.id, isAdmin]);
+
+  async function requestPasswordRecovery() {
+    if (!authEmail.trim()) { setFormError('Informe seu e-mail para receber o link de recuperação.'); return; }
+    setFormBusy(true); setFormError(''); setFormMessage('');
+    try {
+      const redirectTo = `${window.location.origin}${window.location.pathname}`;
+      const { error } = await supabase.auth.resetPasswordForEmail(authEmail.trim(), { redirectTo });
+      if (error) throw error;
+      setFormMessage('Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha. Confira também a caixa de spam.');
+    } catch (error) { setFormError(error.message || 'Não foi possível solicitar a recuperação.'); }
+    finally { setFormBusy(false); }
+  }
+
+  async function updateRecoveredPassword(event) {
+    event.preventDefault();
+    if (newPassword.length < 6) { setFormError('A nova senha deve ter pelo menos 6 caracteres.'); return; }
+    setFormBusy(true); setFormError(''); setFormMessage('');
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setPasswordRecovery(false); setNewPassword(''); setAuthPassword('');
+      setFormMessage('Senha alterada com sucesso! Sua conta já está pronta para uso.');
+    } catch (error) { setFormError(error.message || 'Não foi possível alterar a senha.'); }
+    finally { setFormBusy(false); }
+  }
 
   async function handleAuthSubmit(event) {
     event.preventDefault();
@@ -516,7 +550,14 @@ function App() {
       {!isSupabaseConfigured ? <p>O cadastro está temporariamente indisponível. A conexão com o banco ainda não foi configurada na publicação.</p> : <>
         {formMessage && <div className="form-notice">{formMessage}</div>}
         {formError && <div className="form-error">{formError}</div>}
-        {!authUser ? <>
+        {passwordRecovery ? <form onSubmit={updateRecoveredPassword} className="business-form">
+          <div className="eyebrow dark">RECUPERAÇÃO DE ACESSO</div><h2>Crie uma nova senha.</h2>
+          <p>Escolha uma senha com pelo menos 6 caracteres.</p>
+          {formMessage && <div className="form-notice">{formMessage}</div>}
+          {formError && <div className="form-error">{formError}</div>}
+          <label>Nova senha<input type="password" required minLength="6" autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Mínimo de 6 caracteres"/></label>
+          <button className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Salvando...' : 'Salvar nova senha'}</button>
+        </form> : !authUser ? <>
           <p>{authMode === 'signup' ? 'Crie uma conta gratuita para cadastrar sua empresa ou serviço.' : 'Entre na sua conta para continuar.'}</p>
           <form onSubmit={handleAuthSubmit} className="business-form">
             <label>E-mail<input type="email" required value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="voce@email.com"/></label>
@@ -524,6 +565,7 @@ function App() {
             <button className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Aguarde...' : authMode === 'signup' ? 'Criar conta' : 'Entrar'}</button>
           </form>
           <button className="text-switch" onClick={()=>{setAuthMode(authMode === 'signup' ? 'login' : 'signup');setFormError('');setFormMessage('')}}>{authMode === 'signup' ? 'Já tenho conta — entrar' : 'Não tenho conta — criar agora'}</button>
+          {authMode === 'login' && <button type="button" className="text-switch" disabled={formBusy} onClick={requestPasswordRecovery}>Esqueci minha senha</button>}
         </> : <>
           <section className="owner-dashboard">
             <div className="owner-dashboard-head"><div><div className="eyebrow dark">ÁREA DO ANUNCIANTE</div><h3>Meus anúncios</h3><p>Acompanhe a situação dos seus cadastros.</p></div><button type="button" className="owner-refresh" onClick={loadOwnerBusinesses} disabled={ownerLoading}>Atualizar</button></div>
