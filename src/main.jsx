@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Search, MapPin, Store, Wrench, ShoppingBag, Heart, ArrowRight, Menu, X, Plus, ShieldCheck, Sparkles, Building2, Star } from 'lucide-react';
+import { Search, MapPin, Store, Wrench, ShoppingBag, Heart, ArrowRight, Menu, X, Plus, ShieldCheck, Sparkles, Building2, Star, Share2 } from 'lucide-react';
 import './style.css';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 
@@ -47,6 +47,7 @@ function App() {
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
+  const [shareMessage, setShareMessage] = useState('');
   const [formBusy, setFormBusy] = useState(false);
   const [formMessage, setFormMessage] = useState('');
   const [formError, setFormError] = useState('');
@@ -61,6 +62,37 @@ function App() {
   const [adminAuditLogs, setAdminAuditLogs] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
   const isAdmin = authUser?.app_metadata?.role === 'admin';
+
+  function openBusinessDetails(item) {
+    setSelectedBusiness(item);
+    setShareMessage('');
+    const url = new URL(window.location.href);
+    url.searchParams.set('negocio', item.id);
+    window.history.pushState({}, '', url);
+  }
+
+  function closeBusinessDetails() {
+    setSelectedBusiness(null);
+    setShareMessage('');
+    const url = new URL(window.location.href);
+    url.searchParams.delete('negocio');
+    window.history.pushState({}, '', url);
+  }
+
+  async function shareBusiness(item) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('negocio', item.id);
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: item.name, text: `Conheça ${item.name} no Conecta Brasil`, url: url.toString() });
+      } else {
+        await navigator.clipboard.writeText(url.toString());
+        setShareMessage('Link copiado! Agora é só compartilhar.');
+      }
+    } catch (error) {
+      if (error.name !== 'AbortError') setShareMessage('Não foi possível compartilhar automaticamente.');
+    }
+  }
 
   async function loadAdminAuditLogs() {
     if (!isAdmin) return;
@@ -308,6 +340,17 @@ function App() {
     return () => { alive = false; };
   }, []);
 
+  useEffect(() => {
+    if (!businesses.length) return;
+    const openFromUrl = () => {
+      const id = new URLSearchParams(window.location.search).get('negocio');
+      setSelectedBusiness(id ? businesses.find(item => String(item.id) === id) || null : null);
+    };
+    openFromUrl();
+    window.addEventListener('popstate', openFromUrl);
+    return () => window.removeEventListener('popstate', openFromUrl);
+  }, [businesses]);
+
   const listingSource = isSupabaseConfigured ? businesses : examples;
   const citySuggestions = useMemo(() => [...new Set(listingSource
     .map(item => item.city).filter(Boolean)
@@ -337,11 +380,11 @@ function App() {
       </div><div className="hero-art"><div className="orbit orbit-one"></div><div className="orbit orbit-two"></div><div className="map-card"><div className="map-lines"></div><div className="pin pin-a"><MapPin/></div><div className="pin pin-b"><MapPin/></div><div className="pin pin-c"><MapPin/></div><div className="map-center"><span>BR</span><b>Brasil</b><small>Grandes conexões começam localmente</small></div></div><div className="float-card float-top"><span className="float-icon"><Store/></span><span><b>Negócios locais</b><small>Ganham visibilidade</small></span></div><div className="float-card float-bottom"><span className="float-icon green"><Heart/></span><span><b>Comunidade forte</b><small>Todo mundo conectado</small></span></div></div></section>
       <section className="trust-strip"><div><b>1 só lugar</b><span>para encontrar</span></div><i></i><div><b>Seu município</b><span>como ponto de partida</span></div><i></i><div><b>Todo o Brasil</b><span>como horizonte</span></div></section>
       <section className="section categories" id="categorias"><div className="section-heading"><div><div className="eyebrow dark">EXPLORE POSSIBILIDADES</div><h2>O Brasil tem de tudo.<br/><em>Encontre aqui.</em></h2></div><p>Uma vitrine para negócios de todos os tamanhos e uma busca simples para quem precisa encontrar soluções.</p></div><div className="category-grid">{publicCategories.map(({name,icon:Icon,count},i)=><button className="category-card" key={name} onClick={()=>{setActive(name);document.getElementById('explorar').scrollIntoView({behavior:'smooth'})}}><span className={'cat-icon cat-'+i}><Icon size={23}/></span><b>{name}</b><small>{count}</small><ArrowRight className="cat-arrow" size={18}/></button>)}</div></section>
-      <section className="explore-section" id="explorar"><div className="section-heading explore-heading"><div><div className="eyebrow dark">VITRINE CONECTA BRASIL</div><h2>Descubra o que existe <em>por perto.</em></h2></div><span className="demo-label">PRÉVIA DA PLATAFORMA</span></div><div className="filters"><div className="filter-pills">{['Todas',...publicCategories.map(c=>c.name)].map(c=><button key={c} className={active===c?'selected':''} onClick={()=>setActive(c)}>{c}</button>)}</div><span>{city ? <>{filtered.length} resultado(s) em “{city}” <button className="clear-city-filter" onClick={()=>setCity('')}>Limpar</button></> : citySuggestions.length ? 'Sugestões de cidades disponíveis na vitrine' : 'Começando pela sua região'}</span></div><div className="listing-grid">{loadingBusinesses ? <div className="empty-state">Carregando negócios cadastrados...</div> : filtered.length ? filtered.map((item,i)=>{const Icon=item.icon;return <article className="listing-card" key={item.name}><div className={'listing-visual visual-'+i}>{item.photos?.[0] ? <img className="listing-cover photo-selectable" src={item.photos[0]} alt={`Foto de ${item.name}`} loading="lazy" role="button" tabIndex={0} title="Clique para ampliar" onClick={()=>setSelectedPhoto({src:item.photos[0],name:item.name})} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setSelectedPhoto({src:item.photos[0],name:item.name})}}}/> : <Icon size={32} />}{item.logo && <img className="listing-logo photo-selectable" src={item.logo} alt={`Logo ${item.name}`} loading="lazy" role="button" tabIndex={0} title="Clique para ampliar" onClick={()=>setSelectedPhoto({src:item.logo,name:item.name+' — logo'})}/>}<span>{item.tag}</span>{item.featured && <strong className="listing-featured"><Star size={11} fill="currentColor"/> Destaque</strong>}</div>{item.photos?.length > 1 && <div className="listing-gallery">{item.photos.slice(1,5).map((url,index)=><img className="photo-selectable" key={url} src={url} alt={`Foto ${index+2} de ${item.name}`} loading="lazy" role="button" tabIndex={0} title="Clique para ampliar" onClick={()=>setSelectedPhoto({src:url,name:item.name})} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setSelectedPhoto({src:url,name:item.name})}}}/>)}</div>}<div className="listing-body"><small>{item.category}</small><h3>{item.name}</h3><p>{item.desc}</p><div className="listing-foot"><span><MapPin size={14}/>{item.city}</span><button className="listing-details-button" onClick={()=>setSelectedBusiness(item)}>Ver detalhes</button>{whatsappLink(item.phone) ? <a className="listing-contact" href={whatsappLink(item.phone)} target="_blank" rel="noopener noreferrer" aria-label={`Conversar com ${item.name} pelo WhatsApp`}>WhatsApp <ArrowRight size={14}/></a> : <span className="coming">Contato não informado</span>}</div></div></article>}) : <div className="empty-state">{loadError || (isSupabaseConfigured ? 'Ainda não há negócios aprovados nesta busca.' : 'Nenhum resultado nesta prévia. Experimente outra categoria.')}</div>}</div></section>
+      <section className="explore-section" id="explorar"><div className="section-heading explore-heading"><div><div className="eyebrow dark">VITRINE CONECTA BRASIL</div><h2>Descubra o que existe <em>por perto.</em></h2></div><span className="demo-label">PRÉVIA DA PLATAFORMA</span></div><div className="filters"><div className="filter-pills">{['Todas',...publicCategories.map(c=>c.name)].map(c=><button key={c} className={active===c?'selected':''} onClick={()=>setActive(c)}>{c}</button>)}</div><span>{city ? <>{filtered.length} resultado(s) em “{city}” <button className="clear-city-filter" onClick={()=>setCity('')}>Limpar</button></> : citySuggestions.length ? 'Sugestões de cidades disponíveis na vitrine' : 'Começando pela sua região'}</span></div><div className="listing-grid">{loadingBusinesses ? <div className="empty-state">Carregando negócios cadastrados...</div> : filtered.length ? filtered.map((item,i)=>{const Icon=item.icon;return <article className="listing-card" key={item.name}><div className={'listing-visual visual-'+i}>{item.photos?.[0] ? <img className="listing-cover photo-selectable" src={item.photos[0]} alt={`Foto de ${item.name}`} loading="lazy" role="button" tabIndex={0} title="Clique para ampliar" onClick={()=>setSelectedPhoto({src:item.photos[0],name:item.name})} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setSelectedPhoto({src:item.photos[0],name:item.name})}}}/> : <Icon size={32} />}{item.logo && <img className="listing-logo photo-selectable" src={item.logo} alt={`Logo ${item.name}`} loading="lazy" role="button" tabIndex={0} title="Clique para ampliar" onClick={()=>setSelectedPhoto({src:item.logo,name:item.name+' — logo'})}/>}<span>{item.tag}</span>{item.featured && <strong className="listing-featured"><Star size={11} fill="currentColor"/> Destaque</strong>}</div>{item.photos?.length > 1 && <div className="listing-gallery">{item.photos.slice(1,5).map((url,index)=><img className="photo-selectable" key={url} src={url} alt={`Foto ${index+2} de ${item.name}`} loading="lazy" role="button" tabIndex={0} title="Clique para ampliar" onClick={()=>setSelectedPhoto({src:url,name:item.name})} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setSelectedPhoto({src:url,name:item.name})}}}/>)}</div>}<div className="listing-body"><small>{item.category}</small><h3>{item.name}</h3><p>{item.desc}</p><div className="listing-foot"><span><MapPin size={14}/>{item.city}</span><button className="listing-details-button" onClick={()=>openBusinessDetails(item)}>Ver detalhes</button>{whatsappLink(item.phone) ? <a className="listing-contact" href={whatsappLink(item.phone)} target="_blank" rel="noopener noreferrer" aria-label={`Conversar com ${item.name} pelo WhatsApp`}>WhatsApp <ArrowRight size={14}/></a> : <span className="coming">Contato não informado</span>}</div></div></article>}) : <div className="empty-state">{loadError || (isSupabaseConfigured ? 'Ainda não há negócios aprovados nesta busca.' : 'Nenhum resultado nesta prévia. Experimente outra categoria.')}</div>}</div></section>
       <section className="cta" id="sobre"><div className="cta-orb"></div><div><div className="eyebrow">FAÇA PARTE DESSA CONEXÃO</div><h2>Seu negócio merece<br/>ser encontrado.</h2><p>Estamos preparando uma nova vitrine para empresas e profissionais de todo o Brasil.</p></div><button className="btn cta-btn" onClick={()=>{setShowForm(true);setSent(false)}}>Quero anunciar <ArrowRight size={17}/></button></section>
     </main>
     <footer><a className="brand footer-brand" href="#"><span className="brand-mark"><span></span><span></span><span></span></span><span>conecta<span className="brand-light">brasil</span><small>CONEXÕES QUE MOVIMENTAM</small></span></a><span>© 2026 Conecta Brasil. Um país inteiro de possibilidades.</span><span className="footer-status"><i></i> Projeto em construção</span></footer>
-    {selectedBusiness && <div className="business-detail-backdrop" role="dialog" aria-modal="true" aria-label={`Detalhes de ${selectedBusiness.name}`} onClick={()=>setSelectedBusiness(null)}><section className="business-detail" onClick={e=>e.stopPropagation()}><button className="business-detail-close" onClick={()=>setSelectedBusiness(null)} aria-label="Fechar detalhes"><X size={22}/></button><div className="business-detail-hero">{selectedBusiness.photos?.[0] ? <img src={selectedBusiness.photos[0]} alt={`Foto de ${selectedBusiness.name}`}/> : selectedBusiness.logo ? <img src={selectedBusiness.logo} alt={`Logo de ${selectedBusiness.name}`}/> : <Store size={46}/>}</div><div className="business-detail-content"><small>{selectedBusiness.category}</small><h2>{selectedBusiness.name}</h2>{selectedBusiness.featured && <strong className="detail-featured"><Star size={13} fill="currentColor"/> Negócio em destaque</strong>}<p>{selectedBusiness.desc}</p><div className="business-detail-location"><MapPin size={17}/>{selectedBusiness.city || 'Localização não informada'}</div>{selectedBusiness.photos?.length > 0 && <div className="business-detail-gallery">{selectedBusiness.photos.slice(0,5).map((url,index)=><img key={url} src={url} alt={`Foto ${index+1} de ${selectedBusiness.name}`} onClick={()=>setSelectedPhoto({src:url,name:selectedBusiness.name})}/>)}</div>}{whatsappLink(selectedBusiness.phone) ? <a className="listing-contact business-detail-contact" href={whatsappLink(selectedBusiness.phone)} target="_blank" rel="noopener noreferrer">Conversar pelo WhatsApp <ArrowRight size={16}/></a> : <span className="coming">Contato não informado</span>}</div></section></div>}
+    {selectedBusiness && <div className="business-detail-backdrop" role="dialog" aria-modal="true" aria-label={`Detalhes de ${selectedBusiness.name}`} onClick={closeBusinessDetails}><section className="business-detail" onClick={e=>e.stopPropagation()}><button className="business-detail-close" onClick={closeBusinessDetails} aria-label="Fechar detalhes"><X size={22}/></button><div className="business-detail-hero">{selectedBusiness.photos?.[0] ? <img src={selectedBusiness.photos[0]} alt={`Foto de ${selectedBusiness.name}`}/> : selectedBusiness.logo ? <img src={selectedBusiness.logo} alt={`Logo de ${selectedBusiness.name}`}/> : <Store size={46}/>}</div><div className="business-detail-content"><small>{selectedBusiness.category}</small><h2>{selectedBusiness.name}</h2>{selectedBusiness.featured && <strong className="detail-featured"><Star size={13} fill="currentColor"/> Negócio em destaque</strong>}<p>{selectedBusiness.desc}</p><div className="business-detail-location"><MapPin size={17}/>{selectedBusiness.city || 'Localização não informada'}</div>{selectedBusiness.photos?.length > 0 && <div className="business-detail-gallery">{selectedBusiness.photos.slice(0,5).map((url,index)=><img key={url} src={url} alt={`Foto ${index+1} de ${selectedBusiness.name}`} onClick={()=>setSelectedPhoto({src:url,name:selectedBusiness.name})}/>)}</div>}<div className="business-detail-actions">{whatsappLink(selectedBusiness.phone) && <a className="listing-contact business-detail-contact" href={whatsappLink(selectedBusiness.phone)} target="_blank" rel="noopener noreferrer">Conversar pelo WhatsApp <ArrowRight size={16}/></a>}<button className="business-share-button" onClick={()=>shareBusiness(selectedBusiness)}><Share2 size={16}/> Compartilhar negócio</button></div>{shareMessage && <small className="share-feedback">{shareMessage}</small>}{!whatsappLink(selectedBusiness.phone) && <span className="coming">Contato não informado</span>}</div></section></div>}
     {selectedPhoto && <div className="photo-lightbox" role="dialog" aria-modal="true" aria-label={`Foto ampliada de ${selectedPhoto.name}`} onClick={()=>setSelectedPhoto(null)}><button className="photo-lightbox-close" aria-label="Fechar imagem" onClick={()=>setSelectedPhoto(null)}><X size={24}/></button><div className="photo-lightbox-content" onClick={e=>e.stopPropagation()}><img src={selectedPhoto.src} alt={selectedPhoto.name}/><span>{selectedPhoto.name}</span></div></div>}
     {showForm && <div className="modal-backdrop" onClick={()=>setShowForm(false)}><div className="modal" onClick={e=>e.stopPropagation()}>
       <button className="modal-close" onClick={()=>setShowForm(false)}><X/></button>
