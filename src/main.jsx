@@ -280,7 +280,7 @@ function App() {
     let alive = true;
     supabase
       .from('businesses')
-      .select('id,name,description,business_type,city,state,logo_url,gallery_urls,business_categories(categories(name))')
+      .select('id,name,description,business_type,phone,city,state,logo_url,gallery_urls,business_categories(categories(name))')
       .eq('status', 'approved')
       .order('featured', { ascending: false })
       .order('name', { ascending: true })
