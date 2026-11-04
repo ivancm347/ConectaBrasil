@@ -295,7 +295,7 @@ function App() {
       name: ownerEditing.name.trim(), description: (ownerEditing.description || '').trim(),
       business_type: ownerEditing.business_type, phone: (ownerEditing.phone || '').trim(),
       city: ownerEditing.city.trim(), state: ownerEditing.state.trim().toUpperCase(),
-      ...(originalStatus === 'approved' ? { status: 'pending' } : {})
+      ...(originalStatus === 'approved' ? { status: 'pending', featured: false } : {})
     };
     const { data, error } = await supabase.from('businesses').update(payload)
       .eq('id', ownerEditing.id).eq('owner_id', authUser.id).eq('status', originalStatus)
