@@ -166,3 +166,14 @@
 .business-share-button:hover{background:#f3f7f9;border-color:#aabac5}
 .share-feedback{display:block;margin-top:9px;color:#24744b;font-weight:600}
 @media(max-width:560px){.business-detail-actions{flex-direction:column;align-items:stretch}.business-share-button{width:100%}}
+
+
+/* Favoritos salvos no próprio dispositivo */
+.filter-tools{display:flex;align-items:center;justify-content:flex-end;gap:14px;flex-wrap:wrap}
+.favorites-filter{display:inline-flex;align-items:center;gap:7px;border:1px solid #e4eaf0;background:#fff;color:#63748a;border-radius:24px;padding:9px 13px;font-size:10px;font-weight:800;cursor:pointer;white-space:nowrap}
+.favorites-filter.active{background:#fff0f1;border-color:#ffd4d9;color:#d64b60}
+.listing-visual .listing-favorite{position:absolute;right:12px;top:12px;z-index:3;width:35px;height:35px;display:grid;place-items:center;border:1px solid #ffffffaa;border-radius:50%;background:#ffffffed;color:#7b899b;cursor:pointer;box-shadow:0 3px 12px #10243a18}
+.listing-visual .listing-favorite.saved{background:#fff0f1;color:#d64b60;border-color:#ffd4d9}
+.listing-visual .listing-favorite:hover{transform:scale(1.06)}
+@media(max-width:760px){.filters{align-items:flex-start;flex-direction:column}.filter-tools{width:100%;justify-content:space-between}}
+@media(max-width:460px){.filter-tools{align-items:flex-start;flex-direction:column;gap:8px}}
