@@ -42,7 +42,32 @@ function App() {
   const [editingBusiness, setEditingBusiness] = useState(null);
   const [adminCategories, setAdminCategories] = useState([]);
   const [newCategory, setNewCategory] = useState('');
+  const [adminAuditLogs, setAdminAuditLogs] = useState([]);
+  const [auditLoading, setAuditLoading] = useState(false);
   const isAdmin = authUser?.app_metadata?.role === 'admin';
+
+  async function loadAdminAuditLogs() {
+    if (!isAdmin) return;
+    setAuditLoading(true);
+    const { data, error } = await supabase.from('admin_audit_logs')
+      .select('id,action,entity_type,entity_name,details,actor_email,created_at')
+      .order('created_at', { ascending: false }).limit(100);
+    if (error) setAdminError('Não foi possível carregar o histórico. Execute o SQL supabase/admin_audit.sql no Supabase.');
+    else setAdminAuditLogs(data || []);
+    setAuditLoading(false);
+  }
+
+  async function recordAdminAction(action, entityType, entityId, entityName, details = {}) {
+    const { error } = await supabase.from('admin_audit_logs').insert({
+      action, entity_type: entityType, entity_id: entityId,
+      entity_name: entityName, actor_email: authUser?.email || null, details
+    });
+    if (error) {
+      setAdminError('A ação foi concluída, mas não foi possível registrar no histórico. Confira o SQL de auditoria no Supabase.');
+      return;
+    }
+    await loadAdminAuditLogs();
+  }
 
   async function loadAdminBusinesses() {
     if (!isAdmin) return;
@@ -54,6 +79,7 @@ function App() {
     else setAdminBusinesses(data || []);
     const cats = await supabase.from('categories').select('id,name,active').order('name');
     if (!cats.error) setAdminCategories(cats.data || []);
+    await loadAdminAuditLogs();
     setAdminLoading(false);
   }
 
@@ -63,7 +89,7 @@ function App() {
     const payload = { name: editingBusiness.name.trim(), description: editingBusiness.description.trim(), phone: editingBusiness.phone.trim(), city: editingBusiness.city.trim(), state: editingBusiness.state.trim().toUpperCase() };
     const { error } = await supabase.from('businesses').update(payload).eq('id', editingBusiness.id);
     if (error) setAdminError('Não foi possível salvar a edição: ' + error.message);
-    else { setAdminBusinesses(rows => rows.map(row => row.id === editingBusiness.id ? { ...row, ...payload } : row)); setEditingBusiness(null); }
+    else { setAdminBusinesses(rows => rows.map(row => row.id === editingBusiness.id ? { ...row, ...payload } : row)); await recordAdminAction('editado', 'anúncio', editingBusiness.id, payload.name, payload); setEditingBusiness(null); }
     setFormBusy(false);
   }
 
@@ -95,6 +121,7 @@ function App() {
       setAdminCategories(rows => [...rows, data].sort((a,b)=>a.name.localeCompare(b.name)));
       setNewCategory('');
       setAvailableCategories(rows => [...rows, {id:data.id,name:data.name}].sort((a,b)=>a.name.localeCompare(b.name)));
+      await recordAdminAction('criada', 'categoria', data.id, data.name);
     }
     setFormBusy(false);
   }
@@ -103,7 +130,7 @@ function App() {
     setFormBusy(true); setAdminError('');
     const { error } = await supabase.from('categories').update({ active: !category.active }).eq('id', category.id);
     if (error) setAdminError('Não foi possível alterar a categoria: ' + error.message);
-    else { setAdminCategories(rows => rows.map(row => row.id === category.id ? {...row,active:!category.active} : row)); setAvailableCategories(rows => category.active ? rows.filter(row=>row.id!==category.id) : [...rows,{id:category.id,name:category.name}]); }
+    else { setAdminCategories(rows => rows.map(row => row.id === category.id ? {...row,active:!category.active} : row)); setAvailableCategories(rows => category.active ? rows.filter(row=>row.id!==category.id) : [...rows,{id:category.id,name:category.name}]); await recordAdminAction(category.active ? 'desativada' : 'ativada', 'categoria', category.id, category.name); }
     setFormBusy(false);
   }
 
@@ -111,7 +138,7 @@ function App() {
     setFormBusy(true); setAdminError('');
     const { error } = await supabase.from('businesses').update({ featured: !item.featured }).eq('id', item.id);
     if (error) setAdminError('Não foi possível alterar o destaque: ' + error.message);
-    else setAdminBusinesses(items => items.map(row => row.id === item.id ? { ...row, featured: !item.featured } : row));
+    else { setAdminBusinesses(items => items.map(row => row.id === item.id ? { ...row, featured: !item.featured } : row)); await recordAdminAction(item.featured ? 'destaque removido' : 'destacado', 'anúncio', item.id, item.name); }
     setFormBusy(false);
   }
 
@@ -126,6 +153,7 @@ function App() {
       setAdminError('Não foi possível excluir o anúncio: ' + error.message);
     } else {
       setAdminBusinesses(items => items.filter(row => row.id !== item.id));
+      await recordAdminAction('excluído', 'anúncio', item.id, item.name, { status_anterior: item.status });
       if (editingBusiness?.id === item.id) setEditingBusiness(null);
       setAdminError('');
     }
@@ -137,7 +165,9 @@ function App() {
     const { error } = await supabase.from('businesses').update({ status }).eq('id', id);
     if (error) setAdminError('Não foi possível atualizar este cadastro: ' + error.message);
     else {
+      const changed = adminBusinesses.find(item => item.id === id);
       setAdminBusinesses(items => items.map(item => item.id === id ? { ...item, status } : item));
+      await recordAdminAction(status === 'approved' ? 'aprovado' : status === 'rejected' ? 'rejeitado' : status === 'suspended' ? 'suspenso' : 'retornado para análise', 'anúncio', id, changed?.name || 'Anúncio', { status_novo: status, status_anterior: changed?.status || null });
       if (status === 'approved') {
         const { data } = await supabase.from('businesses')
           .select('id,name,description,business_type,city,state,business_categories(categories(name))')
@@ -305,6 +335,10 @@ function App() {
         <section className="admin-category-manager"><h3>Gerenciar categorias</h3><p>Cadastre novas categorias ou desative as que não devem aparecer no formulário de anunciantes.</p>
           <form onSubmit={addAdminCategory}><input value={newCategory} onChange={e=>setNewCategory(e.target.value)} maxLength="60" placeholder="Nome da nova categoria" required/><button className="approve-action" disabled={formBusy}>Adicionar</button></form>
           <div className="admin-category-list">{adminCategories.map(cat=><div key={cat.id}><span>{cat.name}<small>{cat.active?'Ativa':'Inativa'}</small></span><button disabled={formBusy} onClick={()=>toggleCategory(cat)}>{cat.active?'Desativar':'Ativar'}</button></div>)}</div>
+        </section>
+        <section className="admin-category-manager admin-audit"><h3>Histórico administrativo</h3><p>Últimas 100 ações realizadas no painel, com data e responsável.</p>
+          {auditLoading ? <div className="empty-state">Carregando histórico...</div> : adminAuditLogs.length ? <div className="audit-list">{adminAuditLogs.map(log=><article className="audit-item" key={log.id}><div><b>{log.entity_name || log.entity_type}</b><span>{log.action} · {log.entity_type}</span></div><small>{log.actor_email || 'Administrador'}<br/>{new Date(log.created_at).toLocaleString('pt-BR')}</small></article>)}</div> : <div className="empty-state">Nenhuma ação registrada ainda.</div>}
+          <button className="text-switch" disabled={auditLoading} onClick={loadAdminAuditLogs}>Atualizar histórico</button>
         </section>
         <button className="text-switch" onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);setShowForm(false)}}>Sair da conta administrativa</button>
       </> : <>
