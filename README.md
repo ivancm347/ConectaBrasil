@@ -5,13 +5,19 @@
 O Conecta Brasil conecta pessoas, empresas, profissionais, lojas e serviços. A plataforma começa pela Baixada Santista e está preparada para crescer em todo o país.
 
 ## Recursos implementados
-- Página inicial responsiva.
-- Busca por texto e cidade e filtros por categoria.
+- Página inicial responsiva, com navegação adaptada para celular.
+- Busca por texto e cidade, sem diferenciar acentos, com filtros por categoria.
+- Sugestões de cidades com base nos anúncios cadastrados.
+- Favoritos locais, guardados no navegador sem exigir login.
 - Integração com Supabase para exibir apenas negócios aprovados.
 - Cadastro e login de anunciantes por e-mail e senha.
 - Envio de negócios para análise, com status inicial pendente.
-- Painel administrativo para aprovar, rejeitar, suspender e devolver cadastros para análise.
-- Visitantes podem explorar a vitrine sem fazer login.
+- Painel administrativo para aprovar, rejeitar, suspender, editar e excluir anúncios.
+- Gestão de categorias, destaques e histórico administrativo.
+- Perfis públicos de negócios com galeria de até cinco fotos, logo, WhatsApp e compartilhamento por link.
+- Visualização ampliada de fotos e modais com suporte à tecla Esc.
+- Metadados para mecanismos de busca e compartilhamento, além de sitemap e robots.txt.
+- Visitantes podem explorar, pesquisar e compartilhar a vitrine sem fazer login.
 
 ## Tecnologias
 - React 18 e Vite
@@ -58,11 +64,10 @@ npm run preview
 - Nunca exponha a chave `service_role` no navegador ou em variáveis `VITE_*`.
 
 ## Próximas etapas
-1. Página pública detalhada de cada negócio.
-2. Edição dos dados pelo anunciante.
-3. Melhorias na busca por localização.
-4. Denúncias e ferramentas de qualidade da vitrine.
-5. Avaliações, favoritos e anúncios em destaque.
+1. Área do anunciante para editar e acompanhar os próprios anúncios.
+2. Fluxo de recuperação de senha e orientações de conta.
+3. Ferramentas de denúncia e qualidade da vitrine.
+4. Melhorias graduais de descoberta e filtros por localização.
 
 ---
 Conecta Brasil — um país inteiro de possibilidades.
