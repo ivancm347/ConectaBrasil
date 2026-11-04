@@ -290,18 +290,23 @@ function App() {
     event.preventDefault();
     if (!ownerEditing) return;
     setFormBusy(true); setOwnerError('');
+    const originalStatus = ownerEditing.status;
     const payload = {
       name: ownerEditing.name.trim(), description: (ownerEditing.description || '').trim(),
       business_type: ownerEditing.business_type, phone: (ownerEditing.phone || '').trim(),
-      city: ownerEditing.city.trim(), state: ownerEditing.state.trim().toUpperCase()
+      city: ownerEditing.city.trim(), state: ownerEditing.state.trim().toUpperCase(),
+      ...(originalStatus === 'approved' ? { status: 'pending' } : {})
     };
-    const { error } = await supabase.from('businesses').update(payload)
-      .eq('id', ownerEditing.id).eq('owner_id', authUser.id).eq('status', 'pending');
-    if (error) setOwnerError('Não foi possível salvar. Somente anúncios pendentes podem ser editados: ' + error.message);
+    const { data, error } = await supabase.from('businesses').update(payload)
+      .eq('id', ownerEditing.id).eq('owner_id', authUser.id).eq('status', originalStatus)
+      .select('id').maybeSingle();
+    if (error || !data) setOwnerError('Não foi possível salvar. Confira se a atualização de permissões do anunciante foi aplicada no Supabase.' + (error?.message ? ' ' + error.message : ''));
     else {
       setOwnerBusinesses(rows => rows.map(row => row.id === ownerEditing.id ? { ...row, ...payload, updated_at: new Date().toISOString() } : row));
       setOwnerEditing(null);
-      setFormMessage('Alterações salvas. Seu anúncio continua aguardando aprovação.');
+      setFormMessage(originalStatus === 'approved'
+        ? 'Alterações enviadas! Seu anúncio ficará temporariamente em análise até a nova aprovação.'
+        : 'Alterações salvas. Seu anúncio continua aguardando aprovação.');
     }
     setFormBusy(false);
   }
@@ -527,11 +532,11 @@ function App() {
               <div className="owner-business-head"><div><b>{item.name}</b><small>{[item.city,item.state].filter(Boolean).join(' / ')} · {item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</small></div><span className={'status-badge status-'+item.status}>{({pending:'Em análise',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</span></div>
               <p>{item.description || 'Sem descrição informada.'}</p>
               <small className="owner-updated">Enviado em {new Date(item.created_at).toLocaleDateString('pt-BR')}{item.updated_at && item.updated_at !== item.created_at ? ` · Atualizado em ${new Date(item.updated_at).toLocaleDateString('pt-BR')}` : ''}</small>
-              {item.status === 'pending' ? <button type="button" className="owner-edit-button" onClick={() => setOwnerEditing({...item})}>Editar anúncio</button> : <small className="owner-status-help">{item.status === 'approved' ? 'Seu anúncio está visível na vitrine pública.' : item.status === 'rejected' ? 'Entre em contato com a equipe para entender os ajustes necessários.' : 'Este anúncio não está visível na vitrine no momento.'}</small>}
+              {['pending','approved'].includes(item.status) ? <><button type="button" className="owner-edit-button" onClick={() => setOwnerEditing({...item})}>Editar anúncio</button>{item.status === 'approved' && <small className="owner-status-help">Ao salvar, o anúncio ficará em análise até a equipe aprovar as alterações.</small>}</> : <small className="owner-status-help">{item.status === 'rejected' ? 'Entre em contato com a equipe para entender os ajustes necessários.' : 'Este anúncio não está visível na vitrine no momento.'}</small>}
             </article>)}</div> : <div className="empty-state">Você ainda não cadastrou nenhum negócio. Preencha o formulário abaixo para começar.</div>}
           </section>
           {ownerEditing && <form className="owner-edit-form business-form" onSubmit={saveOwnerBusiness}>
-            <h3>Editar anúncio pendente</h3>
+            <h3>Editar meu anúncio</h3>
             <label>Nome do negócio<input required maxLength="100" value={ownerEditing.name || ''} onChange={e=>setOwnerEditing({...ownerEditing,name:e.target.value})}/></label>
             <label>Tipo<select value={ownerEditing.business_type || 'empresa'} onChange={e=>setOwnerEditing({...ownerEditing,business_type:e.target.value})}><option value="empresa">Empresa</option><option value="profissional">Profissional</option><option value="loja">Loja / comércio</option><option value="servico">Prestador de serviço</option></select></label>
             <label>Descrição<textarea rows="3" maxLength="600" value={ownerEditing.description || ''} onChange={e=>setOwnerEditing({...ownerEditing,description:e.target.value})}/></label>
