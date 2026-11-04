@@ -68,11 +68,34 @@ function App() {
   }
 
   async function addAdminCategory(event) {
-    event.preventDefault(); const name = newCategory.trim(); if (!name) return;
-    setFormBusy(true); setAdminError('');
-    const { data, error } = await supabase.from('categories').insert({ name, active: true }).select('id,name,active').single();
-    if (error) setAdminError('Não foi possível criar a categoria: ' + error.message);
-    else { setAdminCategories(rows => [...rows, data].sort((a,b)=>a.name.localeCompare(b.name))); setNewCategory(''); setAvailableCategories(rows => [...rows, {id:data.id,name:data.name}].sort((a,b)=>a.name.localeCompare(b.name))); }
+    event.preventDefault();
+    const name = newCategory.trim();
+    if (!name) return;
+
+    const slug = name.normalize('NFD')
+      .replace(/[\\u0300-\\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || `categoria-${Date.now()}`;
+
+    setFormBusy(true);
+    setAdminError('');
+    const { data, error } = await supabase
+      .from('categories')
+      .insert({ name, slug, active: true })
+      .select('id,name,active')
+      .single();
+
+    if (error) {
+      const message = error.code === '23505'
+        ? 'Já existe uma categoria com esse nome ou endereço. Escolha outro nome.'
+        : error.message;
+      setAdminError('Não foi possível criar a categoria: ' + message);
+    } else {
+      setAdminCategories(rows => [...rows, data].sort((a,b)=>a.name.localeCompare(b.name)));
+      setNewCategory('');
+      setAvailableCategories(rows => [...rows, {id:data.id,name:data.name}].sort((a,b)=>a.name.localeCompare(b.name)));
+    }
     setFormBusy(false);
   }
 
