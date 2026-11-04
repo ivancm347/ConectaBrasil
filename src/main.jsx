@@ -63,6 +63,10 @@ function App() {
   const [newCategory, setNewCategory] = useState('');
   const [adminAuditLogs, setAdminAuditLogs] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
+  const [ownerBusinesses, setOwnerBusinesses] = useState([]);
+  const [ownerLoading, setOwnerLoading] = useState(false);
+  const [ownerError, setOwnerError] = useState('');
+  const [ownerEditing, setOwnerEditing] = useState(null);
   const isAdmin = authUser?.app_metadata?.role === 'admin';
 
   useEffect(() => { localStorage.setItem('conecta-favorites', JSON.stringify(favoriteIds)); }, [favoriteIds]);
@@ -271,6 +275,42 @@ function App() {
     return () => authListener.subscription.unsubscribe();
   }, []);
 
+  async function loadOwnerBusinesses() {
+    if (!authUser || isAdmin) return;
+    setOwnerLoading(true); setOwnerError('');
+    const { data, error } = await supabase.from('businesses')
+      .select('id,name,description,business_type,phone,city,state,status,created_at,updated_at,business_categories(categories(name))')
+      .eq('owner_id', authUser.id).order('created_at', { ascending: false });
+    if (error) setOwnerError('Não foi possível carregar seus anúncios. Tente novamente.');
+    else setOwnerBusinesses(data || []);
+    setOwnerLoading(false);
+  }
+
+  async function saveOwnerBusiness(event) {
+    event.preventDefault();
+    if (!ownerEditing) return;
+    setFormBusy(true); setOwnerError('');
+    const payload = {
+      name: ownerEditing.name.trim(), description: (ownerEditing.description || '').trim(),
+      business_type: ownerEditing.business_type, phone: (ownerEditing.phone || '').trim(),
+      city: ownerEditing.city.trim(), state: ownerEditing.state.trim().toUpperCase()
+    };
+    const { error } = await supabase.from('businesses').update(payload)
+      .eq('id', ownerEditing.id).eq('owner_id', authUser.id).eq('status', 'pending');
+    if (error) setOwnerError('Não foi possível salvar. Somente anúncios pendentes podem ser editados: ' + error.message);
+    else {
+      setOwnerBusinesses(rows => rows.map(row => row.id === ownerEditing.id ? { ...row, ...payload, updated_at: new Date().toISOString() } : row));
+      setOwnerEditing(null);
+      setFormMessage('Alterações salvas. Seu anúncio continua aguardando aprovação.');
+    }
+    setFormBusy(false);
+  }
+
+  useEffect(() => {
+    if (authUser && !isAdmin) loadOwnerBusinesses();
+    else setOwnerBusinesses([]);
+  }, [authUser?.id, isAdmin]);
+
   async function handleAuthSubmit(event) {
     event.preventDefault();
     setFormBusy(true); setFormError(''); setFormMessage('');
@@ -332,6 +372,7 @@ function App() {
         if (categoryError) throw categoryError;
       }
       setFormMessage('Cadastro enviado para análise! Seu negócio aparecerá na vitrine depois da aprovação.');
+      await loadOwnerBusinesses();
       setBusinessForm({ name: '', description: '', business_type: 'empresa', phone: '', city: '', state: '', category_id: '' });
       setLogoFile(null); setGalleryFiles([]);
     } catch (error) { setFormError(error.message || 'Não foi possível enviar o cadastro.'); }
@@ -479,7 +520,26 @@ function App() {
           </form>
           <button className="text-switch" onClick={()=>{setAuthMode(authMode === 'signup' ? 'login' : 'signup');setFormError('');setFormMessage('')}}>{authMode === 'signup' ? 'Já tenho conta — entrar' : 'Não tenho conta — criar agora'}</button>
         </> : <>
-          <p>Preencha os dados. Seu anúncio ficará pendente até a aprovação da equipe.</p>
+          <section className="owner-dashboard">
+            <div className="owner-dashboard-head"><div><div className="eyebrow dark">ÁREA DO ANUNCIANTE</div><h3>Meus anúncios</h3><p>Acompanhe a situação dos seus cadastros.</p></div><button type="button" className="owner-refresh" onClick={loadOwnerBusinesses} disabled={ownerLoading}>Atualizar</button></div>
+            {ownerError && <div className="form-error">{ownerError}</div>}
+            {ownerLoading ? <div className="empty-state">Carregando seus anúncios...</div> : ownerBusinesses.length ? <div className="owner-list">{ownerBusinesses.map(item => <article className="owner-business" key={item.id}>
+              <div className="owner-business-head"><div><b>{item.name}</b><small>{[item.city,item.state].filter(Boolean).join(' / ')} · {item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</small></div><span className={'status-badge status-'+item.status}>{({pending:'Em análise',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</span></div>
+              <p>{item.description || 'Sem descrição informada.'}</p>
+              <small className="owner-updated">Enviado em {new Date(item.created_at).toLocaleDateString('pt-BR')}{item.updated_at && item.updated_at !== item.created_at ? ` · Atualizado em ${new Date(item.updated_at).toLocaleDateString('pt-BR')}` : ''}</small>
+              {item.status === 'pending' ? <button type="button" className="owner-edit-button" onClick={() => setOwnerEditing({...item})}>Editar anúncio</button> : <small className="owner-status-help">{item.status === 'approved' ? 'Seu anúncio está visível na vitrine pública.' : item.status === 'rejected' ? 'Entre em contato com a equipe para entender os ajustes necessários.' : 'Este anúncio não está visível na vitrine no momento.'}</small>}
+            </article>)}</div> : <div className="empty-state">Você ainda não cadastrou nenhum negócio. Preencha o formulário abaixo para começar.</div>}
+          </section>
+          {ownerEditing && <form className="owner-edit-form business-form" onSubmit={saveOwnerBusiness}>
+            <h3>Editar anúncio pendente</h3>
+            <label>Nome do negócio<input required maxLength="100" value={ownerEditing.name || ''} onChange={e=>setOwnerEditing({...ownerEditing,name:e.target.value})}/></label>
+            <label>Tipo<select value={ownerEditing.business_type || 'empresa'} onChange={e=>setOwnerEditing({...ownerEditing,business_type:e.target.value})}><option value="empresa">Empresa</option><option value="profissional">Profissional</option><option value="loja">Loja / comércio</option><option value="servico">Prestador de serviço</option></select></label>
+            <label>Descrição<textarea rows="3" maxLength="600" value={ownerEditing.description || ''} onChange={e=>setOwnerEditing({...ownerEditing,description:e.target.value})}/></label>
+            <div className="form-row"><label>Cidade<input required value={ownerEditing.city || ''} onChange={e=>setOwnerEditing({...ownerEditing,city:e.target.value})}/></label><label>Estado (UF)<input required maxLength="2" value={ownerEditing.state || ''} onChange={e=>setOwnerEditing({...ownerEditing,state:e.target.value.toUpperCase()})}/></label></div>
+            <label>Telefone / WhatsApp<input value={ownerEditing.phone || ''} onChange={e=>setOwnerEditing({...ownerEditing,phone:e.target.value})}/></label>
+            <div className="admin-actions"><button className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Salvando...' : 'Salvar alterações'}</button><button type="button" disabled={formBusy} onClick={()=>setOwnerEditing(null)}>Cancelar</button></div>
+          </form>}
+          <div className="owner-new-listing"><h3>Cadastrar outro negócio</h3><p>Seu novo anúncio ficará pendente até a aprovação da equipe.</p></div>
           <form onSubmit={handleBusinessSubmit} className="business-form">
             <label>Nome do negócio<input required maxLength="100" value={businessForm.name} onChange={e=>setBusinessForm({...businessForm,name:e.target.value})}/></label>
             <label>Tipo<select value={businessForm.business_type} onChange={e=>setBusinessForm({...businessForm,business_type:e.target.value})}><option value="empresa">Empresa</option><option value="profissional">Profissional</option><option value="loja">Loja / comércio</option><option value="servico">Prestador de serviço</option></select></label>
