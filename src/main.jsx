@@ -39,6 +39,9 @@ function App() {
   const [adminFilter, setAdminFilter] = useState('pending');
   const [adminSearch, setAdminSearch] = useState('');
   const [adminError, setAdminError] = useState('');
+  const [editingBusiness, setEditingBusiness] = useState(null);
+  const [adminCategories, setAdminCategories] = useState([]);
+  const [newCategory, setNewCategory] = useState('');
   const isAdmin = authUser?.app_metadata?.role === 'admin';
 
   async function loadAdminBusinesses() {
@@ -49,7 +52,36 @@ function App() {
       .order('created_at', { ascending: false });
     if (error) setAdminError('Não foi possível carregar os cadastros. Confira se sua conta tem permissão de administrador.');
     else setAdminBusinesses(data || []);
+    const cats = await supabase.from('categories').select('id,name,active').order('name');
+    if (!cats.error) setAdminCategories(cats.data || []);
     setAdminLoading(false);
+  }
+
+  async function saveBusinessEdit(event) {
+    event.preventDefault(); if (!editingBusiness) return;
+    setFormBusy(true); setAdminError('');
+    const payload = { name: editingBusiness.name.trim(), description: editingBusiness.description.trim(), phone: editingBusiness.phone.trim(), city: editingBusiness.city.trim(), state: editingBusiness.state.trim().toUpperCase() };
+    const { error } = await supabase.from('businesses').update(payload).eq('id', editingBusiness.id);
+    if (error) setAdminError('Não foi possível salvar a edição: ' + error.message);
+    else { setAdminBusinesses(rows => rows.map(row => row.id === editingBusiness.id ? { ...row, ...payload } : row)); setEditingBusiness(null); }
+    setFormBusy(false);
+  }
+
+  async function addAdminCategory(event) {
+    event.preventDefault(); const name = newCategory.trim(); if (!name) return;
+    setFormBusy(true); setAdminError('');
+    const { data, error } = await supabase.from('categories').insert({ name, active: true }).select('id,name,active').single();
+    if (error) setAdminError('Não foi possível criar a categoria: ' + error.message);
+    else { setAdminCategories(rows => [...rows, data].sort((a,b)=>a.name.localeCompare(b.name))); setNewCategory(''); setAvailableCategories(rows => [...rows, {id:data.id,name:data.name}].sort((a,b)=>a.name.localeCompare(b.name))); }
+    setFormBusy(false);
+  }
+
+  async function toggleCategory(category) {
+    setFormBusy(true); setAdminError('');
+    const { error } = await supabase.from('categories').update({ active: !category.active }).eq('id', category.id);
+    if (error) setAdminError('Não foi possível alterar a categoria: ' + error.message);
+    else { setAdminCategories(rows => rows.map(row => row.id === category.id ? {...row,active:!category.active} : row)); setAvailableCategories(rows => category.active ? rows.filter(row=>row.id!==category.id) : [...rows,{id:category.id,name:category.name}]); }
+    setFormBusy(false);
   }
 
   async function toggleFeatured(item) {
@@ -206,12 +238,21 @@ function App() {
         <div className="admin-filters">{[['pending','Pendentes'],['approved','Aprovados'],['rejected','Rejeitados'],['suspended','Suspensos'],['all','Todos']].map(([value,label])=><button key={value} className={adminFilter===value?'active':''} onClick={()=>setAdminFilter(value)}>{label}</button>)}</div>
         <input className="admin-search" value={adminSearch} onChange={e=>setAdminSearch(e.target.value)} placeholder="Buscar por negócio, cidade ou telefone..." aria-label="Buscar cadastros" />
         {adminError && <div className="form-error">{adminError}</div>}
+        {editingBusiness && <form className="admin-edit-form" onSubmit={saveBusinessEdit}>
+          <h3>Editar anúncio</h3>
+          <label>Nome<input required value={editingBusiness.name} onChange={e=>setEditingBusiness({...editingBusiness,name:e.target.value})}/></label>
+          <label>Descrição<textarea rows="3" value={editingBusiness.description || ''} onChange={e=>setEditingBusiness({...editingBusiness,description:e.target.value})}/></label>
+          <div className="form-row"><label>Cidade<input value={editingBusiness.city || ''} onChange={e=>setEditingBusiness({...editingBusiness,city:e.target.value})}/></label><label>UF<input maxLength="2" value={editingBusiness.state || ''} onChange={e=>setEditingBusiness({...editingBusiness,state:e.target.value.toUpperCase()})}/></label></div>
+          <label>Telefone / WhatsApp<input value={editingBusiness.phone || ''} onChange={e=>setEditingBusiness({...editingBusiness,phone:e.target.value})}/></label>
+          <div className="admin-actions"><button className="approve-action" disabled={formBusy}>Salvar alterações</button><button type="button" disabled={formBusy} onClick={()=>setEditingBusiness(null)}>Cancelar</button></div>
+        </form>}
         {adminLoading ? <div className="empty-state">Carregando cadastros...</div> : <div className="admin-list">
           {adminBusinesses.filter(item=>(adminFilter==='all'||item.status===adminFilter) && [item.name,item.city,item.state,item.phone].filter(Boolean).join(' ').toLowerCase().includes(adminSearch.toLowerCase())).length ? adminBusinesses.filter(item=>(adminFilter==='all'||item.status===adminFilter) && [item.name,item.city,item.state,item.phone].filter(Boolean).join(' ').toLowerCase().includes(adminSearch.toLowerCase())).map(item=><article className="admin-business" key={item.id}>
             <div className="admin-business-head"><div><h3>{item.name}</h3><span>{item.business_type} · {[item.city,item.state].filter(Boolean).join('/')}</span></div><small className={'status-badge status-'+item.status}>{({pending:'Pendente',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</small></div>
             <p>{item.description || 'Sem descrição informada.'}</p>
             <div className="admin-meta"><span>{item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</span>{item.phone && <span>{item.phone}</span>}<span>{new Date(item.created_at).toLocaleDateString('pt-BR')}</span></div>
             <div className="admin-actions">
+              <button disabled={formBusy} onClick={()=>setEditingBusiness({...item})}>Editar anúncio</button>
               <button disabled={formBusy} className={item.featured?'featured-action':''} onClick={()=>toggleFeatured(item)}>{item.featured?'Remover destaque':'Destacar anúncio'}</button>
               {item.status!=='approved' && <button disabled={formBusy} className="approve-action" onClick={()=>moderateBusiness(item.id,'approved')}>Aprovar</button>}
               {item.status!=='rejected' && <button disabled={formBusy} onClick={()=>moderateBusiness(item.id,'rejected')}>Rejeitar</button>}
@@ -220,6 +261,10 @@ function App() {
             </div>
           </article>) : <div className="empty-state">Nenhum cadastro nesta categoria de status.</div>}
         </div>}
+        <section className="admin-category-manager"><h3>Gerenciar categorias</h3><p>Cadastre novas categorias ou desative as que não devem aparecer no formulário de anunciantes.</p>
+          <form onSubmit={addAdminCategory}><input value={newCategory} onChange={e=>setNewCategory(e.target.value)} maxLength="60" placeholder="Nome da nova categoria" required/><button className="approve-action" disabled={formBusy}>Adicionar</button></form>
+          <div className="admin-category-list">{adminCategories.map(cat=><div key={cat.id}><span>{cat.name}<small>{cat.active?'Ativa':'Inativa'}</small></span><button disabled={formBusy} onClick={()=>toggleCategory(cat)}>{cat.active?'Desativar':'Ativar'}</button></div>)}</div>
+        </section>
         <button className="text-switch" onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);setShowForm(false)}}>Sair da conta administrativa</button>
       </> : <>
       <div className="eyebrow dark">CADASTRO DE ANUNCIANTE</div>
