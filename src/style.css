@@ -41,6 +41,7 @@
 .admin-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
 .admin-actions button{border:1px solid #dfe6ed;background:#fff;color:#536176;border-radius:7px;padding:8px 10px;font-size:10px;font-weight:700}
 .admin-actions button.approve-action{background:#53d6b0;border-color:#53d6b0;color:#082238}
+.admin-actions button.delete-action{background:#fff0f0;border-color:#f2c3c3;color:#a52d2d}
 .admin-actions button:disabled{opacity:.5;cursor:wait}
 @media(max-width:560px){.admin-stats b{font-size:19px}.admin-business{padding:12px}.admin-actions button{flex:1}}
 
