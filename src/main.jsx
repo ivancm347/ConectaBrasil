@@ -25,6 +25,72 @@ function App() {
   const [businesses, setBusinesses] = useState([]);
   const [loadingBusinesses, setLoadingBusinesses] = useState(isSupabaseConfigured);
   const [loadError, setLoadError] = useState('');
+  const [authUser, setAuthUser] = useState(null);
+  const [authMode, setAuthMode] = useState('signup');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [availableCategories, setAvailableCategories] = useState([]);
+  const [businessForm, setBusinessForm] = useState({ name: '', description: '', business_type: 'empresa', phone: '', city: '', state: '', category_id: '' });
+  const [formBusy, setFormBusy] = useState(false);
+  const [formMessage, setFormMessage] = useState('');
+  const [formError, setFormError] = useState('');
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+    supabase.auth.getSession().then(({ data }) => setAuthUser(data.session?.user || null));
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => setAuthUser(session?.user || null));
+    supabase.from('categories').select('id,name').eq('active', true).order('name')
+      .then(({ data }) => setAvailableCategories(data || []));
+    return () => authListener.subscription.unsubscribe();
+  }, []);
+
+  async function handleAuthSubmit(event) {
+    event.preventDefault();
+    setFormBusy(true); setFormError(''); setFormMessage('');
+    try {
+      if (authMode === 'signup') {
+        const { data, error } = await supabase.auth.signUp({ email: authEmail, password: authPassword });
+        if (error) throw error;
+        if (data.session) {
+          setAuthUser(data.user);
+          setFormMessage('Conta criada! Agora preencha os dados do seu negócio.');
+        } else {
+          setFormMessage('Conta criada. Confira seu e-mail para confirmar o cadastro. Depois, entre aqui para anunciar.');
+        }
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
+        if (error) throw error;
+        setAuthUser(data.user);
+        setFormMessage('Acesso confirmado. Preencha os dados do seu negócio.');
+      }
+    } catch (error) { setFormError(error.message || 'Não foi possível concluir o acesso.'); }
+    finally { setFormBusy(false); }
+  }
+
+  async function handleBusinessSubmit(event) {
+    event.preventDefault();
+    setFormBusy(true); setFormError(''); setFormMessage('');
+    try {
+      const slugBase = businessForm.name.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const slug = slugBase + '-' + crypto.randomUUID().slice(0, 8);
+      const { data, error } = await supabase.from('businesses').insert({
+        owner_id: authUser.id, name: businessForm.name.trim(), slug,
+        description: businessForm.description.trim(), business_type: businessForm.business_type,
+        phone: businessForm.phone.trim(), city: businessForm.city.trim(),
+        state: businessForm.state.trim().toUpperCase(), status: 'pending', featured: false
+      }).select('id').single();
+      if (error) throw error;
+      if (businessForm.category_id) {
+        const { error: categoryError } = await supabase.from('business_categories').insert({
+          business_id: data.id, category_id: businessForm.category_id
+        });
+        if (categoryError) throw categoryError;
+      }
+      setFormMessage('Cadastro enviado para análise! Seu negócio aparecerá na vitrine depois da aprovação.');
+      setBusinessForm({ name: '', description: '', business_type: 'empresa', phone: '', city: '', state: '', category_id: '' });
+    } catch (error) { setFormError(error.message || 'Não foi possível enviar o cadastro.'); }
+    finally { setFormBusy(false); }
+  }
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
@@ -74,7 +140,36 @@ function App() {
       <section className="cta" id="sobre"><div className="cta-orb"></div><div><div className="eyebrow">FAÇA PARTE DESSA CONEXÃO</div><h2>Seu negócio merece<br/>ser encontrado.</h2><p>Estamos preparando uma nova vitrine para empresas e profissionais de todo o Brasil.</p></div><button className="btn cta-btn" onClick={()=>{setShowForm(true);setSent(false)}}>Quero anunciar <ArrowRight size={17}/></button></section>
     </main>
     <footer><a className="brand footer-brand" href="#"><span className="brand-mark"><span></span><span></span><span></span></span><span>conecta<span className="brand-light">brasil</span><small>CONEXÕES QUE MOVIMENTAM</small></span></a><span>© 2026 Conecta Brasil. Um país inteiro de possibilidades.</span><span className="footer-status"><i></i> Projeto em construção</span></footer>
-    {showForm && <div className="modal-backdrop" onClick={()=>setShowForm(false)}><div className="modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={()=>setShowForm(false)}><X/></button>{sent ? <><div className="success-icon"><ShieldCheck/></div><h2>Obrigado pelo interesse!</h2><p>O cadastro de anunciantes será liberado na próxima etapa do projeto.</p><button className="btn modal-submit" onClick={()=>setShowForm(false)}>Fechar</button></> : <><div className="eyebrow dark">CADASTRO DE INTERESSE</div><h2>Traga seu negócio<br/>para o Conecta Brasil.</h2><p>Estamos preparando o cadastro de empresas e profissionais. Em breve você poderá criar sua página e divulgar seus serviços.</p><div className="modal-preview"><Building2/><span><b>Cadastro de anunciantes</b><small>Será disponibilizado na próxima fase.</small></span></div><button className="btn modal-submit" onClick={()=>setSent(true)}>Entendi <ArrowRight size={17}/></button></>}</div></div>}
+    {showForm && <div className="modal-backdrop" onClick={()=>setShowForm(false)}><div className="modal" onClick={e=>e.stopPropagation()}>
+      <button className="modal-close" onClick={()=>setShowForm(false)}><X/></button>
+      <div className="eyebrow dark">CADASTRO DE ANUNCIANTE</div>
+      <h2>{authUser ? 'Apresente seu negócio.' : 'Entre para anunciar.'}</h2>
+      {!isSupabaseConfigured ? <p>O cadastro está temporariamente indisponível. A conexão com o banco ainda não foi configurada na publicação.</p> : <>
+        {formMessage && <div className="form-notice">{formMessage}</div>}
+        {formError && <div className="form-error">{formError}</div>}
+        {!authUser ? <>
+          <p>{authMode === 'signup' ? 'Crie uma conta gratuita para cadastrar sua empresa ou serviço.' : 'Entre na sua conta para continuar.'}</p>
+          <form onSubmit={handleAuthSubmit} className="business-form">
+            <label>E-mail<input type="email" required value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="voce@email.com"/></label>
+            <label>Senha<input type="password" required minLength="6" value={authPassword} onChange={e=>setAuthPassword(e.target.value)} placeholder="Mínimo de 6 caracteres"/></label>
+            <button className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Aguarde...' : authMode === 'signup' ? 'Criar conta' : 'Entrar'}</button>
+          </form>
+          <button className="text-switch" onClick={()=>{setAuthMode(authMode === 'signup' ? 'login' : 'signup');setFormError('');setFormMessage('')}}>{authMode === 'signup' ? 'Já tenho conta — entrar' : 'Não tenho conta — criar agora'}</button>
+        </> : <>
+          <p>Preencha os dados. Seu anúncio ficará pendente até a aprovação da equipe.</p>
+          <form onSubmit={handleBusinessSubmit} className="business-form">
+            <label>Nome do negócio<input required maxLength="100" value={businessForm.name} onChange={e=>setBusinessForm({...businessForm,name:e.target.value})}/></label>
+            <label>Tipo<select value={businessForm.business_type} onChange={e=>setBusinessForm({...businessForm,business_type:e.target.value})}><option value="empresa">Empresa</option><option value="profissional">Profissional</option><option value="loja">Loja / comércio</option><option value="servico">Prestador de serviço</option></select></label>
+            <label>Descrição<textarea rows="3" maxLength="600" value={businessForm.description} onChange={e=>setBusinessForm({...businessForm,description:e.target.value})} placeholder="Conte brevemente o que você oferece."/></label>
+            <label>Categoria<select value={businessForm.category_id} onChange={e=>setBusinessForm({...businessForm,category_id:e.target.value})}><option value="">Selecione uma categoria</option>{availableCategories.map(cat=><option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label>
+            <div className="form-row"><label>Cidade<input required value={businessForm.city} onChange={e=>setBusinessForm({...businessForm,city:e.target.value})}/></label><label>Estado (UF)<input required maxLength="2" value={businessForm.state} onChange={e=>setBusinessForm({...businessForm,state:e.target.value.toUpperCase()})}/></label></div>
+            <label>Telefone / WhatsApp<input value={businessForm.phone} onChange={e=>setBusinessForm({...businessForm,phone:e.target.value})}/></label>
+            <button className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Enviando...' : 'Enviar para aprovação'}</button>
+          </form>
+          <button className="text-switch" onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);setFormMessage('')}}>Sair da conta</button>
+        </>}
+      </>}
+    </div></div>}
   </div>;
 }
 createRoot(document.getElementById('root')).render(<App/>);
