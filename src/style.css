@@ -177,3 +177,10 @@
 .listing-visual .listing-favorite:hover{transform:scale(1.06)}
 @media(max-width:760px){.filters{align-items:flex-start;flex-direction:column}.filter-tools{width:100%;justify-content:space-between}}
 @media(max-width:460px){.filter-tools{align-items:flex-start;flex-direction:column;gap:8px}}
+
+
+/* Contagem de resultados e recuperação rápida da busca */
+.results-summary{display:inline-flex;align-items:center;gap:7px;flex-wrap:wrap;color:#718096;font-size:10px}
+.reset-search-button{display:block;margin:13px auto 0;border:1px solid #cfe8df;border-radius:9px;background:#eef9f5;color:#187c65;padding:10px 15px;font:800 11px 'DM Sans',sans-serif;cursor:pointer}
+.reset-search-button:hover{background:#dff4eb}
+.reset-search-button:focus-visible{outline:3px solid #53d6b0;outline-offset:2px}
