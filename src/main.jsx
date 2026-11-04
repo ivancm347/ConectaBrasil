@@ -115,6 +115,23 @@ function App() {
     setFormBusy(false);
   }
 
+  async function deleteBusiness(item) {
+    const confirmed = window.confirm(`Excluir definitivamente o anúncio "${item.name}"? Esta ação não pode ser desfeita.`);
+    if (!confirmed) return;
+
+    setFormBusy(true);
+    setAdminError('');
+    const { error } = await supabase.from('businesses').delete().eq('id', item.id);
+    if (error) {
+      setAdminError('Não foi possível excluir o anúncio: ' + error.message);
+    } else {
+      setAdminBusinesses(items => items.filter(row => row.id !== item.id));
+      if (editingBusiness?.id === item.id) setEditingBusiness(null);
+      setAdminError('');
+    }
+    setFormBusy(false);
+  }
+
   async function moderateBusiness(id, status) {
     setFormBusy(true); setAdminError('');
     const { error } = await supabase.from('businesses').update({ status }).eq('id', id);
@@ -276,6 +293,7 @@ function App() {
             <div className="admin-meta"><span>{item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</span>{item.phone && <span>{item.phone}</span>}<span>{new Date(item.created_at).toLocaleDateString('pt-BR')}</span></div>
             <div className="admin-actions">
               <button disabled={formBusy} onClick={()=>setEditingBusiness({...item})}>Editar anúncio</button>
+              <button disabled={formBusy} className="delete-action" onClick={()=>deleteBusiness(item)}>Excluir definitivamente</button>
               <button disabled={formBusy} className={item.featured?'featured-action':''} onClick={()=>toggleFeatured(item)}>{item.featured?'Remover destaque':'Destacar anúncio'}</button>
               {item.status!=='approved' && <button disabled={formBusy} className="approve-action" onClick={()=>moderateBusiness(item.id,'approved')}>Aprovar</button>}
               {item.status!=='rejected' && <button disabled={formBusy} onClick={()=>moderateBusiness(item.id,'rejected')}>Rejeitar</button>}
