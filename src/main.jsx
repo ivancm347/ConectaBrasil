@@ -31,6 +31,8 @@ function App() {
   const [authPassword, setAuthPassword] = useState('');
   const [availableCategories, setAvailableCategories] = useState([]);
   const [businessForm, setBusinessForm] = useState({ name: '', description: '', business_type: 'empresa', phone: '', city: '', state: '', category_id: '' });
+  const [logoFile, setLogoFile] = useState(null);
+  const [galleryFiles, setGalleryFiles] = useState([]);
   const [formBusy, setFormBusy] = useState(false);
   const [formMessage, setFormMessage] = useState('');
   const [formError, setFormError] = useState('');
@@ -73,7 +75,7 @@ function App() {
     if (!isAdmin) return;
     setAdminLoading(true); setAdminError('');
     const { data, error } = await supabase.from('businesses')
-      .select('id,name,description,business_type,phone,city,state,status,featured,created_at,business_categories(categories(name))')
+      .select('id,name,description,business_type,phone,city,state,status,featured,created_at,logo_url,gallery_urls,business_categories(categories(name))')
       .order('created_at', { ascending: false });
     if (error) setAdminError('Não foi possível carregar os cadastros. Confira se sua conta tem permissão de administrador.');
     else setAdminBusinesses(data || []);
@@ -170,14 +172,14 @@ function App() {
       await recordAdminAction(status === 'approved' ? 'aprovado' : status === 'rejected' ? 'rejeitado' : status === 'suspended' ? 'suspenso' : 'retornado para análise', 'anúncio', id, changed?.name || 'Anúncio', { status_novo: status, status_anterior: changed?.status || null });
       if (status === 'approved') {
         const { data } = await supabase.from('businesses')
-          .select('id,name,description,business_type,city,state,business_categories(categories(name))')
+          .select('id,name,description,business_type,city,state,logo_url,gallery_urls,business_categories(categories(name))')
           .eq('status', 'approved').order('featured', { ascending: false }).order('name');
         if (data) setBusinesses(data.map(item => ({
           id: item.id, name: item.name,
           category: item.business_categories?.[0]?.categories?.name || 'Empresas',
           city: [item.city, item.state].filter(Boolean).join(' - '),
           desc: item.description || 'Conheça este negócio cadastrado no Conecta Brasil.',
-          tag: item.business_type || 'Negócio', icon: Store
+          tag: item.business_type || 'Negócio', icon: Store, logo: item.logo_url || '', photos: item.gallery_urls || []
         })));
       }
     }
@@ -233,6 +235,24 @@ function App() {
         state: businessForm.state.trim().toUpperCase(), status: 'pending', featured: false
       }).select('id').single();
       if (error) throw error;
+      const businessId = data.id;
+      const uploadedPhotos = [];
+      const uploadImage = async (file, label) => {
+        if (!file) return null;
+        if (!file.type.startsWith('image/')) throw new Error('Envie somente arquivos de imagem.');
+        if (file.size > 5 * 1024 * 1024) throw new Error(`A imagem ${file.name} ultrapassa o limite de 5 MB.`);
+        const safeName = file.name.toLowerCase().replace(/[^a-z0-9.-]+/g, '-');
+        const path = `${authUser.id}/${businessId}/${label}-${Date.now()}-${safeName}`;
+        const { error: uploadError } = await supabase.storage.from('business-images').upload(path, file, { cacheControl: '3600', upsert: false });
+        if (uploadError) throw uploadError;
+        return supabase.storage.from('business-images').getPublicUrl(path).data.publicUrl;
+      };
+      const logoUrl = await uploadImage(logoFile, 'logo');
+      for (let i = 0; i < galleryFiles.length; i++) uploadedPhotos.push(await uploadImage(galleryFiles[i], `foto-${i + 1}`));
+      if (logoUrl || uploadedPhotos.length) {
+        const { error: imageError } = await supabase.from('businesses').update({ logo_url: logoUrl, gallery_urls: uploadedPhotos }).eq('id', businessId);
+        if (imageError) throw imageError;
+      }
       if (businessForm.category_id) {
         const { error: categoryError } = await supabase.from('business_categories').insert({
           business_id: data.id, category_id: businessForm.category_id
@@ -241,6 +261,7 @@ function App() {
       }
       setFormMessage('Cadastro enviado para análise! Seu negócio aparecerá na vitrine depois da aprovação.');
       setBusinessForm({ name: '', description: '', business_type: 'empresa', phone: '', city: '', state: '', category_id: '' });
+      setLogoFile(null); setGalleryFiles([]);
     } catch (error) { setFormError(error.message || 'Não foi possível enviar o cadastro.'); }
     finally { setFormBusy(false); }
   }
@@ -264,7 +285,7 @@ function App() {
           city: [item.city, item.state].filter(Boolean).join(' - '),
           desc: item.description || 'Conheça este negócio cadastrado no Conecta Brasil.',
           tag: item.business_type || 'Negócio',
-          icon: Store,
+          icon: Store, logo: item.logo_url || '', photos: item.gallery_urls || [],
         })));
         setLoadingBusinesses(false);
       });
@@ -289,7 +310,7 @@ function App() {
       </div><div className="hero-art"><div className="orbit orbit-one"></div><div className="orbit orbit-two"></div><div className="map-card"><div className="map-lines"></div><div className="pin pin-a"><MapPin/></div><div className="pin pin-b"><MapPin/></div><div className="pin pin-c"><MapPin/></div><div className="map-center"><span>BR</span><b>Brasil</b><small>Grandes conexões começam localmente</small></div></div><div className="float-card float-top"><span className="float-icon"><Store/></span><span><b>Negócios locais</b><small>Ganham visibilidade</small></span></div><div className="float-card float-bottom"><span className="float-icon green"><Heart/></span><span><b>Comunidade forte</b><small>Todo mundo conectado</small></span></div></div></section>
       <section className="trust-strip"><div><b>1 só lugar</b><span>para encontrar</span></div><i></i><div><b>Seu município</b><span>como ponto de partida</span></div><i></i><div><b>Todo o Brasil</b><span>como horizonte</span></div></section>
       <section className="section categories" id="categorias"><div className="section-heading"><div><div className="eyebrow dark">EXPLORE POSSIBILIDADES</div><h2>O Brasil tem de tudo.<br/><em>Encontre aqui.</em></h2></div><p>Uma vitrine para negócios de todos os tamanhos e uma busca simples para quem precisa encontrar soluções.</p></div><div className="category-grid">{categories.map(({name,icon:Icon,count},i)=><button className="category-card" key={name} onClick={()=>{setActive(name);document.getElementById('explorar').scrollIntoView({behavior:'smooth'})}}><span className={'cat-icon cat-'+i}><Icon size={23}/></span><b>{name}</b><small>{count}</small><ArrowRight className="cat-arrow" size={18}/></button>)}</div></section>
-      <section className="explore-section" id="explorar"><div className="section-heading explore-heading"><div><div className="eyebrow dark">VITRINE CONECTA BRASIL</div><h2>Descubra o que existe <em>por perto.</em></h2></div><span className="demo-label">PRÉVIA DA PLATAFORMA</span></div><div className="filters"><div className="filter-pills">{['Todas',...categories.map(c=>c.name)].map(c=><button key={c} className={active===c?'selected':''} onClick={()=>setActive(c)}>{c}</button>)}</div><span>{city ? 'Localização informada: '+city : 'Começando pela sua região'}</span></div><div className="listing-grid">{loadingBusinesses ? <div className="empty-state">Carregando negócios cadastrados...</div> : filtered.length ? filtered.map((item,i)=>{const Icon=item.icon;return <article className="listing-card" key={item.name}><div className={'listing-visual visual-'+i}><Icon size={32}/><span>{item.tag}</span></div><div className="listing-body"><small>{item.category}</small><h3>{item.name}</h3><p>{item.desc}</p><div className="listing-foot"><span><MapPin size={14}/>{item.city}</span><span className="coming">Cadastro em breve</span></div></div></article>}) : <div className="empty-state">{loadError || (isSupabaseConfigured ? 'Ainda não há negócios aprovados nesta busca.' : 'Nenhum resultado nesta prévia. Experimente outra categoria.')}</div>}</div></section>
+      <section className="explore-section" id="explorar"><div className="section-heading explore-heading"><div><div className="eyebrow dark">VITRINE CONECTA BRASIL</div><h2>Descubra o que existe <em>por perto.</em></h2></div><span className="demo-label">PRÉVIA DA PLATAFORMA</span></div><div className="filters"><div className="filter-pills">{['Todas',...categories.map(c=>c.name)].map(c=><button key={c} className={active===c?'selected':''} onClick={()=>setActive(c)}>{c}</button>)}</div><span>{city ? 'Localização informada: '+city : 'Começando pela sua região'}</span></div><div className="listing-grid">{loadingBusinesses ? <div className="empty-state">Carregando negócios cadastrados...</div> : filtered.length ? filtered.map((item,i)=>{const Icon=item.icon;return <article className="listing-card" key={item.name}><div className={'listing-visual visual-'+i}>{item.photos?.[0] ? <img className="listing-cover" src={item.photos[0]} alt={`Foto de ${item.name}`} loading="lazy"/> : <Icon size={32}/ >}{item.logo && <img className="listing-logo" src={item.logo} alt={`Logo ${item.name}`} loading="lazy"/>}<span>{item.tag}</span></div><div className="listing-body"><small>{item.category}</small><h3>{item.name}</h3><p>{item.desc}</p><div className="listing-foot"><span><MapPin size={14}/>{item.city}</span><span className="coming">Cadastro em breve</span></div></div></article>}) : <div className="empty-state">{loadError || (isSupabaseConfigured ? 'Ainda não há negócios aprovados nesta busca.' : 'Nenhum resultado nesta prévia. Experimente outra categoria.')}</div>}</div></section>
       <section className="cta" id="sobre"><div className="cta-orb"></div><div><div className="eyebrow">FAÇA PARTE DESSA CONEXÃO</div><h2>Seu negócio merece<br/>ser encontrado.</h2><p>Estamos preparando uma nova vitrine para empresas e profissionais de todo o Brasil.</p></div><button className="btn cta-btn" onClick={()=>{setShowForm(true);setSent(false)}}>Quero anunciar <ArrowRight size={17}/></button></section>
     </main>
     <footer><a className="brand footer-brand" href="#"><span className="brand-mark"><span></span><span></span><span></span></span><span>conecta<span className="brand-light">brasil</span><small>CONEXÕES QUE MOVIMENTAM</small></span></a><span>© 2026 Conecta Brasil. Um país inteiro de possibilidades.</span><span className="footer-status"><i></i> Projeto em construção</span></footer>
@@ -320,6 +341,7 @@ function App() {
           {adminBusinesses.filter(item=>(adminFilter==='all'||item.status===adminFilter) && [item.name,item.city,item.state,item.phone].filter(Boolean).join(' ').toLowerCase().includes(adminSearch.toLowerCase())).length ? adminBusinesses.filter(item=>(adminFilter==='all'||item.status===adminFilter) && [item.name,item.city,item.state,item.phone].filter(Boolean).join(' ').toLowerCase().includes(adminSearch.toLowerCase())).map(item=><article className="admin-business" key={item.id}>
             <div className="admin-business-head"><div><h3>{item.name}</h3><span>{item.business_type} · {[item.city,item.state].filter(Boolean).join('/')}</span></div><small className={'status-badge status-'+item.status}>{({pending:'Pendente',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</small></div>
             <p>{item.description || 'Sem descrição informada.'}</p>
+            {(item.logo_url || item.gallery_urls?.length) && <div className="admin-image-preview">{item.logo_url && <img src={item.logo_url} alt={`Logo ${item.name}`}/>} {(item.gallery_urls || []).map((url,index)=><img key={url} src={url} alt={`Foto ${index+1} de ${item.name}`}/>)}</div>}
             <div className="admin-meta"><span>{item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</span>{item.phone && <span>{item.phone}</span>}<span>{new Date(item.created_at).toLocaleDateString('pt-BR')}</span></div>
             <div className="admin-actions">
               <button disabled={formBusy} onClick={()=>setEditingBusiness({...item})}>Editar anúncio</button>
@@ -364,6 +386,9 @@ function App() {
             <label>Categoria<select value={businessForm.category_id} onChange={e=>setBusinessForm({...businessForm,category_id:e.target.value})}><option value="">Selecione uma categoria</option>{availableCategories.map(cat=><option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label>
             <div className="form-row"><label>Cidade<input required value={businessForm.city} onChange={e=>setBusinessForm({...businessForm,city:e.target.value})}/></label><label>Estado (UF)<input required maxLength="2" value={businessForm.state} onChange={e=>setBusinessForm({...businessForm,state:e.target.value.toUpperCase()})}/></label></div>
             <label>Telefone / WhatsApp<input value={businessForm.phone} onChange={e=>setBusinessForm({...businessForm,phone:e.target.value})}/></label>
+            <label>Logo da empresa<input type="file" accept="image/*" onChange={e=>setLogoFile(e.target.files?.[0] || null)}/><small className="upload-help">Uma imagem, até 5 MB.</small></label>
+            <label>Fotos do negócio (até 5)<input type="file" accept="image/*" multiple onChange={e=>setGalleryFiles(Array.from(e.target.files || []).slice(0,5))}/><small className="upload-help">Selecione até 5 fotos. Cada arquivo pode ter no máximo 5 MB.</small></label>
+            {galleryFiles.length > 0 && <div className="selected-files">{galleryFiles.map(file=><span key={file.name}>{file.name}</span>)}</div>}
             <button className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Enviando...' : 'Enviar para aprovação'}</button>
           </form>
           <button className="text-switch" onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);setFormMessage('')}}>Sair da conta</button>
