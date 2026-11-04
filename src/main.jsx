@@ -37,6 +37,7 @@ function App() {
   const [adminBusinesses, setAdminBusinesses] = useState([]);
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminFilter, setAdminFilter] = useState('pending');
+  const [adminSearch, setAdminSearch] = useState('');
   const [adminError, setAdminError] = useState('');
   const isAdmin = authUser?.app_metadata?.role === 'admin';
 
@@ -44,11 +45,19 @@ function App() {
     if (!isAdmin) return;
     setAdminLoading(true); setAdminError('');
     const { data, error } = await supabase.from('businesses')
-      .select('id,name,description,business_type,phone,city,state,status,created_at,business_categories(categories(name))')
+      .select('id,name,description,business_type,phone,city,state,status,featured,created_at,business_categories(categories(name))')
       .order('created_at', { ascending: false });
     if (error) setAdminError('Não foi possível carregar os cadastros. Confira se sua conta tem permissão de administrador.');
     else setAdminBusinesses(data || []);
     setAdminLoading(false);
+  }
+
+  async function toggleFeatured(item) {
+    setFormBusy(true); setAdminError('');
+    const { error } = await supabase.from('businesses').update({ featured: !item.featured }).eq('id', item.id);
+    if (error) setAdminError('Não foi possível alterar o destaque: ' + error.message);
+    else setAdminBusinesses(items => items.map(row => row.id === item.id ? { ...row, featured: !item.featured } : row));
+    setFormBusy(false);
   }
 
   async function moderateBusiness(id, status) {
@@ -192,15 +201,18 @@ function App() {
           <div><b>{adminBusinesses.length}</b><span>Cadastros</span></div>
           <div><b>{adminBusinesses.filter(item=>item.status==='pending').length}</b><span>Pendentes</span></div>
           <div><b>{adminBusinesses.filter(item=>item.status==='approved').length}</b><span>Aprovados</span></div>
+          <div><b>{adminBusinesses.filter(item=>item.featured).length}</b><span>Em destaque</span></div>
         </div>
         <div className="admin-filters">{[['pending','Pendentes'],['approved','Aprovados'],['rejected','Rejeitados'],['suspended','Suspensos'],['all','Todos']].map(([value,label])=><button key={value} className={adminFilter===value?'active':''} onClick={()=>setAdminFilter(value)}>{label}</button>)}</div>
+        <input className="admin-search" value={adminSearch} onChange={e=>setAdminSearch(e.target.value)} placeholder="Buscar por negócio, cidade ou telefone..." aria-label="Buscar cadastros" />
         {adminError && <div className="form-error">{adminError}</div>}
         {adminLoading ? <div className="empty-state">Carregando cadastros...</div> : <div className="admin-list">
-          {adminBusinesses.filter(item=>adminFilter==='all'||item.status===adminFilter).length ? adminBusinesses.filter(item=>adminFilter==='all'||item.status===adminFilter).map(item=><article className="admin-business" key={item.id}>
+          {adminBusinesses.filter(item=>(adminFilter==='all'||item.status===adminFilter) && [item.name,item.city,item.state,item.phone].filter(Boolean).join(' ').toLowerCase().includes(adminSearch.toLowerCase())).length ? adminBusinesses.filter(item=>(adminFilter==='all'||item.status===adminFilter) && [item.name,item.city,item.state,item.phone].filter(Boolean).join(' ').toLowerCase().includes(adminSearch.toLowerCase())).map(item=><article className="admin-business" key={item.id}>
             <div className="admin-business-head"><div><h3>{item.name}</h3><span>{item.business_type} · {[item.city,item.state].filter(Boolean).join('/')}</span></div><small className={'status-badge status-'+item.status}>{({pending:'Pendente',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</small></div>
             <p>{item.description || 'Sem descrição informada.'}</p>
             <div className="admin-meta"><span>{item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</span>{item.phone && <span>{item.phone}</span>}<span>{new Date(item.created_at).toLocaleDateString('pt-BR')}</span></div>
             <div className="admin-actions">
+              <button disabled={formBusy} className={item.featured?'featured-action':''} onClick={()=>toggleFeatured(item)}>{item.featured?'Remover destaque':'Destacar anúncio'}</button>
               {item.status!=='approved' && <button disabled={formBusy} className="approve-action" onClick={()=>moderateBusiness(item.id,'approved')}>Aprovar</button>}
               {item.status!=='rejected' && <button disabled={formBusy} onClick={()=>moderateBusiness(item.id,'rejected')}>Rejeitar</button>}
               {item.status!=='suspended' && item.status==='approved' && <button disabled={formBusy} onClick={()=>moderateBusiness(item.id,'suspended')}>Suspender</button>}
