@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Search, MapPin, Store, Wrench, ShoppingBag, Heart, ArrowRight, Menu, X, Plus, ShieldCheck, Sparkles, Building2, Star } from 'lucide-react';
 import './style.css';
+import { isSupabaseConfigured, supabase } from './lib/supabase';
 
 const categories = [
   { name: 'Casa e construção', icon: Building2, count: 'Obras, reformas e materiais' },
@@ -21,7 +22,42 @@ function App() {
   const [menu, setMenu] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [sent, setSent] = useState(false);
-  const filtered = useMemo(() => examples.filter(item => (active === 'Todas' || item.category === active) && (item.name + item.desc + item.category).toLowerCase().includes(query.toLowerCase())), [query, active]);
+  const [businesses, setBusinesses] = useState([]);
+  const [loadingBusinesses, setLoadingBusinesses] = useState(isSupabaseConfigured);
+  const [loadError, setLoadError] = useState('');
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+    let alive = true;
+    supabase
+      .from('businesses')
+      .select('id,name,description,business_type,city,state,business_categories(categories(name))')
+      .eq('status', 'approved')
+      .order('featured', { ascending: false })
+      .order('name', { ascending: true })
+      .then(({ data, error }) => {
+        if (!alive) return;
+        if (error) setLoadError('Não foi possível carregar os cadastros agora.');
+        else setBusinesses((data || []).map(item => ({
+          id: item.id,
+          name: item.name,
+          category: item.business_categories?.[0]?.categories?.name || 'Empresas',
+          city: [item.city, item.state].filter(Boolean).join(' - '),
+          desc: item.description || 'Conheça este negócio cadastrado no Conecta Brasil.',
+          tag: item.business_type || 'Negócio',
+          icon: Store,
+        })));
+        setLoadingBusinesses(false);
+      });
+    return () => { alive = false; };
+  }, []);
+
+  const listingSource = isSupabaseConfigured ? businesses : examples;
+  const filtered = useMemo(() => listingSource.filter(item =>
+    (active === 'Todas' || item.category === active) &&
+    (item.name + item.desc + item.category + item.city).toLowerCase().includes(query.toLowerCase()) &&
+    (!city || item.city.toLowerCase().includes(city.toLowerCase()))
+  ), [listingSource, query, active, city]);
   return <div className="app">
     <header className="topbar"><a className="brand" href="#"><span className="brand-mark"><span></span><span></span><span></span></span><span>conecta<span className="brand-light">brasil</span><small>CONEXÕES QUE MOVIMENTAM</small></span></a>
       <button className="mobile-menu" onClick={() => setMenu(!menu)} aria-label="Abrir menu">{menu ? <X/> : <Menu/>}</button>
@@ -34,7 +70,7 @@ function App() {
       </div><div className="hero-art"><div className="orbit orbit-one"></div><div className="orbit orbit-two"></div><div className="map-card"><div className="map-lines"></div><div className="pin pin-a"><MapPin/></div><div className="pin pin-b"><MapPin/></div><div className="pin pin-c"><MapPin/></div><div className="map-center"><span>BR</span><b>Brasil</b><small>Grandes conexões começam localmente</small></div></div><div className="float-card float-top"><span className="float-icon"><Store/></span><span><b>Negócios locais</b><small>Ganham visibilidade</small></span></div><div className="float-card float-bottom"><span className="float-icon green"><Heart/></span><span><b>Comunidade forte</b><small>Todo mundo conectado</small></span></div></div></section>
       <section className="trust-strip"><div><b>1 só lugar</b><span>para encontrar</span></div><i></i><div><b>Seu município</b><span>como ponto de partida</span></div><i></i><div><b>Todo o Brasil</b><span>como horizonte</span></div></section>
       <section className="section categories" id="categorias"><div className="section-heading"><div><div className="eyebrow dark">EXPLORE POSSIBILIDADES</div><h2>O Brasil tem de tudo.<br/><em>Encontre aqui.</em></h2></div><p>Uma vitrine para negócios de todos os tamanhos e uma busca simples para quem precisa encontrar soluções.</p></div><div className="category-grid">{categories.map(({name,icon:Icon,count},i)=><button className="category-card" key={name} onClick={()=>{setActive(name);document.getElementById('explorar').scrollIntoView({behavior:'smooth'})}}><span className={'cat-icon cat-'+i}><Icon size={23}/></span><b>{name}</b><small>{count}</small><ArrowRight className="cat-arrow" size={18}/></button>)}</div></section>
-      <section className="explore-section" id="explorar"><div className="section-heading explore-heading"><div><div className="eyebrow dark">VITRINE CONECTA BRASIL</div><h2>Descubra o que existe <em>por perto.</em></h2></div><span className="demo-label">PRÉVIA DA PLATAFORMA</span></div><div className="filters"><div className="filter-pills">{['Todas',...categories.map(c=>c.name)].map(c=><button key={c} className={active===c?'selected':''} onClick={()=>setActive(c)}>{c}</button>)}</div><span>{city ? 'Localização informada: '+city : 'Começando pela sua região'}</span></div><div className="listing-grid">{filtered.length ? filtered.map((item,i)=>{const Icon=item.icon;return <article className="listing-card" key={item.name}><div className={'listing-visual visual-'+i}><Icon size={32}/><span>{item.tag}</span></div><div className="listing-body"><small>{item.category}</small><h3>{item.name}</h3><p>{item.desc}</p><div className="listing-foot"><span><MapPin size={14}/>{item.city}</span><span className="coming">Cadastro em breve</span></div></div></article>}) : <div className="empty-state">Nenhum resultado nesta prévia. Experimente outra categoria.</div>}</div></section>
+      <section className="explore-section" id="explorar"><div className="section-heading explore-heading"><div><div className="eyebrow dark">VITRINE CONECTA BRASIL</div><h2>Descubra o que existe <em>por perto.</em></h2></div><span className="demo-label">PRÉVIA DA PLATAFORMA</span></div><div className="filters"><div className="filter-pills">{['Todas',...categories.map(c=>c.name)].map(c=><button key={c} className={active===c?'selected':''} onClick={()=>setActive(c)}>{c}</button>)}</div><span>{city ? 'Localização informada: '+city : 'Começando pela sua região'}</span></div><div className="listing-grid">{loadingBusinesses ? <div className="empty-state">Carregando negócios cadastrados...</div> : filtered.length ? filtered.map((item,i)=>{const Icon=item.icon;return <article className="listing-card" key={item.name}><div className={'listing-visual visual-'+i}><Icon size={32}/><span>{item.tag}</span></div><div className="listing-body"><small>{item.category}</small><h3>{item.name}</h3><p>{item.desc}</p><div className="listing-foot"><span><MapPin size={14}/>{item.city}</span><span className="coming">Cadastro em breve</span></div></div></article>}) : <div className="empty-state">{loadError || (isSupabaseConfigured ? 'Ainda não há negócios aprovados nesta busca.' : 'Nenhum resultado nesta prévia. Experimente outra categoria.')}</div>}</div></section>
       <section className="cta" id="sobre"><div className="cta-orb"></div><div><div className="eyebrow">FAÇA PARTE DESSA CONEXÃO</div><h2>Seu negócio merece<br/>ser encontrado.</h2><p>Estamos preparando uma nova vitrine para empresas e profissionais de todo o Brasil.</p></div><button className="btn cta-btn" onClick={()=>{setShowForm(true);setSent(false)}}>Quero anunciar <ArrowRight size={17}/></button></section>
     </main>
     <footer><a className="brand footer-brand" href="#"><span className="brand-mark"><span></span><span></span><span></span></span><span>conecta<span className="brand-light">brasil</span><small>CONEXÕES QUE MOVIMENTAM</small></span></a><span>© 2026 Conecta Brasil. Um país inteiro de possibilidades.</span><span className="footer-status"><i></i> Projeto em construção</span></footer>
