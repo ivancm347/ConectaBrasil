@@ -76,3 +76,5 @@
 /* Correção de proporção da galeria nos cards da vitrine (desktop e mobile) */
 .listing-gallery{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:8px 12px 0;overflow:hidden;height:64px;align-items:start}
 .listing-gallery img{display:block!important;width:100%!important;min-width:0!important;height:48px!important;max-height:48px!important;object-fit:cover!important;flex:none!important;border-radius:6px;border:1px solid #e8edf1}
+
+/* Rebuild de publicação após correção da galeria de imagens. */
