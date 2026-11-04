@@ -88,3 +88,9 @@
 .photo-lightbox-content img{display:block;max-width:100%;max-height:calc(100vh - 100px);width:auto;height:auto;object-fit:contain;border-radius:10px}
 .photo-lightbox-close{position:absolute;top:18px;right:20px;width:44px;height:44px;border:0;border-radius:50%;background:#fff;color:#152842;display:grid;place-items:center;cursor:pointer}
 @media(max-width:560px){.photo-lightbox{padding:14px}.photo-lightbox-content img{max-height:calc(100vh - 90px)}}
+
+
+/* Contato direto nos anúncios públicos */
+.listing-contact{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 10px;border-radius:7px;background:#e8f8f0;color:#147b55;font-size:10px;font-weight:800;text-decoration:none;white-space:nowrap;transition:background .2s,transform .2s}
+.listing-contact:hover{background:#d3f1e2;transform:translateY(-1px)}
+.listing-contact:focus-visible{outline:3px solid #53d6b0;outline-offset:2px}
