@@ -105,6 +105,12 @@ drop policy if exists "Categories are publicly readable" on public.categories;
 create policy "Categories are publicly readable" on public.categories
 for select to anon, authenticated using (active = true);
 
+drop policy if exists "Admins manage categories" on public.categories;
+create policy "Admins manage categories" on public.categories
+for all to authenticated
+using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
+with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
 drop policy if exists "Approved businesses are public" on public.businesses;
 create policy "Approved businesses are public" on public.businesses
 for select to anon, authenticated
@@ -160,6 +166,7 @@ with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 grant usage on schema public to anon, authenticated;
 grant select on public.categories to anon, authenticated;
+grant insert, update on public.categories to authenticated;
 grant select on public.businesses, public.business_categories to anon, authenticated;
 grant select, insert, update on public.profiles to authenticated;
 grant insert, update on public.businesses, public.business_categories to authenticated;
