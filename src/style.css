@@ -128,3 +128,9 @@
   .search-panel{padding:5px}
   .search-field{padding:9px 10px}
 }
+
+
+/* Busca por cidade: sugestões e limpeza rápida do filtro */
+.search-field datalist{display:none}
+.clear-city-filter{margin-left:7px;border:0;background:transparent;color:#159b78;font:800 10px 'DM Sans',sans-serif;cursor:pointer;text-decoration:underline}
+.clear-city-filter:focus-visible{outline:2px solid #53d6b0;outline-offset:2px;border-radius:3px}
