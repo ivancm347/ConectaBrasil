@@ -16,7 +16,7 @@ const examples = [
   { name: 'Comércio local', category: 'Lojas e comércio', city: 'Brasil', desc: 'Descubra lojas, novidades e oportunidades.', tag: 'Em breve', icon: ShoppingBag },
 ];
 function whatsappLink(phone) {
-  const digits = String(phone || '').replace(/\\D/g, '');
+  const digits = String(phone || '').replace(/\D/g, '');
   if (!digits) return '';
   const number = digits.startsWith('55') ? digits : `55${digits}`;
   const message = encodeURIComponent('Olá! Encontrei seu negócio no Conecta Brasil e gostaria de mais informações.');
