@@ -157,3 +157,12 @@
 .detail-featured{display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:20px;background:#fff4d6;color:#94620a;font-size:10px}
 .business-detail-contact{margin-top:10px;padding:11px 14px}
 @media(max-width:560px){.business-detail-backdrop{padding:8px}.business-detail{max-height:calc(100vh - 16px);border-radius:14px}.business-detail-hero{height:170px}.business-detail-content{padding:19px}.business-detail-content h2{font-size:22px}.business-detail-gallery{grid-template-columns:repeat(3,minmax(0,1fr))}.business-detail-gallery img{height:70px}}
+
+
+/* Compartilhamento de páginas individuais */
+.business-detail-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:20px}
+.business-detail-actions .business-detail-contact{margin-top:0}
+.business-share-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border:1px solid #dce3e8;border-radius:12px;background:#fff;color:#263746;font:inherit;font-weight:700;cursor:pointer;transition:background .2s,border-color .2s}
+.business-share-button:hover{background:#f3f7f9;border-color:#aabac5}
+.share-feedback{display:block;margin-top:9px;color:#24744b;font-weight:600}
+@media(max-width:560px){.business-detail-actions{flex-direction:column;align-items:stretch}.business-share-button{width:100%}}
