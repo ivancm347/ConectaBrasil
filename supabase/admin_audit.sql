@@ -5,7 +5,7 @@
 
 create table if not exists public.admin_audit_logs (
   id uuid primary key default gen_random_uuid(),
-  actor_id uuid not null default auth.uid() references auth.users(id) on delete set null,
+  actor_id uuid default auth.uid() references auth.users(id) on delete set null,
   actor_email text,
   action text not null,
   entity_type text not null,
