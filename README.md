@@ -2,22 +2,41 @@
 
 **Conexões que movimentam.**
 
-O Conecta Brasil é uma plataforma em desenvolvimento para aproximar pessoas, empresas, profissionais, lojas e serviços de suas comunidades, começando pela Baixada Santista e preparada para crescer em todo o país.
+O Conecta Brasil conecta pessoas, empresas, profissionais, lojas e serviços. A plataforma começa pela Baixada Santista e está preparada para crescer em todo o país.
 
-## Primeira versão
-- Página inicial responsiva para celular e computador.
-- Busca visual e filtros por categoria.
-- Categorias de empresas, comércio, serviços e construção.
-- Estrutura inicial de vitrine e apresentação do projeto.
-- Preparação para integração futura com Supabase e cadastro real de anunciantes.
-
-> Esta primeira entrega é uma prévia visual. Os cartões exibidos são demonstrativos; ainda não representam empresas cadastradas. Busca por cidade, cadastro, avaliações e painel administrativo serão implementados nas próximas etapas.
+## Recursos implementados
+- Página inicial responsiva.
+- Busca por texto e cidade e filtros por categoria.
+- Integração com Supabase para exibir apenas negócios aprovados.
+- Cadastro e login de anunciantes por e-mail e senha.
+- Envio de negócios para análise, com status inicial pendente.
+- Painel administrativo para aprovar, rejeitar, suspender e devolver cadastros para análise.
+- Visitantes podem explorar a vitrine sem fazer login.
 
 ## Tecnologias
-- React 18
-- Vite
+- React 18 e Vite
+- Supabase Auth e PostgreSQL com Row Level Security (RLS)
 - Lucide React
-- GitHub Actions / GitHub Pages
+- GitHub Actions e GitHub Pages
+
+## Configuração do Supabase
+1. Crie um projeto no Supabase.
+2. Execute o arquivo `supabase/schema.sql` no SQL Editor.
+3. No GitHub, abra **Settings → Secrets and variables → Actions**.
+4. Crie as variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` com os dados do projeto Supabase. A chave usada no navegador deve ser a chave pública/anon (publishable); nunca coloque a `service_role` ou secret key no frontend.
+5. Confirme em **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
+## Habilitar a conta administradora
+A conta precisa existir primeiro em **Authentication → Users**. Depois, no SQL Editor do Supabase, substitua o texto de exemplo pelo e-mail da conta que será administradora e execute:
+
+```sql
+update auth.users
+set raw_app_meta_data =
+  coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role":"admin"}'::jsonb
+where email = 'SEU_EMAIL_DE_LOGIN';
+```
+
+O painel verifica a função em `app_metadata.role` e o banco também valida essa função nas políticas RLS. Não use `user_metadata` para conceder privilégios. Depois de alterar a função, saia da conta no site e entre novamente para renovar a sessão.
 
 ## Rodar localmente
 ```bash
@@ -31,17 +50,19 @@ npm run build
 npm run preview
 ```
 
-## Publicação
-O workflow em `.github/workflows/deploy.yml` gera e publica o site no GitHub Pages a cada atualização da branch `main`. Nas configurações do repositório, confirme **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+## Segurança
+- Os visitantes anônimos só podem consultar negócios aprovados.
+- O anunciante autenticado pode enviar e acompanhar os próprios cadastros.
+- A aprovação e a moderação são protegidas por políticas RLS.
+- O papel administrativo deve ser concedido somente pelo painel seguro do Supabase/SQL Editor.
+- Nunca exponha a chave `service_role` no navegador ou em variáveis `VITE_*`.
 
 ## Próximas etapas
-1. Identidade visual e revisão da experiência mobile.
-2. Projeto Supabase: tabelas, autenticação e regras de acesso.
-3. Cadastro e edição de empresas e profissionais.
-4. Busca por cidade, região e categoria.
-5. Página pública de cada anunciante.
-6. Painel administrativo, moderação e denúncias.
-7. Avaliações, favoritos e anúncios em destaque.
+1. Página pública detalhada de cada negócio.
+2. Edição dos dados pelo anunciante.
+3. Melhorias na busca por localização.
+4. Denúncias e ferramentas de qualidade da vitrine.
+5. Avaliações, favoritos e anúncios em destaque.
 
 ---
 Conecta Brasil — um país inteiro de possibilidades.
