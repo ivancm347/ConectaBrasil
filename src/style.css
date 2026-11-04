@@ -78,3 +78,13 @@
 .listing-gallery img{display:block!important;width:100%!important;min-width:0!important;height:48px!important;max-height:48px!important;object-fit:cover!important;flex:none!important;border-radius:6px;border:1px solid #e8edf1}
 
 /* Rebuild de publicação após correção da galeria de imagens. */
+
+
+/* Visualização ampliada das fotos dos anúncios */
+.photo-selectable{cursor:zoom-in}
+.photo-selectable:focus-visible{outline:3px solid #53d6b0;outline-offset:2px}
+.photo-lightbox{position:fixed;inset:0;z-index:3000;background:rgba(5,14,27,.92);display:flex;align-items:center;justify-content:center;padding:28px}
+.photo-lightbox-content{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:min(100%,1100px);max-height:100%;color:#fff;font-size:13px;font-weight:700}
+.photo-lightbox-content img{display:block;max-width:100%;max-height:calc(100vh - 100px);width:auto;height:auto;object-fit:contain;border-radius:10px}
+.photo-lightbox-close{position:absolute;top:18px;right:20px;width:44px;height:44px;border:0;border-radius:50%;background:#fff;color:#152842;display:grid;place-items:center;cursor:pointer}
+@media(max-width:560px){.photo-lightbox{padding:14px}.photo-lightbox-content img{max-height:calc(100vh - 90px)}}
