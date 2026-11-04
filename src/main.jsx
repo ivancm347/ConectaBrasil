@@ -34,6 +34,48 @@ function App() {
   const [formBusy, setFormBusy] = useState(false);
   const [formMessage, setFormMessage] = useState('');
   const [formError, setFormError] = useState('');
+  const [adminBusinesses, setAdminBusinesses] = useState([]);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [adminFilter, setAdminFilter] = useState('pending');
+  const [adminError, setAdminError] = useState('');
+  const isAdmin = authUser?.app_metadata?.role === 'admin';
+
+  async function loadAdminBusinesses() {
+    if (!isAdmin) return;
+    setAdminLoading(true); setAdminError('');
+    const { data, error } = await supabase.from('businesses')
+      .select('id,name,description,business_type,phone,city,state,status,created_at,business_categories(categories(name))')
+      .order('created_at', { ascending: false });
+    if (error) setAdminError('Não foi possível carregar os cadastros. Confira se sua conta tem permissão de administrador.');
+    else setAdminBusinesses(data || []);
+    setAdminLoading(false);
+  }
+
+  async function moderateBusiness(id, status) {
+    setFormBusy(true); setAdminError('');
+    const { error } = await supabase.from('businesses').update({ status }).eq('id', id);
+    if (error) setAdminError('Não foi possível atualizar este cadastro: ' + error.message);
+    else {
+      setAdminBusinesses(items => items.map(item => item.id === id ? { ...item, status } : item));
+      if (status === 'approved') {
+        const { data } = await supabase.from('businesses')
+          .select('id,name,description,business_type,city,state,business_categories(categories(name))')
+          .eq('status', 'approved').order('featured', { ascending: false }).order('name');
+        if (data) setBusinesses(data.map(item => ({
+          id: item.id, name: item.name,
+          category: item.business_categories?.[0]?.categories?.name || 'Empresas',
+          city: [item.city, item.state].filter(Boolean).join(' - '),
+          desc: item.description || 'Conheça este negócio cadastrado no Conecta Brasil.',
+          tag: item.business_type || 'Negócio', icon: Store
+        })));
+      }
+    }
+    setFormBusy(false);
+  }
+
+  useEffect(() => {
+    if (showForm && isAdmin) loadAdminBusinesses();
+  }, [showForm, isAdmin]);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
@@ -127,7 +169,7 @@ function App() {
   return <div className="app">
     <header className="topbar"><a className="brand" href="#"><span className="brand-mark"><span></span><span></span><span></span></span><span>conecta<span className="brand-light">brasil</span><small>CONEXÕES QUE MOVIMENTAM</small></span></a>
       <button className="mobile-menu" onClick={() => setMenu(!menu)} aria-label="Abrir menu">{menu ? <X/> : <Menu/>}</button>
-      <nav className={menu ? 'nav open' : 'nav'}><a href="#categorias" onClick={()=>setMenu(false)}>Categorias</a><a href="#explorar" onClick={()=>setMenu(false)}>Explorar</a><a href="#sobre" onClick={()=>setMenu(false)}>Sobre</a><button className="btn btn-small" onClick={()=>{setShowForm(true);setMenu(false)}}><Plus size={16}/> Anunciar negócio</button></nav>
+      <nav className={menu ? 'nav open' : 'nav'}><a href="#categorias" onClick={()=>setMenu(false)}>Categorias</a><a href="#explorar" onClick={()=>setMenu(false)}>Explorar</a><a href="#sobre" onClick={()=>setMenu(false)}>Sobre</a>{isAdmin && <button className="btn btn-small admin-nav" onClick={()=>{setShowForm(true);setMenu(false)}}><ShieldCheck size={16}/> Administração</button>}<button className="btn btn-small" onClick={()=>{setShowForm(true);setMenu(false)}}><Plus size={16}/> Anunciar negócio</button></nav>
     </header>
     <main>
       <section className="hero"><div className="hero-glow"></div><div className="hero-content"><div className="eyebrow"><Sparkles size={15}/> UM BRASIL DE OPORTUNIDADES</div><h1>O que você procura.<br/><em>Mais perto de você.</em></h1><p>Encontre empresas, profissionais, lojas e serviços. Valorize quem faz a economia acontecer em cada cidade do Brasil.</p>
@@ -142,6 +184,32 @@ function App() {
     <footer><a className="brand footer-brand" href="#"><span className="brand-mark"><span></span><span></span><span></span></span><span>conecta<span className="brand-light">brasil</span><small>CONEXÕES QUE MOVIMENTAM</small></span></a><span>© 2026 Conecta Brasil. Um país inteiro de possibilidades.</span><span className="footer-status"><i></i> Projeto em construção</span></footer>
     {showForm && <div className="modal-backdrop" onClick={()=>setShowForm(false)}><div className="modal" onClick={e=>e.stopPropagation()}>
       <button className="modal-close" onClick={()=>setShowForm(false)}><X/></button>
+      {isAdmin ? <>
+        <div className="eyebrow dark">ÁREA RESTRITA</div>
+        <h2>Painel administrativo</h2>
+        <p>Revise os anúncios enviados e escolha quais podem aparecer publicamente na vitrine.</p>
+        <div className="admin-stats">
+          <div><b>{adminBusinesses.length}</b><span>Cadastros</span></div>
+          <div><b>{adminBusinesses.filter(item=>item.status==='pending').length}</b><span>Pendentes</span></div>
+          <div><b>{adminBusinesses.filter(item=>item.status==='approved').length}</b><span>Aprovados</span></div>
+        </div>
+        <div className="admin-filters">{[['pending','Pendentes'],['approved','Aprovados'],['rejected','Rejeitados'],['suspended','Suspensos'],['all','Todos']].map(([value,label])=><button key={value} className={adminFilter===value?'active':''} onClick={()=>setAdminFilter(value)}>{label}</button>)}</div>
+        {adminError && <div className="form-error">{adminError}</div>}
+        {adminLoading ? <div className="empty-state">Carregando cadastros...</div> : <div className="admin-list">
+          {adminBusinesses.filter(item=>adminFilter==='all'||item.status===adminFilter).length ? adminBusinesses.filter(item=>adminFilter==='all'||item.status===adminFilter).map(item=><article className="admin-business" key={item.id}>
+            <div className="admin-business-head"><div><h3>{item.name}</h3><span>{item.business_type} · {[item.city,item.state].filter(Boolean).join('/')}</span></div><small className={'status-badge status-'+item.status}>{({pending:'Pendente',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</small></div>
+            <p>{item.description || 'Sem descrição informada.'}</p>
+            <div className="admin-meta"><span>{item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</span>{item.phone && <span>{item.phone}</span>}<span>{new Date(item.created_at).toLocaleDateString('pt-BR')}</span></div>
+            <div className="admin-actions">
+              {item.status!=='approved' && <button disabled={formBusy} className="approve-action" onClick={()=>moderateBusiness(item.id,'approved')}>Aprovar</button>}
+              {item.status!=='rejected' && <button disabled={formBusy} onClick={()=>moderateBusiness(item.id,'rejected')}>Rejeitar</button>}
+              {item.status!=='suspended' && item.status==='approved' && <button disabled={formBusy} onClick={()=>moderateBusiness(item.id,'suspended')}>Suspender</button>}
+              {item.status!=='pending' && <button disabled={formBusy} onClick={()=>moderateBusiness(item.id,'pending')}>Voltar para análise</button>}
+            </div>
+          </article>) : <div className="empty-state">Nenhum cadastro nesta categoria de status.</div>}
+        </div>}
+        <button className="text-switch" onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);setShowForm(false)}}>Sair da conta administrativa</button>
+      </> : <>
       <div className="eyebrow dark">CADASTRO DE ANUNCIANTE</div>
       <h2>{authUser ? 'Apresente seu negócio.' : 'Entre para anunciar.'}</h2>
       {!isSupabaseConfigured ? <p>O cadastro está temporariamente indisponível. A conexão com o banco ainda não foi configurada na publicação.</p> : <>
@@ -168,6 +236,7 @@ function App() {
           </form>
           <button className="text-switch" onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);setFormMessage('')}}>Sair da conta</button>
         </>}
+      </>}
       </>}
     </div></div>}
   </div>;
