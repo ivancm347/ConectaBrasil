@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ivancm347.github.io/ConectaBrasil/sitemap.xml
