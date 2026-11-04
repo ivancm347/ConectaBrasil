@@ -64,3 +64,6 @@
 .admin-category-list>div{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px solid #e7edf0;border-radius:8px;padding:9px 10px}
 .admin-category-list span{font-size:11px;font-weight:700;color:#33445b}.admin-category-list small{display:block;color:#8995a5;font-size:9px;margin-top:3px}
 .admin-category-list button{background:#edf2f5;color:#536176}
+
+/* Histórico administrativo */
+.audit-list{display:grid;gap:8px;margin-top:12px}.audit-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:11px;background:#fff;border:1px solid #e5ebef;border-radius:9px}.audit-item b,.audit-item span{display:block}.audit-item b{font-size:11px;color:#20344e}.audit-item span,.audit-item small{font-size:9px;line-height:1.5;color:#7b899b}.audit-item small{text-align:right;white-space:nowrap}
