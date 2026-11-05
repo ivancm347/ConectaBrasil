@@ -14,7 +14,12 @@ O Conecta Brasil conecta pessoas, empresas, profissionais, lojas e serviços. A 
 - Envio de negócios para análise, com status inicial pendente.
 - Painel administrativo para aprovar, rejeitar, suspender, editar e excluir anúncios.
 - Gestão de categorias, destaques e histórico administrativo.
-- Perfis públicos de negócios com galeria de até cinco fotos, logo, WhatsApp e compartilhamento por link.
+- Perfis públicos de negócios com galeria de até cinco fotos, logo, WhatsApp, compartilhamento por link e QR Code baixável.
+- Busca inteligente com expansão de termos relacionados a serviços e categorias.
+- Acesso à localização aproximada do negócio por pesquisa no OpenStreetMap.
+- Solicitação de orçamento pelo WhatsApp com mensagem inicial pronta.
+- Selo de verificação administrado pela equipe e anúncios em destaque.
+- Métricas aproximadas de visualizações de perfil e cliques no WhatsApp para o anunciante.
 - Visualização ampliada de fotos e modais com suporte à tecla Esc.
 - Metadados para mecanismos de busca e compartilhamento, além de sitemap e robots.txt.
 - Visitantes podem explorar, pesquisar e compartilhar a vitrine sem fazer login.
@@ -31,6 +36,9 @@ O Conecta Brasil conecta pessoas, empresas, profissionais, lojas e serviços. A 
 3. No GitHub, abra **Settings → Secrets and variables → Actions**.
 4. Crie as variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` com os dados do projeto Supabase. A chave usada no navegador deve ser a chave pública/anon (publishable); nunca coloque a `service_role` ou secret key no frontend.
 5. Confirme em **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
+## Ativar as inovações de métricas e verificação
+Depois de publicar a atualização, execute uma única vez `supabase/innovations.sql` no SQL Editor do Supabase. A migração apenas adiciona três colunas e uma função limitada para contar visualizações e cliques; não apaga nem altera os anúncios existentes. O selo verificado só pode ser concedido ou removido por uma conta administradora. As métricas são aproximadas e representam aberturas de perfil e cliques no WhatsApp.
 
 ## Habilitar a conta administradora
 A conta precisa existir primeiro em **Authentication → Users**. Depois, no SQL Editor do Supabase, substitua o texto de exemplo pelo e-mail da conta que será administradora e execute:
@@ -64,10 +72,8 @@ npm run preview
 - Nunca exponha a chave `service_role` no navegador ou em variáveis `VITE_*`.
 
 ## Próximas etapas
-1. Área do anunciante para editar e acompanhar os próprios anúncios.
-2. Fluxo de recuperação de senha e orientações de conta.
-3. Ferramentas de denúncia e qualidade da vitrine.
-4. Melhorias graduais de descoberta e filtros por localização.
+1. Executar `supabase/innovations.sql` para habilitar métricas e selo de verificação.
+2. Validar os novos recursos na vitrine e na área do anunciante.
 
 ---
 Conecta Brasil — um país inteiro de possibilidades.
