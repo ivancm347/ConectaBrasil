@@ -97,10 +97,9 @@ function getBusinessImagePath(value) {
 }
 
 async function createBusinessImageUrl(value) {
-  const path = getBusinessImagePath(value);
-  if (!path) return '';
-  const { data, error } = await supabase.storage.from('business-images').createSignedUrl(path, 60 * 60 * 24 * 7);
-  return error ? '' : (data?.signedUrl || '');
+  // Recuperação temporária: mantém as URLs públicas originais enquanto a política
+  // de leitura privada é revisada. Não descarta os caminhos já salvos no banco.
+  return getBusinessImagePath(value) ? value : '';
 }
 
 async function fetchPublicBusinesses() {
