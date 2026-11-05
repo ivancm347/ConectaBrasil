@@ -94,20 +94,27 @@ async function fetchPublicBusinesses() {
   }
   const { data, error } = result;
   if (error) throw error;
-  const businesses = (data || []).map(item => ({
-    id: item.id,
-    name: item.name,
-    category: item.business_categories?.[0]?.categories?.name || 'Empresas',
-    city: [item.city, item.state].filter(Boolean).join(' - '),
-    desc: item.description || 'Conheça este negócio cadastrado no Conecta Brasil.',
-    tag: item.business_type || 'Negócio',
-    featured: Boolean(item.featured) && (!item.featured_expires_at || new Date(item.featured_expires_at).getTime() > Date.now()),
-    planType: item.plan_type || (item.featured ? 'destaque' : 'gratuito'),
-    planExpiresAt: item.plan_expires_at || item.featured_expires_at || null,
-    verified: Boolean(item.verified),
-    phone: item.phone || '',
-    icon: Store, logo: item.logo_url || '', photos: item.gallery_urls || [],
-  }));
+  const businesses = (data || []).map(item => {
+    const now = Date.now();
+    const planExpiresAt = item.plan_expires_at || item.featured_expires_at || null;
+    const planActive = !planExpiresAt || new Date(planExpiresAt).getTime() > now;
+    const featuredActive = Boolean(item.featured) && planActive &&
+      (!item.featured_expires_at || new Date(item.featured_expires_at).getTime() > now);
+    return {
+      id: item.id,
+      name: item.name,
+      category: item.business_categories?.[0]?.categories?.name || 'Empresas',
+      city: [item.city, item.state].filter(Boolean).join(' - '),
+      desc: item.description || 'Conheça este negócio cadastrado no Conecta Brasil.',
+      tag: item.business_type || 'Negócio',
+      featured: featuredActive,
+      planType: planActive ? (item.plan_type || (item.featured ? 'destaque' : 'gratuito')) : 'gratuito',
+      planExpiresAt,
+      verified: Boolean(item.verified),
+      phone: item.phone || '',
+      icon: Store, logo: item.logo_url || '', photos: item.gallery_urls || [],
+    };
+  });
   try {
     localStorage.setItem('conecta-public-businesses', JSON.stringify(businesses.map(({ icon, ...item }) => item)));
   } catch { /* A vitrine continua funcionando mesmo se o armazenamento local estiver cheio. */ }
@@ -118,7 +125,18 @@ function readCachedPublicBusinesses() {
   try {
     const saved = JSON.parse(localStorage.getItem('conecta-public-businesses') || '[]');
     if (!Array.isArray(saved)) return [];
-    return saved.filter(item => item && item.id && item.name).map(item => ({ ...item, icon: Store }));
+    const now = Date.now();
+    return saved.filter(item => item && item.id && item.name).map(item => {
+      const expiresAt = item.planExpiresAt || item.plan_expires_at || item.featured_expires_at || null;
+      const planActive = !expiresAt || new Date(expiresAt).getTime() > now;
+      return {
+        ...item,
+        featured: Boolean(item.featured) && planActive,
+        planType: planActive ? (item.planType || item.plan_type || 'gratuito') : 'gratuito',
+        planExpiresAt: expiresAt,
+        icon: Store,
+      };
+    });
   } catch {
     return [];
   }
