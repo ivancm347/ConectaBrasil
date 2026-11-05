@@ -71,6 +71,9 @@ const searchSynonyms = {
   restaurante: ['comida', 'alimentação', 'lanchonete'],
 };
 
+// Palavras de ligação não devem impedir resultados em buscas como “loja de material”.
+const searchStopWords = new Set(['a','as','o','os','um','uma','uns','umas','de','do','da','dos','das','e','em','no','na','nos','nas','para','por','com','sem','ao','aos']);
+
 function expandSearchQuery(value) {
   const normalized = normalizeSearch(value);
   const terms = normalized.split(/\s+/).filter(Boolean);
@@ -1023,7 +1026,7 @@ function App() {
   ), [adminBusinesses, adminFilter, adminSearch]);
   const filtered = useMemo(() => listingSource.filter(item => {
     const searchable = normalizeSearch([item.name, item.desc, item.category, item.city, item.phone].join(' '));
-    const queryTokens = normalizeSearch(query).split(/\s+/).filter(Boolean);
+    const queryTokens = normalizeSearch(query).split(/\s+/).filter(term => term && !searchStopWords.has(term));
     const matchesSearch = !queryTokens.length || queryTokens.every(term =>
       searchable.includes(term) ||
       (searchSynonyms[term] || []).some(alias => searchable.includes(normalizeSearch(alias)))
