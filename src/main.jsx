@@ -414,17 +414,11 @@ function App() {
       const changed = adminBusinesses.find(item => item.id === id);
       setAdminBusinesses(items => items.map(item => item.id === id ? { ...item, status } : item));
       await recordAdminAction(status === 'approved' ? 'aprovado' : status === 'rejected' ? 'rejeitado' : status === 'suspended' ? 'suspenso' : 'retornado para análise', 'anúncio', id, changed?.name || 'Anúncio', { status_novo: status, status_anterior: changed?.status || null });
-      if (status === 'approved') {
-        const { data } = await supabase.from('businesses')
-          .select('id,name,description,business_type,phone,city,state,featured,logo_url,gallery_urls,business_categories(categories(name))')
-          .eq('status', 'approved').order('featured', { ascending: false }).order('name');
-        if (data) setBusinesses(data.map(item => ({
-          id: item.id, name: item.name,
-          category: item.business_categories?.[0]?.categories?.name || 'Empresas',
-          city: [item.city, item.state].filter(Boolean).join(' - '),
-          desc: item.description || 'Conheça este negócio cadastrado no Conecta Brasil.',
-          tag: item.business_type || 'Negócio', featured: Boolean(item.featured), phone: item.phone || '', icon: Store, logo: item.logo_url || '', photos: item.gallery_urls || []
-        })));
+      try {
+        setBusinesses(await fetchPublicBusinesses());
+        setLoadError('');
+      } catch {
+        setLoadError('A moderação foi salva, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
       }
     }
     setFormBusy(false);
