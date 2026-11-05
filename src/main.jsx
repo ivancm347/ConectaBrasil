@@ -72,6 +72,7 @@ function App() {
   const [ownerBusinesses, setOwnerBusinesses] = useState([]);
   const [ownerLoading, setOwnerLoading] = useState(false);
   const [ownerError, setOwnerError] = useState('');
+  const [ownerShareMessage, setOwnerShareMessage] = useState('');
   const [ownerEditing, setOwnerEditing] = useState(null);
   const [marketingTone, setMarketingTone] = useState('profissional');
   const [marketingPlatform, setMarketingPlatform] = useState('instagram');
@@ -350,6 +351,17 @@ function App() {
     if (error) setOwnerError('Não foi possível carregar seus anúncios. Tente novamente.');
     else setOwnerBusinesses(data || []);
     setOwnerLoading(false);
+  }
+
+  async function copyOwnerBusinessLink(item) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('negocio', item.id);
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      setOwnerShareMessage('Link público de ' + item.name + ' copiado!');
+    } catch {
+      setOwnerShareMessage('Não foi possível copiar automaticamente. Abra o anúncio na vitrine para compartilhar.');
+    }
   }
 
   async function saveOwnerBusiness(event) {
@@ -740,11 +752,12 @@ function App() {
               <div><b>{ownerStats.attention}</b><span>Precisam de atenção</span></div>
             </div>
             {ownerError && <div className="form-error" role="alert">{ownerError}</div>}
+            {ownerShareMessage && <div className="form-message" role="status">{ownerShareMessage}</div>}
             {ownerLoading ? <div className="empty-state">Carregando seus anúncios...</div> : ownerBusinesses.length ? <div className="owner-list">{ownerBusinesses.map(item => <article className="owner-business" key={item.id}>
               <div className="owner-business-head"><div><b>{item.name}</b><small>{[item.city,item.state].filter(Boolean).join(' / ')} · {item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</small></div><span className={'status-badge status-'+item.status}>{({pending:'Em análise',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</span></div>
               <p>{item.description || 'Sem descrição informada.'}</p>
               <small className="owner-updated">Enviado em {new Date(item.created_at).toLocaleDateString('pt-BR')}{item.updated_at && item.updated_at !== item.created_at ? ` · Atualizado em ${new Date(item.updated_at).toLocaleDateString('pt-BR')}` : ''}</small>
-              {['pending','approved'].includes(item.status) ? <><button type="button" className="owner-edit-button" onClick={() => setOwnerEditing({...item})}>Editar anúncio</button>{item.status === 'approved' && <small className="owner-status-help">Ao salvar, o anúncio ficará em análise até a equipe aprovar as alterações.</small>}</> : <small className="owner-status-help">{item.status === 'rejected' ? 'Entre em contato com a equipe para entender os ajustes necessários.' : 'Este anúncio não está visível na vitrine no momento.'}</small>}
+              {['pending','approved'].includes(item.status) ? <><button type="button" className="owner-edit-button" onClick={() => setOwnerEditing({...item})}>Editar anúncio</button>{item.status === 'approved' && <><small className="owner-status-help">Ao salvar, o anúncio ficará em análise até a equipe aprovar as alterações.</small><button type="button" className="owner-share-link" onClick={() => copyOwnerBusinessLink(item)}>Copiar link público</button></>}</> : <small className="owner-status-help">{item.status === 'rejected' ? 'Entre em contato com a equipe para entender os ajustes necessários.' : 'Este anúncio não está visível na vitrine no momento.'}</small>}
             </article>)}</div> : <div className="empty-state">Você ainda não cadastrou nenhum negócio. Preencha o formulário abaixo para começar.</div>}
           </section>
           <section className="marketing-assistant">
