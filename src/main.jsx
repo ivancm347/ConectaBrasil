@@ -403,7 +403,7 @@ function App() {
     const name = businessForm.name.trim();
     const city = businessForm.city.trim();
     const state = businessForm.state.trim().toUpperCase();
-    const phoneDigits = businessForm.phone.replace(/\\D/g, '');
+    const phoneDigits = businessForm.phone.replace(/\D/g, '');
     const selectedImages = [logoFile, ...galleryFiles].filter(Boolean);
     if (!name || !city || !/^[A-Z]{2}$/.test(state)) {
       setFormError('Informe o nome do negócio, a cidade e uma UF válida com duas letras.');
