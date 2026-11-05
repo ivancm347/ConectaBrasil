@@ -113,10 +113,12 @@ function App() {
         ? 'Está procurando produtos ou serviços? Conte com a gente.'
         : 'Qualidade, compromisso e atendimento para você.';
     const platformText = marketingPlatform === 'whatsapp'
-      ? `${opening}\\n\\n*${name}*\\n${service}${location}\\n\\nChame nesta conversa para pedir informações ou solicitar um orçamento.`
+      ? `${opening}\n\n*${name}*\n${service}${location}\n\nChame nesta conversa para pedir informações ou solicitar um orçamento.`
       : marketingPlatform === 'facebook'
-        ? `${opening}\\n\\n*${name}* — ${service}${location}\\n\\nEnvie uma mensagem e saiba mais!\\n\\n#ConectaBrasil #NegócioLocal #Empreendedorismo`
-        : `${opening}\\n\\n*${name}*\\n${service}${location}\\n\\nSalve este perfil e entre em contato para saber mais!\\n\\n#ConectaBrasil #NegócioLocal #Empreendedorismo #Brasil`;
+        ? `${opening}\n\n*${name}* — ${service}${location}\n\nEnvie uma mensagem e saiba mais!\n\n#ConectaBrasil #NegócioLocal #Empreendedorismo`
+        : marketingPlatform === 'tiktok'
+          ? `${opening}\n\n✨ ${name}\n${service}${location}\n\nSiga o perfil e compartilhe com quem precisa conhecer nosso trabalho!\n\n#ConectaBrasil #NegócioLocal #TikTokBrasil`
+          : `${opening}\n\n*${name}*\n${service}${location}\n\nSalve este perfil e entre em contato para saber mais!\n\n#ConectaBrasil #NegócioLocal #Empreendedorismo #Brasil`;
     setMarketingOutput(platformText);
     setMarketingCopied(false);
   }
@@ -747,6 +749,7 @@ function App() {
               <select value={marketingPlatform} onChange={e=>setMarketingPlatform(e.target.value)}>
                 <option value="instagram">Instagram</option>
                 <option value="facebook">Facebook</option>
+                <option value="tiktok">TikTok</option>
                 <option value="whatsapp">WhatsApp</option>
               </select>
             </label>
