@@ -1,20 +1,33 @@
 -- Conecta Brasil: imagens de empresas (logo + até 5 fotos)
--- Execute no SQL Editor do Supabase antes de testar os envios.
+-- Execute no SQL Editor do Supabase antes de testar os envios. O bucket é privado.
 alter table public.businesses
   add column if not exists logo_url text,
   add column if not exists gallery_urls text[] not null default '{}';
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('business-images', 'business-images', true, 5242880,
+values ('business-images', 'business-images', false, 5242880,
         array['image/jpeg','image/png','image/webp','image/gif'])
 on conflict (id) do update
-set public = true, file_size_limit = 5242880,
+set public = false, file_size_limit = 5242880,
     allowed_mime_types = excluded.allowed_mime_types;
 
 drop policy if exists "Public can view business images" on storage.objects;
-create policy "Public can view business images" on storage.objects
+drop policy if exists "Approved businesses and owners can view business images" on storage.objects;
+create policy "Approved businesses and owners can view business images"
+on storage.objects
 for select to anon, authenticated
-using (bucket_id = 'business-images');
+using (
+  bucket_id = 'business-images'
+  and exists (
+    select 1 from public.businesses b
+    where b.id::text = (storage.foldername(name))[2]
+      and (
+        b.status = 'approved'
+        or b.owner_id = auth.uid()
+        or (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+      )
+  )
+);
 
 drop policy if exists "Owners upload business images" on storage.objects;
 create policy "Owners upload business images" on storage.objects
