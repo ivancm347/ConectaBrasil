@@ -1130,10 +1130,45 @@ function App() {
     printWindow.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório Conecta Brasil - '+safe(monthLabel)+'</title><style>body{font:14px Arial,sans-serif;padding:28px;color:#172b3a}h1{font-size:22px}p{color:#526575}.summary{display:flex;gap:28px;margin:22px 0;font-weight:bold}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #d8e1e8;padding:9px;text-align:left}th{background:#eef3f7}@media print{button{display:none}}</style></head><body><h1>Conecta Brasil — Relatório de planos</h1><p>Referência: '+safe(monthLabel)+'</p><div class="summary"><span>Total registrado: R$ '+financeSummary.total.toLocaleString('pt-BR',{minimumFractionDigits:2})+'</span><span>Ativações: '+financeSummary.count+'</span></div><table><thead><tr><th>Negócio</th><th>Plano</th><th>Valor</th><th>Data</th><th>Responsável</th></tr></thead><tbody>'+body+'</tbody></table><p>Relatório estimativo com base nas ativações administrativas registradas. Não representa confirmação bancária.</p><script>window.onload=()=>window.print();</script></body></html>');
     printWindow.document.close();
   }
-  const filteredAdminBusinesses = useMemo(() => adminBusinesses.filter(item =>
-    (adminFilter === 'all' || (adminFilter === 'featured' ? item.featured : item.status === adminFilter)) &&
-    normalizeSearch([item.name, item.city, item.state, item.phone].filter(Boolean).join(' ')).includes(normalizeSearch(adminSearch))
-  ), [adminBusinesses, adminFilter, adminSearch]);
+  const adminPlanStatus = item => {
+    const type = item.plan_type || (item.featured ? 'destaque' : 'gratuito');
+    const expiry = item.plan_expires_at || item.featured_expires_at;
+    const expiryTime = expiry ? new Date(expiry).getTime() : null;
+    const isPaid = ['destaque','parceiro'].includes(type);
+    const isExpired = isPaid && expiryTime !== null && expiryTime <= Date.now();
+    const isActive = item.status === 'approved' && isPaid && !isExpired;
+    const isExpiring = isActive && expiryTime !== null && expiryTime <= Date.now() + 7 * 24 * 60 * 60 * 1000;
+    return { type, isPaid, isExpired, isActive, isExpiring };
+  };
+  const adminOverview = useMemo(() => {
+    const now = Date.now();
+    const approved = adminBusinesses.filter(item => item.status === 'approved');
+    const pending = adminBusinesses.filter(item => item.status === 'pending');
+    const plans = adminBusinesses.map(item => ({ item, ...adminPlanStatus(item) }));
+    const active = plans.filter(row => row.isActive);
+    const expired = plans.filter(row => row.isExpired);
+    const expiring = plans.filter(row => row.isExpiring).sort((a,b) => new Date(a.item.plan_expires_at || a.item.featured_expires_at) - new Date(b.item.plan_expires_at || b.item.featured_expires_at));
+    return {
+      total: adminBusinesses.length, approved: approved.length, pending: pending.length,
+      free: approved.filter(item => !plans.find(row => row.item.id === item.id)?.isActive).length,
+      destaque: active.filter(row => row.type === 'destaque').length,
+      parceiro: active.filter(row => row.type === 'parceiro').length,
+      expired: expired.length, expiring, expiredItems: expired.sort((a,b) => new Date(a.item.plan_expires_at || a.item.featured_expires_at) - new Date(b.item.plan_expires_at || b.item.featured_expires_at)),
+      checkedAt: now
+    };
+  }, [adminBusinesses]);
+  const filteredAdminBusinesses = useMemo(() => adminBusinesses.filter(item => {
+    const plan = adminPlanStatus(item);
+    const matchesFilter = adminFilter === 'all' ? true
+      : adminFilter === 'featured' ? item.featured
+      : adminFilter === 'expiring' ? plan.isExpiring
+      : adminFilter === 'expired' ? plan.isExpired
+      : adminFilter === 'free' ? item.status === 'approved' && !plan.isActive
+      : adminFilter === 'destaque' ? plan.isActive && plan.type === 'destaque'
+      : adminFilter === 'parceiro' ? plan.isActive && plan.type === 'parceiro'
+      : item.status === adminFilter;
+    return matchesFilter && normalizeSearch([item.name, item.city, item.state, item.phone].filter(Boolean).join(' ')).includes(normalizeSearch(adminSearch));
+  }), [adminBusinesses, adminFilter, adminSearch]);
   const filtered = useMemo(() => listingSource.filter(item => {
     const searchable = normalizeSearch([item.name, item.desc, item.category, item.city, item.phone].join(' '));
     const queryTokens = normalizeSearch(query).split(/\s+/).filter(term => term && !searchStopWords.has(term));
@@ -1234,6 +1269,33 @@ function App() {
             <span aria-hidden="true">↻</span> {adminLoading ? 'Atualizando...' : 'Atualizar'}
           </button>
         </div>
+        <section className="admin-category-manager admin-central-dashboard" style={{margin:'16px 0',padding:16,border:'1px solid #dbe6ed',borderRadius:16,background:'linear-gradient(145deg,#f7fbfd,#eef6f4)'}}>
+          <div style={{display:'flex',justifyContent:'space-between',gap:12,flexWrap:'wrap',alignItems:'center'}}>
+            <div><div className="eyebrow dark">VISÃO GERAL</div><h3 style={{margin:'4px 0'}}>Central de gestão</h3><p style={{margin:0}}>Indicadores calculados sobre os cadastros carregados no painel.</p></div>
+            <small style={{color:'#64748b'}}>Atualizado em {new Date(adminOverview.checkedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</small>
+          </div>
+          <div className="admin-stats" style={{margin:'14px 0 8px'}}>
+            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('all')}><b>{adminOverview.total}</b><span>Total de negócios</span></button>
+            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('approved')}><b>{adminOverview.approved}</b><span>Aprovados</span></button>
+            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('pending')}><b>{adminOverview.pending}</b><span>Aguardando análise</span></button>
+            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('free')}><b>{adminOverview.free}</b><span>Gratuitos ativos</span></button>
+            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('destaque')}><b>{adminOverview.destaque}</b><span>Destaque ativo</span></button>
+            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('parceiro')}><b>{adminOverview.parceiro}</b><span>Parceiro ativo</span></button>
+            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('expiring')}><b>{adminOverview.expiring.length}</b><span>Vencem em até 7 dias</span></button>
+            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('expired')}><b>{adminOverview.expired}</b><span>Planos vencidos</span></button>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(230px,1fr))',gap:12,marginTop:12}}>
+            <div style={{background:'#fff',border:'1px solid #e0e8ed',borderRadius:12,padding:12}}>
+              <strong style={{display:'block',marginBottom:8}}>Vencimentos próximos</strong>
+              {adminOverview.expiring.length ? adminOverview.expiring.slice(0,5).map(({item,type})=><div key={item.id} style={{display:'flex',justifyContent:'space-between',gap:8,padding:'7px 0',borderTop:'1px solid #edf1f4',fontSize:12}}><span>{item.name}<small style={{display:'block',color:'#64748b'}}>{type === 'destaque' ? 'Destaque' : 'Parceiro'}</small></span><b>{new Date(item.plan_expires_at || item.featured_expires_at).toLocaleDateString('pt-BR')}</b></div>) : <small style={{color:'#64748b'}}>Nenhum plano vence nos próximos 7 dias.</small>}
+            </div>
+            <div style={{background:'#fff',border:'1px solid #e0e8ed',borderRadius:12,padding:12}}>
+              <strong style={{display:'block',marginBottom:8}}>Planos vencidos</strong>
+              {adminOverview.expiredItems.length ? adminOverview.expiredItems.slice(0,5).map(({item,type})=><div key={item.id} style={{display:'flex',justifyContent:'space-between',gap:8,padding:'7px 0',borderTop:'1px solid #edf1f4',fontSize:12}}><span>{item.name}<small style={{display:'block',color:'#64748b'}}>{type === 'destaque' ? 'Destaque' : 'Parceiro'}</small></span><b>{new Date(item.plan_expires_at || item.featured_expires_at).toLocaleDateString('pt-BR')}</b></div>) : <small style={{color:'#64748b'}}>Nenhum plano vencido identificado.</small>}
+            </div>
+          </div>
+          <small style={{display:'block',marginTop:10,color:'#64748b'}}>Os planos são considerados ativos quando o negócio está aprovado e a data de vencimento ainda não passou. Os indicadores refletem os registros carregados pelo Supabase; os valores financeiros estimados ficam no relatório abaixo.</small>
+        </section>
         <div className="admin-stats">
           <button type="button" className={`admin-stat-button ${adminFilter==='all'?'selected':''}`} onClick={()=>setAdminFilter('all')} aria-label="Mostrar todos os cadastros"><b>{adminBusinesses.length}</b><span>Cadastros</span></button>
           <button type="button" className={`admin-stat-button ${adminFilter==='pending'?'selected':''}`} onClick={()=>setAdminFilter('pending')} aria-label="Mostrar cadastros pendentes"><b>{adminBusinesses.filter(item=>item.status==='pending').length}</b><span>Pendentes</span></button>
