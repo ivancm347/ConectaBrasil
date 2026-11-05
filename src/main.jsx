@@ -423,7 +423,7 @@ function App() {
           category: item.business_categories?.[0]?.categories?.name || 'Empresas',
           city: [item.city, item.state].filter(Boolean).join(' - '),
           desc: item.description || 'Conheça este negócio cadastrado no Conecta Brasil.',
-          tag: item.business_type || 'Negócio', icon: Store, logo: item.logo_url || '', photos: item.gallery_urls || []
+          tag: item.business_type || 'Negócio', featured: Boolean(item.featured), phone: item.phone || '', icon: Store, logo: item.logo_url || '', photos: item.gallery_urls || []
         })));
       }
     }
