@@ -1,4 +1,4 @@
-const CACHE_NAME = 'conecta-brasil-shell-v2';
+const CACHE_NAME = 'conecta-brasil-shell-v3';
 const APP_BASE = new URL('./', self.registration.scope);
 const INDEX_URL = new URL('index.html', APP_BASE).toString();
 const APP_ASSETS = [
@@ -47,18 +47,19 @@ self.addEventListener('fetch', event => {
 
   if (/\.(?:js|css|svg|png|webp|jpg|jpeg|avif|ico|woff2?|webmanifest)$/i.test(url.pathname)) {
     event.respondWith((async () => {
-      const cached = await caches.match(request);
-      if (cached) return cached;
-      try {
-        const response = await fetch(request);
-        if (response && response.ok) {
-          const cache = await caches.open(CACHE_NAME);
-          await cache.put(request, response.clone());
-        }
+      const cache = await caches.open(CACHE_NAME);
+      const cached = await cache.match(request);
+      const refresh = fetch(request).then(response => {
+        if (response && response.ok) cache.put(request, response.clone());
         return response;
-      } catch {
-        return Response.error();
+      }).catch(() => null);
+      if (cached) {
+        // Entrega o recurso em cache rapidamente e atualiza a cópia em segundo plano.
+        event.waitUntil(refresh);
+        return cached;
       }
+      const fresh = await refresh;
+      return fresh || Response.error();
     })());
   }
 });
