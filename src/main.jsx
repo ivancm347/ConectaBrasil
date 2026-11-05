@@ -51,6 +51,14 @@ function App() {
   const [galleryFiles, setGalleryFiles] = useState([]);
   const logoPreviewUrl = useMemo(() => logoFile ? URL.createObjectURL(logoFile) : '', [logoFile]);
   const galleryPreviewUrls = useMemo(() => galleryFiles.map(file => ({ name: file.name, url: URL.createObjectURL(file) })), [galleryFiles]);
+  useEffect(() => {
+    if (!logoPreviewUrl) return;
+    return () => URL.revokeObjectURL(logoPreviewUrl);
+  }, [logoPreviewUrl]);
+  useEffect(() => {
+    const urls = galleryPreviewUrls.map(item => item.url);
+    return () => urls.forEach(url => URL.revokeObjectURL(url));
+  }, [galleryPreviewUrls]);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [shareMessage, setShareMessage] = useState('');
