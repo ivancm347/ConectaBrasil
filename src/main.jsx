@@ -389,7 +389,7 @@ function App() {
       setFormBusy(false);
       return;
     }
-    if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 13)) {
+    if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 15)) {
       setOwnerError('Confira o telefone/WhatsApp: informe DDD e número.');
       setFormBusy(false);
       return;
