@@ -276,7 +276,7 @@ function App() {
     setShareMessage('');
     const url = new URL(window.location.href);
     url.searchParams.set('negocio', item.id);
-    window.history.pushState({}, '', url);
+    window.history.pushState({ conectaBusinessModal: true }, '', url);
   }
 
   function closeBusinessDetails() {
@@ -284,7 +284,13 @@ function App() {
     setShareMessage('');
     const url = new URL(window.location.href);
     url.searchParams.delete('negocio');
-    window.history.pushState({}, '', url);
+    // Volta à entrada anterior quando o modal foi aberto dentro do app.
+    // Em links recebidos diretamente, apenas limpa o parâmetro sem sair da página.
+    if (window.history.state?.conectaBusinessModal) {
+      window.history.back();
+    } else {
+      window.history.replaceState({}, '', url);
+    }
   }
 
   async function shareBusiness(item) {
