@@ -623,9 +623,10 @@ function App() {
       setAdminError('Aprove o cadastro antes de ativar um plano pago.');
       return;
     }
+    const isRenewal = planType !== 'gratuito' && (item.plan_type || (item.featured ? 'destaque' : 'gratuito')) === planType;
     const confirmed = window.confirm(planType === 'gratuito'
       ? 'Remover o plano e o destaque de ' + item.name + '?'
-      : 'Ativar o plano ' + (planType === 'destaque' ? 'Destaque' : 'Parceiro') + ' por 30 dias para ' + item.name + '? Confirme somente após verificar a contratação.');
+      : (isRenewal ? 'Renovar o plano ' : 'Ativar o plano ') + (planType === 'destaque' ? 'Destaque' : 'Parceiro') + ' por mais 30 dias para ' + item.name + '? Confirme somente após verificar a contratação.');
     if (!confirmed) return;
     setFormBusy(true);
     setAdminError('');
@@ -642,7 +643,7 @@ function App() {
       const { error } = await supabase.from('businesses').update(payload).eq('id', item.id);
       if (error) throw error;
       setAdminBusinesses(rows => rows.map(row => row.id === item.id ? { ...row, ...payload } : row));
-      await recordAdminAction(planType === 'gratuito' ? 'plano removido' : 'plano ativado por 30 dias', 'plano', item.id, item.name, { plan_type: planType, expires_at: expiresAt });
+      await recordAdminAction(planType === 'gratuito' ? 'plano removido' : (isRenewal ? 'plano renovado por 30 dias' : 'plano ativado por 30 dias'), 'plano', item.id, item.name, { plan_type: planType, expires_at: expiresAt, renewal: isRenewal });
       try {
         setBusinesses(await fetchPublicBusinesses());
         setLoadError('');
@@ -1327,8 +1328,8 @@ function App() {
                  {item.plan_expires_at && <small>Vence em {new Date(item.plan_expires_at).toLocaleDateString('pt-BR')} {new Date(item.plan_expires_at).getTime() <= Date.now() ? '· VENCIDO' : ''}</small>}
                </div>
                {planSchemaReady && <div className="admin-actions" style={{marginTop:8}}>
-                 <button type="button" disabled={formBusy} onClick={()=>setBusinessPlan(item,'destaque')}>Destaque · 30 dias</button>
-                 <button type="button" disabled={formBusy} onClick={()=>setBusinessPlan(item,'parceiro')}>Parceiro · 30 dias</button>
+                 <button type="button" disabled={formBusy} onClick={()=>setBusinessPlan(item,'destaque')}>{item.plan_type === 'destaque' ? 'Renovar Destaque · +30 dias' : 'Destaque · 30 dias'}</button>
+                 <button type="button" disabled={formBusy} onClick={()=>setBusinessPlan(item,'parceiro')}>{item.plan_type === 'parceiro' ? 'Renovar Parceiro · +30 dias' : 'Parceiro · 30 dias'}</button>
                  <button type="button" disabled={formBusy} onClick={()=>setBusinessPlan(item,'gratuito')}>Remover plano</button>
                </div>}
                <small style={{display:'block',marginTop:6,color:'#64748b'}}>Ative somente depois de confirmar a contratação. O destaque vence automaticamente na vitrine.</small>
