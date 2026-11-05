@@ -79,7 +79,7 @@ function expandSearchQuery(value) {
 async function fetchPublicBusinesses() {
   const { data, error } = await supabase
     .from('businesses')
-    .select('id,name,description,business_type,phone,city,state,logo_url,gallery_urls,featured,verified,views_count,whatsapp_clicks,business_categories(categories(name))')
+    .select('id,name,description,business_type,phone,city,state,logo_url,gallery_urls,featured,verified,business_categories(categories(name))')
     .eq('status', 'approved')
     .order('featured', { ascending: false })
     .order('name', { ascending: true });
@@ -952,12 +952,15 @@ function App() {
     (adminFilter === 'all' || (adminFilter === 'featured' ? item.featured : item.status === adminFilter)) &&
     normalizeSearch([item.name, item.city, item.state, item.phone].filter(Boolean).join(' ')).includes(normalizeSearch(adminSearch))
   ), [adminBusinesses, adminFilter, adminSearch]);
-  const filtered = useMemo(() => listingSource.filter(item =>
-    (active === 'Todas' || item.category === active) &&
-    normalizeSearch([item.name, item.desc, item.category, item.city, item.phone].join(' ')).includes(normalizeSearch(query)) || expandSearchQuery(query).split(' ').some(term => term.length > 2 && normalizeSearch([item.name, item.desc, item.category, item.city, item.phone].join(' ')).includes(term)) &&
-    (!city || normalizeSearch(item.city).includes(normalizeSearch(city))) &&
-    (!showFavorites || favoriteIds.includes(String(item.id || item.name)))
-  ), [listingSource, query, active, city, showFavorites, favoriteIds]);
+  const filtered = useMemo(() => listingSource.filter(item => {
+    const searchable = normalizeSearch([item.name, item.desc, item.category, item.city, item.phone].join(' '));
+    const searchTerms = expandSearchQuery(query).split(' ').filter(term => term.length > 2);
+    const matchesSearch = !query.trim() || searchable.includes(normalizeSearch(query)) || searchTerms.some(term => searchable.includes(term));
+    return (active === 'Todas' || item.category === active) &&
+      matchesSearch &&
+      (!city || normalizeSearch(item.city).includes(normalizeSearch(city))) &&
+      (!showFavorites || favoriteIds.includes(String(item.id || item.name)));
+  }), [listingSource, query, active, city, showFavorites, favoriteIds]);
   const listingPageCount = Math.max(1, Math.ceil(filtered.length / listingPageSize));
   const visibleListings = filtered.slice((listingPage - 1) * listingPageSize, listingPage * listingPageSize);
   useEffect(() => { setListingPage(1); }, [query, city, active, showFavorites, favoriteIds, listingSource]);
