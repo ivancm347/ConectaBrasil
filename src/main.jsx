@@ -335,7 +335,20 @@ function App() {
     };
     const { error } = await supabase.from('businesses').update(payload).eq('id', editingBusiness.id);
     if (error) setAdminError('Não foi possível salvar a edição: ' + error.message);
-    else { setAdminBusinesses(rows => rows.map(row => row.id === editingBusiness.id ? { ...row, ...payload } : row)); await recordAdminAction('editado', 'anúncio', editingBusiness.id, payload.name, payload); setEditingBusiness(null); }
+    else {
+      setAdminBusinesses(rows => rows.map(row => row.id === editingBusiness.id ? { ...row, ...payload } : row));
+      await recordAdminAction('editado', 'anúncio', editingBusiness.id, payload.name, payload);
+      if (String(selectedBusiness?.id) === String(editingBusiness.id)) {
+        setSelectedBusiness(current => current ? { ...current, ...payload } : current);
+      }
+      setEditingBusiness(null);
+      try {
+        setBusinesses(await fetchPublicBusinesses());
+        setLoadError('');
+      } catch {
+        setLoadError('A edição foi salva, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
+      }
+    }
     setFormBusy(false);
   }
 
