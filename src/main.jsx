@@ -485,6 +485,7 @@ function App() {
 
   async function loadAdminBusinesses() {
     if (!isAdmin || adminLoading) return;
+    if (!navigator.onLine) { setAdminError('Sem conexão com a internet. Reconecte-se para atualizar a administração.'); return; }
     setAdminLoading(true);
     setAdminError('');
     try {
@@ -519,6 +520,7 @@ function App() {
   async function saveBusinessEdit(event) {
     event.preventDefault();
     if (!editingBusiness || formBusy) return;
+    if (!navigator.onLine) { setAdminError('Você está sem internet. Reconecte-se antes de salvar as alterações.'); return; }
     const cleanName = String(editingBusiness.name || '').trim();
     const cleanCity = String(editingBusiness.city || '').trim();
     const cleanState = String(editingBusiness.state || '').trim().toUpperCase();
@@ -644,6 +646,7 @@ function App() {
 
   async function setBusinessPlan(item, planType) {
     if (formBusy) return;
+    if (!navigator.onLine) { setAdminError('Sem conexão. Reconecte-se antes de alterar ou renovar planos.'); return; }
     if (planType !== 'gratuito' && item.status !== 'approved') {
       setAdminError('Aprove o cadastro antes de ativar um plano pago.');
       return;
@@ -684,6 +687,7 @@ function App() {
 
   async function toggleFeatured(item) {
     if (formBusy) return;
+    if (!navigator.onLine) { setAdminError('Sem conexão. Reconecte-se antes de alterar o destaque.'); return; }
     setFormBusy(true);
     setAdminError('');
     try {
@@ -708,6 +712,7 @@ function App() {
   }
 
   async function deleteBusiness(item) {
+    if (!navigator.onLine) { setAdminError('Sem conexão. Reconecte-se antes de excluir um anúncio.'); return; }
     const confirmed = window.confirm("Excluir definitivamente o anúncio \"" + item.name + "\"? Esta ação não pode ser desfeita.");
     if (!confirmed || formBusy) return;
     setFormBusy(true);
@@ -738,6 +743,7 @@ function App() {
 
   async function moderateBusiness(id, status) {
     if (formBusy) return;
+    if (!navigator.onLine) { setAdminError('Sem conexão. Reconecte-se antes de moderar este cadastro.'); return; }
     setFormBusy(true);
     setAdminError('');
     try {
@@ -769,6 +775,7 @@ function App() {
 
   async function loadOwnerBusinesses() {
     if (!authUser || isAdmin || ownerLoading) return;
+    if (!navigator.onLine) { setOwnerError('Sem conexão com a internet. Seus anúncios salvos continuam disponíveis quando carregados anteriormente.'); return; }
     setOwnerLoading(true);
     setOwnerError('');
     try {
