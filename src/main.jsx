@@ -81,6 +81,7 @@ function App() {
   const [ownerLoading, setOwnerLoading] = useState(false);
   const [ownerError, setOwnerError] = useState('');
   const [ownerShareMessage, setOwnerShareMessage] = useState('');
+  const [ownerFilter, setOwnerFilter] = useState('all');
   const [ownerEditing, setOwnerEditing] = useState(null);
   const [marketingTone, setMarketingTone] = useState('profissional');
   const [marketingPlatform, setMarketingPlatform] = useState('instagram');
@@ -635,6 +636,11 @@ function App() {
     approved: ownerBusinesses.filter(item => item.status === 'approved').length,
     attention: ownerBusinesses.filter(item => ['rejected','suspended'].includes(item.status)).length
   }), [ownerBusinesses]);
+  const filteredOwnerBusinesses = useMemo(() => ownerBusinesses.filter(item => {
+    if (ownerFilter === 'all') return true;
+    if (ownerFilter === 'attention') return ['rejected','suspended'].includes(item.status);
+    return item.status === ownerFilter;
+  }), [ownerBusinesses, ownerFilter]);
   const hasActiveFilters = Boolean(query.trim() || city.trim() || active !== 'Todas' || showFavorites);
   function clearFilters() { setQuery(''); setCity(''); setActive('Todas'); setShowFavorites(false); }
   const publicCategories = availableCategories.length
@@ -753,20 +759,20 @@ function App() {
         </> : <>
           <section className="owner-dashboard">
             <div className="owner-dashboard-head"><div><div className="eyebrow dark">ÁREA DO ANUNCIANTE</div><h3>Meus anúncios</h3><p>Acompanhe a situação dos seus cadastros.</p></div><button type="button" className="owner-refresh" onClick={loadOwnerBusinesses} disabled={ownerLoading} aria-label="Atualizar meus anúncios">{ownerLoading ? "Atualizando..." : "Atualizar"}</button></div>
-            <div className="owner-stats" aria-label="Resumo dos anúncios">
-              <div><b>{ownerStats.total}</b><span>Total</span></div>
-              <div><b>{ownerStats.pending}</b><span>Em análise</span></div>
-              <div><b>{ownerStats.approved}</b><span>Aprovados</span></div>
-              <div><b>{ownerStats.attention}</b><span>Precisam de atenção</span></div>
+            <div className="owner-stats" aria-label="Filtrar meus anúncios">
+              <button type="button" onClick={()=>setOwnerFilter('all')} aria-pressed={ownerFilter === 'all'}><b>{ownerStats.total}</b><span>Todos</span></button>
+              <button type="button" onClick={()=>setOwnerFilter('pending')} aria-pressed={ownerFilter === 'pending'}><b>{ownerStats.pending}</b><span>Em análise</span></button>
+              <button type="button" onClick={()=>setOwnerFilter('approved')} aria-pressed={ownerFilter === 'approved'}><b>{ownerStats.approved}</b><span>Aprovados</span></button>
+              <button type="button" onClick={()=>setOwnerFilter('attention')} aria-pressed={ownerFilter === 'attention'}><b>{ownerStats.attention}</b><span>Precisam de atenção</span></button>
             </div>
             {ownerError && <div className="form-error" role="alert">{ownerError}</div>}
             {ownerShareMessage && <div className="form-message" role="status">{ownerShareMessage}</div>}
-            {ownerLoading ? <div className="empty-state">Carregando seus anúncios...</div> : ownerBusinesses.length ? <div className="owner-list">{ownerBusinesses.map(item => <article className="owner-business" key={item.id}>
+            {ownerLoading ? <div className="empty-state">Carregando seus anúncios...</div> : ownerBusinesses.length ? filteredOwnerBusinesses.length ? <div className="owner-list">{filteredOwnerBusinesses.map(item => <article className="owner-business" key={item.id}>
               <div className="owner-business-head"><div><b>{item.name}</b><small>{[item.city,item.state].filter(Boolean).join(' / ')} · {item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</small></div><span className={'status-badge status-'+item.status}>{({pending:'Em análise',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</span></div>
               <p>{item.description || 'Sem descrição informada.'}</p>
               <small className="owner-updated">Enviado em {new Date(item.created_at).toLocaleDateString('pt-BR')}{item.updated_at && item.updated_at !== item.created_at ? ` · Atualizado em ${new Date(item.updated_at).toLocaleDateString('pt-BR')}` : ''}</small>
               {['pending','approved'].includes(item.status) ? <><button type="button" className="owner-edit-button" onClick={() => setOwnerEditing({...item})}>Editar anúncio</button>{item.status === 'approved' && <><small className="owner-status-help">Ao salvar, o anúncio ficará em análise até a equipe aprovar as alterações.</small><button type="button" className="owner-share-link" onClick={() => copyOwnerBusinessLink(item)}>Copiar link público</button></>}</> : <small className="owner-status-help">{item.status === 'rejected' ? 'Entre em contato com a equipe para entender os ajustes necessários.' : 'Este anúncio não está visível na vitrine no momento.'}</small>}
-            </article>)}</div> : <div className="empty-state">Você ainda não cadastrou nenhum negócio. Preencha o formulário abaixo para começar.</div>}
+            </article>)}</div> : <div className="empty-state">Nenhum anúncio nesta situação. Selecione outro filtro para consultar seus cadastros.</div> : <div className="empty-state">Você ainda não cadastrou nenhum negócio. Preencha o formulário abaixo para começar.</div>}
           </section>
           <section className="marketing-assistant">
             <div className="eyebrow dark">FERRAMENTA DE DIVULGAÇÃO</div>
