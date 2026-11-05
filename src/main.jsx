@@ -35,7 +35,7 @@ async function fetchPublicBusinesses() {
     .order('featured', { ascending: false })
     .order('name', { ascending: true });
   if (error) throw error;
-  return (data || []).map(item => ({
+  const businesses = (data || []).map(item => ({
     id: item.id,
     name: item.name,
     category: item.business_categories?.[0]?.categories?.name || 'Empresas',
@@ -46,6 +46,20 @@ async function fetchPublicBusinesses() {
     phone: item.phone || '',
     icon: Store, logo: item.logo_url || '', photos: item.gallery_urls || [],
   }));
+  try {
+    localStorage.setItem('conecta-public-businesses', JSON.stringify(businesses.map(({ icon, ...item }) => item)));
+  } catch { /* A vitrine continua funcionando mesmo se o armazenamento local estiver cheio. */ }
+  return businesses;
+}
+
+function readCachedPublicBusinesses() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('conecta-public-businesses') || '[]');
+    if (!Array.isArray(saved)) return [];
+    return saved.filter(item => item && item.id && item.name).map(item => ({ ...item, icon: Store }));
+  } catch {
+    return [];
+  }
 }
 
 function App() {
@@ -59,8 +73,8 @@ function App() {
   const [installHelpOpen, setInstallHelpOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [sent, setSent] = useState(false);
-  const [businesses, setBusinesses] = useState([]);
-  const [loadingBusinesses, setLoadingBusinesses] = useState(isSupabaseConfigured);
+  const [businesses, setBusinesses] = useState(readCachedPublicBusinesses);
+  const [loadingBusinesses, setLoadingBusinesses] = useState(() => isSupabaseConfigured && readCachedPublicBusinesses().length === 0);
   const [loadError, setLoadError] = useState('');
   const [authUser, setAuthUser] = useState(null);
   const [authMode, setAuthMode] = useState('signup');
