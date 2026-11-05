@@ -25,7 +25,8 @@ begin
   if auth.uid() = old.owner_id then
     if new.owner_id is distinct from old.owner_id
       or new.slug is distinct from old.slug
-      or new.featured is distinct from old.featured
+      or (new.featured is distinct from old.featured
+        and not (old.status = 'approved' and new.status = 'pending' and new.featured = false))
       or new.plan_type is distinct from old.plan_type
       or new.plan_started_at is distinct from old.plan_started_at
       or new.plan_expires_at is distinct from old.plan_expires_at
