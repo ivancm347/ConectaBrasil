@@ -73,6 +73,9 @@ function App() {
   const [ownerLoading, setOwnerLoading] = useState(false);
   const [ownerError, setOwnerError] = useState('');
   const [ownerEditing, setOwnerEditing] = useState(null);
+  const [marketingTone, setMarketingTone] = useState('profissional');
+  const [marketingOutput, setMarketingOutput] = useState('');
+  const [marketingCopied, setMarketingCopied] = useState(false);
   const isAdmin = authUser?.app_metadata?.role === 'admin';
 
   useEffect(() => { try { localStorage.setItem('conecta-favorites', JSON.stringify(favoriteIds)); } catch { /* Favoritos continuam disponíveis durante esta sessão. */ } }, [favoriteIds]);
@@ -93,6 +96,34 @@ function App() {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [selectedPhoto, selectedBusiness, showForm]);
+
+  function generateMarketingCopy() {
+    const source = ownerEditing || businessForm;
+    const name = String(source.name || '').trim() || 'Meu negócio';
+    const description = String(source.description || '').trim();
+    const cityName = [source.city, source.state].filter(Boolean).join(' - ');
+    const toneOpening = marketingTone === 'proximo'
+      ? 'Olá, pessoal! Temos uma novidade para você:'
+      : marketingTone === 'direto'
+        ? 'Precisando de um serviço de confiança?'
+        : 'Qualidade, compromisso e atenção em cada atendimento.';
+    const service = description || 'Conheça nossos produtos e serviços. Entre em contato para saber mais.';
+    const location = cityName ? ` Atendemos em ${cityName}.` : '';
+    const text = `${toneOpening}\n\n${name}: ${service}${location}\n\nEntre em contato e solicite mais informações. Será um prazer atender você!\n\n#ConectaBrasil #NegócioLocal #Empreendedorismo`;
+    setMarketingOutput(text);
+    setMarketingCopied(false);
+  }
+
+  async function copyMarketingCopy() {
+    if (!marketingOutput) return;
+    try {
+      await navigator.clipboard.writeText(marketingOutput);
+      setMarketingCopied(true);
+    } catch {
+      setMarketingCopied(false);
+      setFormError('Não foi possível copiar automaticamente. Selecione o texto e copie manualmente.');
+    }
+  }
 
   function toggleFavorite(item) {
     const key = String(item.id || item.name);
@@ -694,6 +725,25 @@ function App() {
               <small className="owner-updated">Enviado em {new Date(item.created_at).toLocaleDateString('pt-BR')}{item.updated_at && item.updated_at !== item.created_at ? ` · Atualizado em ${new Date(item.updated_at).toLocaleDateString('pt-BR')}` : ''}</small>
               {['pending','approved'].includes(item.status) ? <><button type="button" className="owner-edit-button" onClick={() => setOwnerEditing({...item})}>Editar anúncio</button>{item.status === 'approved' && <small className="owner-status-help">Ao salvar, o anúncio ficará em análise até a equipe aprovar as alterações.</small>}</> : <small className="owner-status-help">{item.status === 'rejected' ? 'Entre em contato com a equipe para entender os ajustes necessários.' : 'Este anúncio não está visível na vitrine no momento.'}</small>}
             </article>)}</div> : <div className="empty-state">Você ainda não cadastrou nenhum negócio. Preencha o formulário abaixo para começar.</div>}
+          </section>
+          <section className="marketing-assistant">
+            <div className="eyebrow dark">FERRAMENTA DE DIVULGAÇÃO</div>
+            <h3>Assistente de divulgação</h3>
+            <p>Crie uma sugestão de texto para apresentar seu negócio nas redes sociais e no WhatsApp. Funciona sem chave ou serviço externo.</p>
+            <label>Estilo do texto
+              <select value={marketingTone} onChange={e=>setMarketingTone(e.target.value)}>
+                <option value="profissional">Profissional</option>
+                <option value="proximo">Próximo e acolhedor</option>
+                <option value="direto">Direto e objetivo</option>
+              </select>
+            </label>
+            <button type="button" className="btn modal-submit" onClick={generateMarketingCopy}> <Sparkles size={16}/> Gerar texto de divulgação</button>
+            {marketingOutput && <div className="marketing-output">
+              <label htmlFor="marketing-copy-result">Texto sugerido</label>
+              <textarea id="marketing-copy-result" rows="7" readOnly value={marketingOutput}/>
+              <button type="button" className="business-share-button" onClick={copyMarketingCopy}>{marketingCopied ? 'Texto copiado!' : 'Copiar texto'}</button>
+              <small>Revise as informações antes de publicar. Esta versão usa modelos locais; não envia dados para serviços externos.</small>
+            </div>}
           </section>
           {ownerEditing && <form className="owner-edit-form business-form" onSubmit={saveOwnerBusiness}>
             <h3>Editar meu anúncio</h3>
