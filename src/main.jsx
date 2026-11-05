@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Search, MapPin, Store, Wrench, ShoppingBag, Heart, ArrowRight, Menu, X, Plus, ShieldCheck, Sparkles, Building2, Star, Share2, Download, Mic, LocateFixed } from 'lucide-react';
 import './style.css';
+import '../public/image-fit.css';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import QRCode from 'qrcode';
 
