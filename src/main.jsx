@@ -309,14 +309,19 @@ function App() {
   }
 
   async function loadAdminAuditLogs() {
-    if (!isAdmin) return;
+    if (!isAdmin || auditLoading) return;
     setAuditLoading(true);
-    const { data, error } = await supabase.from('admin_audit_logs')
-      .select('id,action,entity_type,entity_name,details,actor_email,created_at')
-      .order('created_at', { ascending: false }).limit(100);
-    if (error) setAdminError('Não foi possível carregar o histórico. Execute o SQL supabase/admin_audit.sql no Supabase.');
-    else setAdminAuditLogs(data || []);
-    setAuditLoading(false);
+    try {
+      const { data, error } = await supabase.from('admin_audit_logs')
+        .select('id,action,entity_type,entity_name,details,actor_email,created_at')
+        .order('created_at', { ascending: false }).limit(100);
+      if (error) throw error;
+      setAdminAuditLogs(data || []);
+    } catch {
+      setAdminError('Não foi possível carregar o histórico. Verifique sua conexão e as permissões de auditoria no Supabase.');
+    } finally {
+      setAuditLoading(false);
+    }
   }
 
   async function recordAdminAction(action, entityType, entityId, entityName, details = {}) {
@@ -332,17 +337,24 @@ function App() {
   }
 
   async function loadAdminBusinesses() {
-    if (!isAdmin) return;
-    setAdminLoading(true); setAdminError('');
-    const { data, error } = await supabase.from('businesses')
-      .select('id,name,description,business_type,phone,city,state,status,featured,created_at,logo_url,gallery_urls,business_categories(categories(name))')
-      .order('created_at', { ascending: false });
-    if (error) setAdminError('Não foi possível carregar os cadastros. Confira se sua conta tem permissão de administrador.');
-    else setAdminBusinesses(data || []);
-    const cats = await supabase.from('categories').select('id,name,active').order('name');
-    if (!cats.error) setAdminCategories(cats.data || []);
-    await loadAdminAuditLogs();
-    setAdminLoading(false);
+    if (!isAdmin || adminLoading) return;
+    setAdminLoading(true);
+    setAdminError('');
+    try {
+      const { data, error } = await supabase.from('businesses')
+        .select('id,name,description,business_type,phone,city,state,status,featured,created_at,logo_url,gallery_urls,business_categories(categories(name))')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setAdminBusinesses(data || []);
+      const cats = await supabase.from('categories').select('id,name,active').order('name');
+      if (cats.error) throw cats.error;
+      setAdminCategories(cats.data || []);
+      await loadAdminAuditLogs();
+    } catch {
+      setAdminError('Não foi possível atualizar o painel administrativo. Verifique sua conexão e tente novamente.');
+    } finally {
+      setAdminLoading(false);
+    }
   }
 
   async function saveBusinessEdit(event) {
@@ -527,14 +539,20 @@ function App() {
   }, []);
 
   async function loadOwnerBusinesses() {
-    if (!authUser || isAdmin) return;
-    setOwnerLoading(true); setOwnerError('');
-    const { data, error } = await supabase.from('businesses')
-      .select('id,name,description,business_type,phone,city,state,status,created_at,updated_at,business_categories(categories(name))')
-      .eq('owner_id', authUser.id).order('created_at', { ascending: false });
-    if (error) setOwnerError('Não foi possível carregar seus anúncios. Tente novamente.');
-    else setOwnerBusinesses(data || []);
-    setOwnerLoading(false);
+    if (!authUser || isAdmin || ownerLoading) return;
+    setOwnerLoading(true);
+    setOwnerError('');
+    try {
+      const { data, error } = await supabase.from('businesses')
+        .select('id,name,description,business_type,phone,city,state,status,created_at,updated_at,business_categories(categories(name))')
+        .eq('owner_id', authUser.id).order('created_at', { ascending: false });
+      if (error) throw error;
+      setOwnerBusinesses(data || []);
+    } catch {
+      setOwnerError('Não foi possível atualizar seus anúncios. Verifique sua conexão e tente novamente.');
+    } finally {
+      setOwnerLoading(false);
+    }
   }
 
   async function copyOwnerBusinessLink(item) {
