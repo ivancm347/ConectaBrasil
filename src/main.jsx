@@ -272,11 +272,24 @@ function App() {
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
+    const isRecoveryLink = () => {
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const params = new URLSearchParams(window.location.search);
+      return hash.get('type') === 'recovery' || params.get('type') === 'recovery';
+    };
+    if (isRecoveryLink()) {
+      setShowForm(true);
+      setPasswordRecovery(true);
+      setForgotPasswordMode(false);
+      setFormMessage('Defina uma nova senha para sua conta.');
+    }
     supabase.auth.getSession().then(({ data }) => setAuthUser(data.session?.user || null));
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       setAuthUser(session?.user || null);
-      if (event === 'PASSWORD_RECOVERY') {
+      if (event === 'PASSWORD_RECOVERY' || isRecoveryLink()) {
+        setShowForm(true);
         setPasswordRecovery(true);
+        setForgotPasswordMode(false);
         setFormMessage('Defina uma nova senha para sua conta.');
         setFormError('');
       }
