@@ -380,10 +380,24 @@ function App() {
     if (!ownerEditing) return;
     setFormBusy(true); setOwnerError('');
     const originalStatus = ownerEditing.status;
+    const cleanName = String(ownerEditing.name || '').trim();
+    const cleanCity = String(ownerEditing.city || '').trim();
+    const cleanState = String(ownerEditing.state || '').trim().toUpperCase();
+    const phoneDigits = String(ownerEditing.phone || '').replace(/\\D/g, '');
+    if (!cleanName || !cleanCity || !/^[A-Z]{2}$/.test(cleanState)) {
+      setOwnerError('Preencha o nome, a cidade e uma UF válida com duas letras.');
+      setFormBusy(false);
+      return;
+    }
+    if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 13)) {
+      setOwnerError('Confira o telefone/WhatsApp: informe DDD e número.');
+      setFormBusy(false);
+      return;
+    }
     const payload = {
-      name: ownerEditing.name.trim(), description: (ownerEditing.description || '').trim(),
+      name: cleanName, description: (ownerEditing.description || '').trim(),
       business_type: ownerEditing.business_type, phone: (ownerEditing.phone || '').trim(),
-      city: ownerEditing.city.trim(), state: ownerEditing.state.trim().toUpperCase(),
+      city: cleanCity, state: cleanState,
       ...(originalStatus === 'approved' ? { status: 'pending', featured: false } : {})
     };
     const { data, error } = await supabase.from('businesses').update(payload)
