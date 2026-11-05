@@ -1116,7 +1116,7 @@ function App() {
     if (format === 'csv') {
       const quote = value => '"' + String(value ?? '').replace(/"/g, '""') + '"';
       const csv = ['Negócio;Plano;Valor (R$);Data;Responsável', ...rows.map(row => [row.negocio,row.plano,row.valor,row.data,row.responsavel].map(quote).join(';'))].join('\r\n');
-      const blob = new Blob(['\\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url; anchor.download = 'conecta-brasil-relatorio-' + selectedReportMonth + '.csv';
