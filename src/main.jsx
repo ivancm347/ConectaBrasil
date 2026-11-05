@@ -220,9 +220,29 @@ function App() {
   }
 
   async function saveBusinessEdit(event) {
-    event.preventDefault(); if (!editingBusiness) return;
-    setFormBusy(true); setAdminError('');
-    const payload = { name: editingBusiness.name.trim(), description: editingBusiness.description.trim(), phone: editingBusiness.phone.trim(), city: editingBusiness.city.trim(), state: editingBusiness.state.trim().toUpperCase() };
+    event.preventDefault();
+    if (!editingBusiness) return;
+    const cleanName = String(editingBusiness.name || '').trim();
+    const cleanCity = String(editingBusiness.city || '').trim();
+    const cleanState = String(editingBusiness.state || '').trim().toUpperCase();
+    const phoneDigits = String(editingBusiness.phone || '').replace(/\D/g, '');
+    if (!cleanName || !cleanCity || !/^[A-Z]{2}$/.test(cleanState)) {
+      setAdminError('Preencha o nome, a cidade e uma UF válida com duas letras.');
+      return;
+    }
+    if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 15)) {
+      setAdminError('Confira o telefone/WhatsApp: informe DDD e número.');
+      return;
+    }
+    setFormBusy(true);
+    setAdminError('');
+    const payload = {
+      name: cleanName,
+      description: String(editingBusiness.description || '').trim(),
+      phone: String(editingBusiness.phone || '').trim(),
+      city: cleanCity,
+      state: cleanState
+    };
     const { error } = await supabase.from('businesses').update(payload).eq('id', editingBusiness.id);
     if (error) setAdminError('Não foi possível salvar a edição: ' + error.message);
     else { setAdminBusinesses(rows => rows.map(row => row.id === editingBusiness.id ? { ...row, ...payload } : row)); await recordAdminAction('editado', 'anúncio', editingBusiness.id, payload.name, payload); setEditingBusiness(null); }
