@@ -74,6 +74,7 @@ function App() {
   const [ownerError, setOwnerError] = useState('');
   const [ownerEditing, setOwnerEditing] = useState(null);
   const [marketingTone, setMarketingTone] = useState('profissional');
+  const [marketingPlatform, setMarketingPlatform] = useState('instagram');
   const [marketingOutput, setMarketingOutput] = useState('');
   const [marketingCopied, setMarketingCopied] = useState(false);
   const isAdmin = authUser?.app_metadata?.role === 'admin';
@@ -98,19 +99,23 @@ function App() {
   }, [selectedPhoto, selectedBusiness, showForm]);
 
   function generateMarketingCopy() {
-    const source = ownerEditing || businessForm;
+    const source = ownerEditing || ownerBusinesses[0] || businessForm;
     const name = String(source.name || '').trim() || 'Meu negócio';
     const description = String(source.description || '').trim();
     const cityName = [source.city, source.state].filter(Boolean).join(' - ');
-    const toneOpening = marketingTone === 'proximo'
-      ? 'Olá, pessoal! Temos uma novidade para você:'
-      : marketingTone === 'direto'
-        ? 'Precisando de um serviço de confiança?'
-        : 'Qualidade, compromisso e atenção em cada atendimento.';
     const service = description || 'Conheça nossos produtos e serviços. Entre em contato para saber mais.';
     const location = cityName ? ` Atendemos em ${cityName}.` : '';
-    const text = `${toneOpening}\n\n${name}: ${service}${location}\n\nEntre em contato e solicite mais informações. Será um prazer atender você!\n\n#ConectaBrasil #NegócioLocal #Empreendedorismo`;
-    setMarketingOutput(text);
+    const opening = marketingTone === 'proximo'
+      ? 'Olá! Queremos apresentar nosso trabalho para você.'
+      : marketingTone === 'direto'
+        ? 'Está procurando produtos ou serviços? Conte com a gente.'
+        : 'Qualidade, compromisso e atendimento para você.';
+    const platformText = marketingPlatform === 'whatsapp'
+      ? `${opening}\\n\\n*${name}*\\n${service}${location}\\n\\nChame nesta conversa para pedir informações ou solicitar um orçamento.`
+      : marketingPlatform === 'facebook'
+        ? `${opening}\\n\\n*${name}* — ${service}${location}\\n\\nEnvie uma mensagem e saiba mais!\\n\\n#ConectaBrasil #NegócioLocal #Empreendedorismo`
+        : `${opening}\\n\\n*${name}*\\n${service}${location}\\n\\nSalve este perfil e entre em contato para saber mais!\\n\\n#ConectaBrasil #NegócioLocal #Empreendedorismo #Brasil`;
+    setMarketingOutput(platformText);
     setMarketingCopied(false);
   }
 
@@ -730,6 +735,13 @@ function App() {
             <div className="eyebrow dark">FERRAMENTA DE DIVULGAÇÃO</div>
             <h3>Assistente de divulgação</h3>
             <p>Crie uma sugestão de texto para apresentar seu negócio nas redes sociais e no WhatsApp. Funciona sem chave ou serviço externo.</p>
+            <label>Onde você vai publicar?
+              <select value={marketingPlatform} onChange={e=>setMarketingPlatform(e.target.value)}>
+                <option value="instagram">Instagram</option>
+                <option value="facebook">Facebook</option>
+                <option value="whatsapp">WhatsApp</option>
+              </select>
+            </label>
             <label>Estilo do texto
               <select value={marketingTone} onChange={e=>setMarketingTone(e.target.value)}>
                 <option value="profissional">Profissional</option>
