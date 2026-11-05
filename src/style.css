@@ -221,3 +221,12 @@
 .admin-search-summary button:hover{text-decoration:underline}
 .admin-search-summary button:focus-visible{outline:2px solid #53d6b0;outline-offset:3px;border-radius:4px}
 @media(max-width:560px){.admin-search-summary{align-items:flex-start;flex-wrap:wrap}}
+
+
+/* Estado vazio mais claro no painel administrativo */
+.admin-empty-state{padding:24px 18px;border:1px dashed #cfdde2;border-radius:12px;background:#f8fbfc;text-align:center}
+.admin-empty-state strong{display:block;color:#20344e;font:800 14px Manrope,sans-serif}
+.admin-empty-state p{max-width:440px;margin:8px auto 0;color:#718096;font-size:11px;line-height:1.6}
+.admin-empty-state button{margin-top:13px;border:1px solid #cfe8df;border-radius:8px;background:#eef9f5;color:#187c65;padding:9px 12px;font:800 10px 'DM Sans',sans-serif;cursor:pointer}
+.admin-empty-state button:hover{background:#dff4eb}
+.admin-empty-state button:focus-visible{outline:3px solid #53d6b0;outline-offset:2px}
