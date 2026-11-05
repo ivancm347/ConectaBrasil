@@ -569,33 +569,35 @@ function App() {
   async function saveOwnerBusiness(event) {
     event.preventDefault();
     if (!ownerEditing || formBusy) return;
-    setFormBusy(true); setOwnerError('');
-    const originalStatus = ownerEditing.status;
-    const cleanName = String(ownerEditing.name || '').trim();
-    const cleanCity = String(ownerEditing.city || '').trim();
-    const cleanState = String(ownerEditing.state || '').trim().toUpperCase();
-    const phoneDigits = String(ownerEditing.phone || '').replace(/\D/g, '');
-    if (!cleanName || !cleanCity || !/^[A-Z]{2}$/.test(cleanState)) {
-      setOwnerError('Preencha o nome, a cidade e uma UF válida com duas letras.');
-      setFormBusy(false);
-      return;
-    }
-    if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 15)) {
-      setOwnerError('Confira o telefone/WhatsApp: informe DDD e número.');
-      setFormBusy(false);
-      return;
-    }
-    const payload = {
-      name: cleanName, description: (ownerEditing.description || '').trim(),
-      business_type: ownerEditing.business_type, phone: (ownerEditing.phone || '').trim(),
-      city: cleanCity, state: cleanState,
-      ...(originalStatus === 'approved' ? { status: 'pending', featured: false } : {})
-    };
-    const { data, error } = await supabase.from('businesses').update(payload)
-      .eq('id', ownerEditing.id).eq('owner_id', authUser.id).eq('status', originalStatus)
-      .select('id').maybeSingle();
-    if (error || !data) setOwnerError('Não foi possível salvar. Confira se a atualização de permissões do anunciante foi aplicada no Supabase.' + (error?.message ? ' ' + error.message : ''));
-    else {
+    setFormBusy(true);
+    setOwnerError('');
+    try {
+      const originalStatus = ownerEditing.status;
+      const cleanName = String(ownerEditing.name || '').trim();
+      const cleanCity = String(ownerEditing.city || '').trim();
+      const cleanState = String(ownerEditing.state || '').trim().toUpperCase();
+      const phoneDigits = String(ownerEditing.phone || '').replace(/\\D/g, '');
+      if (!cleanName || !cleanCity || !/^[A-Z]{2}$/.test(cleanState)) {
+        setOwnerError('Preencha o nome, a cidade e uma UF válida com duas letras.');
+        return;
+      }
+      if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 15)) {
+        setOwnerError('Confira o telefone/WhatsApp: informe DDD e número.');
+        return;
+      }
+      const payload = {
+        name: cleanName, description: (ownerEditing.description || '').trim(),
+        business_type: ownerEditing.business_type, phone: (ownerEditing.phone || '').trim(),
+        city: cleanCity, state: cleanState,
+        ...(originalStatus === 'approved' ? { status: 'pending', featured: false } : {})
+      };
+      const { data, error } = await supabase.from('businesses').update(payload)
+        .eq('id', ownerEditing.id).eq('owner_id', authUser.id).eq('status', originalStatus)
+        .select('id').maybeSingle();
+      if (error || !data) {
+        setOwnerError('Não foi possível salvar. Confira sua conexão e tente novamente.' + (error?.message ? ' ' + error.message : ''));
+        return;
+      }
       setOwnerBusinesses(rows => rows.map(row => row.id === ownerEditing.id ? { ...row, ...payload, updated_at: new Date().toISOString() } : row));
       if (originalStatus === 'approved') {
         setBusinesses(rows => {
@@ -609,8 +611,11 @@ function App() {
       setFormMessage(originalStatus === 'approved'
         ? 'Alterações enviadas! Seu anúncio ficará temporariamente em análise até a nova aprovação.'
         : 'Alterações salvas. Seu anúncio continua aguardando aprovação.');
+    } catch (error) {
+      setOwnerError('Ocorreu uma falha ao salvar. Verifique sua conexão e tente novamente.' + (error?.message ? ' ' + error.message : ''));
+    } finally {
+      setFormBusy(false);
     }
-    setFormBusy(false);
   }
 
   useEffect(() => {
