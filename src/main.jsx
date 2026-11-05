@@ -384,7 +384,16 @@ function App() {
     setFormBusy(true); setAdminError('');
     const { error } = await supabase.from('businesses').update({ featured: !item.featured }).eq('id', item.id);
     if (error) setAdminError('Não foi possível alterar o destaque: ' + error.message);
-    else { setAdminBusinesses(items => items.map(row => row.id === item.id ? { ...row, featured: !item.featured } : row)); await recordAdminAction(item.featured ? 'destaque removido' : 'destacado', 'anúncio', item.id, item.name); }
+    else {
+      setAdminBusinesses(items => items.map(row => row.id === item.id ? { ...row, featured: !item.featured } : row));
+      await recordAdminAction(item.featured ? 'destaque removido' : 'destacado', 'anúncio', item.id, item.name);
+      try {
+        setBusinesses(await fetchPublicBusinesses());
+        setLoadError('');
+      } catch {
+        setLoadError('O destaque foi salvo, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
+      }
+    }
     setFormBusy(false);
   }
 
@@ -401,6 +410,13 @@ function App() {
       setAdminBusinesses(items => items.filter(row => row.id !== item.id));
       await recordAdminAction('excluído', 'anúncio', item.id, item.name, { status_anterior: item.status });
       if (editingBusiness?.id === item.id) setEditingBusiness(null);
+      if (selectedBusiness?.id === item.id) setSelectedBusiness(null);
+      try {
+        setBusinesses(await fetchPublicBusinesses());
+        setLoadError('');
+      } catch {
+        setLoadError('O anúncio foi excluído, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
+      }
       setAdminError('');
     }
     setFormBusy(false);
