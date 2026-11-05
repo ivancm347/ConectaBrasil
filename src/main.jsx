@@ -548,7 +548,7 @@ function App() {
     const name = businessForm.name.trim();
     const city = businessForm.city.trim();
     const state = businessForm.state.trim().toUpperCase();
-    const phoneDigits = businessForm.phone.replace(/\D/g, '');
+    const phoneDigits = businessForm.phone.replace(/\\D/g, '');
     const selectedImages = [logoFile, ...galleryFiles].filter(Boolean);
     if (!name || !city || !/^[A-Z]{2}$/.test(state)) {
       setFormError('Informe o nome do negócio, a cidade e uma UF válida com duas letras.');
@@ -570,8 +570,10 @@ function App() {
       return;
     }
     setFormBusy(true);
+    let createdBusinessId = null;
+    const uploadedPaths = [];
     try {
-      const slugBase = businessForm.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const slugBase = businessForm.name.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const slug = slugBase + '-' + crypto.randomUUID().slice(0, 8);
       const { data, error } = await supabase.from('businesses').insert({
         owner_id: authUser.id, name, slug,
@@ -580,27 +582,28 @@ function App() {
         state, status: 'pending', featured: false
       }).select('id').single();
       if (error) throw error;
-      const businessId = data.id;
+      createdBusinessId = data.id;
       const uploadedPhotos = [];
       const uploadImage = async (file, label) => {
         if (!file) return null;
         if (!allowedImageTypes.includes(file.type)) throw new Error('Use somente imagens JPG, PNG, WEBP ou GIF.');
         if (file.size > 5 * 1024 * 1024) throw new Error(`A imagem ${file.name} ultrapassa o limite de 5 MB.`);
         const safeName = file.name.toLowerCase().replace(/[^a-z0-9.-]+/g, '-');
-        const path = `${authUser.id}/${businessId}/${label}-${Date.now()}-${safeName}`;
+        const path = `${authUser.id}/${createdBusinessId}/${label}-${Date.now()}-${safeName}`;
         const { error: uploadError } = await supabase.storage.from('business-images').upload(path, file, { cacheControl: '3600', upsert: false });
         if (uploadError) throw uploadError;
+        uploadedPaths.push(path);
         return supabase.storage.from('business-images').getPublicUrl(path).data.publicUrl;
       };
       const logoUrl = await uploadImage(logoFile, 'logo');
       for (let i = 0; i < galleryFiles.length; i++) uploadedPhotos.push(await uploadImage(galleryFiles[i], `foto-${i + 1}`));
       if (logoUrl || uploadedPhotos.length) {
-        const { error: imageError } = await supabase.from('businesses').update({ logo_url: logoUrl, gallery_urls: uploadedPhotos }).eq('id', businessId);
+        const { error: imageError } = await supabase.from('businesses').update({ logo_url: logoUrl, gallery_urls: uploadedPhotos }).eq('id', createdBusinessId);
         if (imageError) throw imageError;
       }
       if (businessForm.category_id) {
         const { error: categoryError } = await supabase.from('business_categories').insert({
-          business_id: data.id, category_id: businessForm.category_id
+          business_id: createdBusinessId, category_id: businessForm.category_id
         });
         if (categoryError) throw categoryError;
       }
@@ -608,8 +611,20 @@ function App() {
       await loadOwnerBusinesses();
       setBusinessForm({ name: '', description: '', business_type: 'empresa', phone: '', city: '', state: '', category_id: '' });
       setLogoFile(null); setGalleryFiles([]);
-    } catch (error) { setFormError(error.message || 'Não foi possível enviar o cadastro.'); }
-    finally { setFormBusy(false); }
+    } catch (error) {
+      let cleanupFailed = false;
+      if (uploadedPaths.length) {
+        const { error: storageCleanupError } = await supabase.storage.from('business-images').remove(uploadedPaths);
+        if (storageCleanupError) cleanupFailed = true;
+      }
+      if (createdBusinessId) {
+        const { error: rowCleanupError } = await supabase.from('businesses').delete()
+          .eq('id', createdBusinessId).eq('owner_id', authUser.id);
+        if (rowCleanupError) cleanupFailed = true;
+      }
+      setFormError((error.message || 'Não foi possível enviar o cadastro.')
+        + (cleanupFailed ? ' Alguns dados temporários não puderam ser removidos automaticamente; entre em contato com o suporte.' : ''));
+    } finally { setFormBusy(false); }
   }
 
   useEffect(() => {
