@@ -537,6 +537,12 @@ function App() {
       setFormError('Formato de logo não permitido. Use JPG, PNG, WEBP ou GIF.');
       return;
     }
+    if (file && file.size === 0) {
+      setLogoFile(null);
+      event.target.value = '';
+      setFormError('O arquivo da logo está vazio. Escolha outra imagem.');
+      return;
+    }
     if (file && file.size > 5 * 1024 * 1024) {
       setLogoFile(null);
       event.target.value = '';
@@ -560,6 +566,13 @@ function App() {
       setGalleryFiles([]);
       event.target.value = '';
       setFormError(`O arquivo "${invalidType.name}" não é JPG, PNG, WEBP ou GIF.`);
+      return;
+    }
+    const emptyFile = files.find(file => file.size === 0);
+    if (emptyFile) {
+      setGalleryFiles([]);
+      event.target.value = '';
+      setFormError(`O arquivo \"${emptyFile.name}\" está vazio. Escolha outra imagem.`);
       return;
     }
     const oversized = files.find(file => file.size > 5 * 1024 * 1024);
@@ -593,7 +606,7 @@ function App() {
       setFormError('Selecione no máximo 5 fotos para a galeria.');
       return;
     }
-    const invalidImage = selectedImages.find(file => !allowedImageTypes.includes(file.type) || file.size > 5 * 1024 * 1024);
+    const invalidImage = selectedImages.find(file => !allowedImageTypes.includes(file.type) || file.size === 0 || file.size > 5 * 1024 * 1024);
     if (invalidImage) {
       setFormError(!allowedImageTypes.includes(invalidImage.type)
         ? 'Use somente imagens JPG, PNG, WEBP ou GIF.'
