@@ -367,3 +367,7 @@
   .install-menu-wrap{display:flex;width:100%;flex-direction:column;align-items:stretch}
   .install-help{position:static;width:100%;margin-top:8px;box-shadow:none}
 }
+
+
+.connection-banner{position:relative;z-index:20;padding:10px 16px;text-align:center;background:#fff1d6;color:#704500;border-bottom:1px solid #f2d39a;font-size:.9rem;line-height:1.45}.connection-banner strong{font-weight:800;margin-right:4px}
+@media(max-width:600px){.connection-banner{font-size:.82rem;padding:9px 12px}}
