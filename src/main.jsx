@@ -97,9 +97,18 @@ function getBusinessImagePath(value) {
 }
 
 async function createBusinessImageUrl(value) {
-  // Recuperação temporária: mantém as URLs públicas originais enquanto a política
-  // de leitura privada é revisada. Não descarta os caminhos já salvos no banco.
-  return getBusinessImagePath(value) ? value : '';
+  const path = getBusinessImagePath(value);
+  if (!path) return '';
+  // O bucket permanece privado. A URL assinada permite exibir apenas arquivos
+  // que a política do Storage autoriza (anúncios aprovados, proprietário ou admin).
+  const { data, error } = await supabase.storage
+    .from('business-images')
+    .createSignedUrl(path, 60 * 60 * 24 * 7);
+  if (error) {
+    console.warn('Não foi possível gerar URL temporária para imagem do negócio:', error.message);
+    return '';
+  }
+  return data?.signedUrl || '';
 }
 
 async function fetchPublicBusinesses() {
