@@ -399,15 +399,40 @@ function App() {
 
   async function handleBusinessSubmit(event) {
     event.preventDefault();
-    setFormBusy(true); setFormError(''); setFormMessage('');
+    setFormError(''); setFormMessage('');
+    const name = businessForm.name.trim();
+    const city = businessForm.city.trim();
+    const state = businessForm.state.trim().toUpperCase();
+    const phoneDigits = businessForm.phone.replace(/\\D/g, '');
+    const selectedImages = [logoFile, ...galleryFiles].filter(Boolean);
+    if (!name || !city || !/^[A-Z]{2}$/.test(state)) {
+      setFormError('Informe o nome do negócio, a cidade e uma UF válida com duas letras.');
+      return;
+    }
+    if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 15)) {
+      setFormError('Confira o telefone/WhatsApp. Informe o DDD e o número completo.');
+      return;
+    }
+    if (galleryFiles.length > 5) {
+      setFormError('Selecione no máximo 5 fotos para a galeria.');
+      return;
+    }
+    const invalidImage = selectedImages.find(file => !file.type.startsWith('image/') || file.size > 5 * 1024 * 1024);
+    if (invalidImage) {
+      setFormError(!invalidImage.type.startsWith('image/')
+        ? 'Envie somente arquivos de imagem.'
+        : `A imagem ${invalidImage.name} ultrapassa o limite de 5 MB.`);
+      return;
+    }
+    setFormBusy(true);
     try {
       const slugBase = businessForm.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const slug = slugBase + '-' + crypto.randomUUID().slice(0, 8);
       const { data, error } = await supabase.from('businesses').insert({
-        owner_id: authUser.id, name: businessForm.name.trim(), slug,
+        owner_id: authUser.id, name, slug,
         description: businessForm.description.trim(), business_type: businessForm.business_type,
-        phone: businessForm.phone.trim(), city: businessForm.city.trim(),
-        state: businessForm.state.trim().toUpperCase(), status: 'pending', featured: false
+        phone: businessForm.phone.trim(), city,
+        state, status: 'pending', featured: false
       }).select('id').single();
       if (error) throw error;
       const businessId = data.id;
@@ -623,8 +648,8 @@ function App() {
             <label>Tipo<select value={businessForm.business_type} onChange={e=>setBusinessForm({...businessForm,business_type:e.target.value})}><option value="empresa">Empresa</option><option value="profissional">Profissional</option><option value="loja">Loja / comércio</option><option value="servico">Prestador de serviço</option></select></label>
             <label>Descrição<textarea rows="3" maxLength="600" value={businessForm.description} onChange={e=>setBusinessForm({...businessForm,description:e.target.value})} placeholder="Conte brevemente o que você oferece."/></label>
             <label>Categoria<select value={businessForm.category_id} onChange={e=>setBusinessForm({...businessForm,category_id:e.target.value})}><option value="">Selecione uma categoria</option>{availableCategories.map(cat=><option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label>
-            <div className="form-row"><label>Cidade<input required value={businessForm.city} onChange={e=>setBusinessForm({...businessForm,city:e.target.value})}/></label><label>Estado (UF)<input required maxLength="2" value={businessForm.state} onChange={e=>setBusinessForm({...businessForm,state:e.target.value.toUpperCase()})}/></label></div>
-            <label>Telefone / WhatsApp<input value={businessForm.phone} onChange={e=>setBusinessForm({...businessForm,phone:e.target.value})}/></label>
+            <div className="form-row"><label>Cidade<input required maxLength="80" autoComplete="address-level2" value={businessForm.city} onChange={e=>setBusinessForm({...businessForm,city:e.target.value})}/></label><label>Estado (UF)<input required maxLength="2" pattern="[A-Za-z]{2}" title="Informe a sigla com duas letras" value={businessForm.state} onChange={e=>setBusinessForm({...businessForm,state:e.target.value.toUpperCase()})}/></label></div>
+            <label>Telefone / WhatsApp<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={businessForm.phone} onChange={e=>setBusinessForm({...businessForm,phone:e.target.value})}/></label>
             <label>Logo da empresa<input type="file" accept="image/*" onChange={e=>setLogoFile(e.target.files?.[0] || null)}/><small className="upload-help">Uma imagem, até 5 MB.</small></label>
             <label>Fotos do negócio (até 5)<input type="file" accept="image/*" multiple onChange={e=>setGalleryFiles(Array.from(e.target.files || []).slice(0,5))}/><small className="upload-help">Selecione até 5 fotos. Cada arquivo pode ter no máximo 5 MB.</small></label>
             {galleryFiles.length > 0 && <div className="selected-files">{galleryFiles.map(file=><span key={file.name}>{file.name}</span>)}</div>}
