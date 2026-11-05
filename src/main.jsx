@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { Search, MapPin, Store, Wrench, ShoppingBag, Heart, ArrowRight, Menu, X, Plus, ShieldCheck, Sparkles, Building2, Star, Share2, Download } from 'lucide-react';
 import './style.css';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
+import QRCode from 'qrcode';
 
 const categories = [
   { name: 'Casa e construção', icon: Building2, count: 'Obras, reformas e materiais' },
@@ -126,6 +127,8 @@ function App() {
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [shareMessage, setShareMessage] = useState('');
+  const [businessQr, setBusinessQr] = useState('');
+  const [qrError, setQrError] = useState('');
   const [favoriteIds, setFavoriteIds] = useState(() => { try { const saved = JSON.parse(localStorage.getItem('conecta-favorites') || '[]'); return Array.isArray(saved) ? saved.map(String) : []; } catch { return []; } });
   const [showFavorites, setShowFavorites] = useState(false);
   const [formBusy, setFormBusy] = useState(false);
@@ -270,6 +273,21 @@ function App() {
     const key = String(item.id || item.name);
     setFavoriteIds(current => current.includes(key) ? current.filter(id => id !== key) : [...current, key]);
   }
+
+  useEffect(() => {
+    let active = true;
+    if (!selectedBusiness?.id) {
+      setBusinessQr('');
+      setQrError('');
+      return () => { active = false; };
+    }
+    const publicUrl = new URL(window.location.href);
+    publicUrl.searchParams.set('negocio', selectedBusiness.id);
+    QRCode.toDataURL(publicUrl.toString(), { width: 220, margin: 2, errorCorrectionLevel: 'M' })
+      .then(dataUrl => { if (active) { setBusinessQr(dataUrl); setQrError(''); } })
+      .catch(() => { if (active) { setBusinessQr(''); setQrError('Não foi possível gerar o QR Code neste momento.'); } });
+    return () => { active = false; };
+  }, [selectedBusiness?.id]);
 
   function openBusinessDetails(item) {
     setSelectedBusiness(item);
@@ -934,7 +952,7 @@ function App() {
       <section className="cta" id="sobre"><div className="cta-orb"></div><div><div className="eyebrow">FAÇA PARTE DESSA CONEXÃO</div><h2>Seu negócio merece<br/>ser encontrado.</h2><p>Dê visibilidade ao seu trabalho e conecte seu negócio a pessoas que procuram produtos e serviços na sua região.</p></div><button type="button" className="btn cta-btn" onClick={()=>{setShowForm(true);setSent(false)}}>Quero anunciar <ArrowRight size={17}/></button></section>
     </main>
     <footer><a className="brand footer-brand" href="#"><span className="brand-mark"><span></span><span></span><span></span></span><span>conecta<span className="brand-light">brasil</span><small>CONEXÕES QUE MOVIMENTAM</small></span></a><span>© 2026 Conecta Brasil. Um país inteiro de possibilidades.</span><span className="footer-status"><i></i> Conectando pessoas e negócios</span></footer>
-    {selectedBusiness && <div className="business-detail-backdrop" role="dialog" aria-modal="true" aria-label={`Detalhes de ${selectedBusiness.name}`} onClick={closeBusinessDetails}><section className="business-detail" onClick={e=>e.stopPropagation()}><button type="button" className="business-detail-close" onClick={closeBusinessDetails} aria-label="Fechar detalhes"><X size={22}/></button><div className="business-detail-hero">{selectedBusiness.photos?.[0] ? <img src={selectedBusiness.photos[0]} alt={`Foto de ${selectedBusiness.name}`}/> : selectedBusiness.logo ? <img src={selectedBusiness.logo} alt={`Logo de ${selectedBusiness.name}`}/> : <Store size={46}/>}</div><div className="business-detail-content"><small>{selectedBusiness.category}</small><h2>{selectedBusiness.name}</h2>{selectedBusiness.featured && <strong className="detail-featured"><Star size={13} fill="currentColor"/> Negócio em destaque</strong>}<p>{selectedBusiness.desc}</p><div className="business-detail-location"><MapPin size={17}/>{selectedBusiness.city || 'Localização não informada'}</div>{selectedBusiness.photos?.length > 0 && <div className="business-detail-gallery">{selectedBusiness.photos.slice(0,5).map((url,index)=><img key={url} src={url} alt={`Foto ${index+1} de ${selectedBusiness.name}`} loading="lazy" decoding="async" role="button" tabIndex={0} title="Clique para ampliar" aria-label={`Ampliar foto ${index+1} de ${selectedBusiness.name}`} onClick={()=>setSelectedPhoto({src:url,name:selectedBusiness.name})} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setSelectedPhoto({src:url,name:selectedBusiness.name})}}}/>)}</div>}<div className="business-detail-actions">{whatsappLink(selectedBusiness.phone) && <a className="listing-contact business-detail-contact" href={whatsappLink(selectedBusiness.phone)} target="_blank" rel="noopener noreferrer">Conversar pelo WhatsApp <ArrowRight size={16}/></a>}<button type="button" className="business-share-button" onClick={()=>shareBusiness(selectedBusiness)}><Share2 size={16}/> Compartilhar negócio</button></div>{shareMessage && <small className="share-feedback">{shareMessage}</small>}{!whatsappLink(selectedBusiness.phone) && <span className="coming">Contato não informado</span>}</div></section></div>}
+    {selectedBusiness && <div className="business-detail-backdrop" role="dialog" aria-modal="true" aria-label={`Detalhes de ${selectedBusiness.name}`} onClick={closeBusinessDetails}><section className="business-detail" onClick={e=>e.stopPropagation()}><button type="button" className="business-detail-close" onClick={closeBusinessDetails} aria-label="Fechar detalhes"><X size={22}/></button><div className="business-detail-hero">{selectedBusiness.photos?.[0] ? <img src={selectedBusiness.photos[0]} alt={`Foto de ${selectedBusiness.name}`}/> : selectedBusiness.logo ? <img src={selectedBusiness.logo} alt={`Logo de ${selectedBusiness.name}`}/> : <Store size={46}/>}</div><div className="business-detail-content"><small>{selectedBusiness.category}</small><h2>{selectedBusiness.name}</h2>{selectedBusiness.featured && <strong className="detail-featured"><Star size={13} fill="currentColor"/> Negócio em destaque</strong>}<p>{selectedBusiness.desc}</p><div className="business-detail-location"><MapPin size={17}/>{selectedBusiness.city || 'Localização não informada'}</div>{selectedBusiness.photos?.length > 0 && <div className="business-detail-gallery">{selectedBusiness.photos.slice(0,5).map((url,index)=><img key={url} src={url} alt={`Foto ${index+1} de ${selectedBusiness.name}`} loading="lazy" decoding="async" role="button" tabIndex={0} title="Clique para ampliar" aria-label={`Ampliar foto ${index+1} de ${selectedBusiness.name}`} onClick={()=>setSelectedPhoto({src:url,name:selectedBusiness.name})} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setSelectedPhoto({src:url,name:selectedBusiness.name})}}}/>)}</div>}<div className="business-detail-actions">{whatsappLink(selectedBusiness.phone) && <a className="listing-contact business-detail-contact" href={whatsappLink(selectedBusiness.phone)} target="_blank" rel="noopener noreferrer">Conversar pelo WhatsApp <ArrowRight size={16}/></a>}<button type="button" className="business-share-button" onClick={()=>shareBusiness(selectedBusiness)}><Share2 size={16}/> Compartilhar negócio</button></div>{shareMessage && <small className="share-feedback">{shareMessage}</small>}<div className="business-qr-card"><div><strong>Compartilhe também por QR Code</strong><small>Escaneie com a câmera do celular para abrir este anúncio.</small></div>{businessQr ? <a href={businessQr} download={`qr-${String(selectedBusiness.name || "negocio").toLowerCase().replace(/[^a-z0-9]+/g,"-")}.png`} aria-label="Baixar QR Code do negócio"><img src={businessQr} alt={`QR Code para abrir o anúncio de ${selectedBusiness.name}`} /></a> : <small role="status">{qrError || "Gerando QR Code..."}</small>}</div>{!whatsappLink(selectedBusiness.phone) && <span className="coming">Contato não informado</span>}</div></section></div>}
     {selectedPhoto && <div className="photo-lightbox" role="dialog" aria-modal="true" aria-label={`Foto ampliada de ${selectedPhoto.name}`} onClick={()=>setSelectedPhoto(null)}><button type="button" className="photo-lightbox-close" aria-label="Fechar imagem" onClick={()=>setSelectedPhoto(null)}><X size={24}/></button><div className="photo-lightbox-content" onClick={e=>e.stopPropagation()}><img src={selectedPhoto.src} alt={selectedPhoto.name}/><span>{selectedPhoto.name}</span></div></div>}
     {showForm && <div className="modal-backdrop" onClick={()=>setShowForm(false)}><div className="modal" role="dialog" aria-modal="true" aria-label="Área de cadastro e administração do Conecta Brasil" onClick={e=>e.stopPropagation()}>
       <button type="button" className="modal-close" onClick={()=>setShowForm(false)} aria-label="Fechar janela"><X/></button>
