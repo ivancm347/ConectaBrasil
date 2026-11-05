@@ -73,7 +73,7 @@ function App() {
   const [ownerEditing, setOwnerEditing] = useState(null);
   const isAdmin = authUser?.app_metadata?.role === 'admin';
 
-  useEffect(() => { localStorage.setItem('conecta-favorites', JSON.stringify(favoriteIds)); }, [favoriteIds]);
+  useEffect(() => { try { localStorage.setItem('conecta-favorites', JSON.stringify(favoriteIds)); } catch { /* Favoritos continuam disponíveis durante esta sessão. */ } }, [favoriteIds]);
 
   useEffect(() => {
     if (!selectedPhoto && !selectedBusiness && !showForm) return;
