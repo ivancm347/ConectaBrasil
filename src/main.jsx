@@ -482,7 +482,7 @@ function App() {
 
   async function saveBusinessEdit(event) {
     event.preventDefault();
-    if (!editingBusiness) return;
+    if (!editingBusiness || formBusy) return;
     const cleanName = String(editingBusiness.name || '').trim();
     const cleanCity = String(editingBusiness.city || '').trim();
     const cleanState = String(editingBusiness.state || '').trim().toUpperCase();
@@ -504,11 +504,15 @@ function App() {
       city: cleanCity,
       state: cleanState
     };
-    const { error } = await supabase.from('businesses').update(payload).eq('id', editingBusiness.id);
-    if (error) setAdminError('Não foi possível salvar a edição: ' + error.message);
-    else {
+    try {
+      const { error } = await supabase.from('businesses').update(payload).eq('id', editingBusiness.id);
+      if (error) {
+        setAdminError('Não foi possível salvar a edição: ' + error.message);
+        return;
+      }
       setAdminBusinesses(rows => rows.map(row => row.id === editingBusiness.id ? { ...row, ...payload } : row));
-      await recordAdminAction('editado', 'anúncio', editingBusiness.id, payload.name, payload);
+      try { await recordAdminAction('editado', 'anúncio', editingBusiness.id, payload.name, payload); }
+      catch { setAdminError('A edição foi salva, mas o histórico administrativo não pôde ser atualizado.'); }
       if (String(selectedBusiness?.id) === String(editingBusiness.id)) {
         setSelectedBusiness(current => current ? { ...current, ...payload } : current);
       }
@@ -519,8 +523,11 @@ function App() {
       } catch {
         setLoadError('A edição foi salva, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
       }
+    } catch (error) {
+      setAdminError('Falha de conexão ao salvar a edição. Tente novamente. ' + (error?.message || ''));
+    } finally {
+      setFormBusy(false);
     }
-    setFormBusy(false);
   }
 
   async function addAdminCategory(event) {
@@ -596,17 +603,19 @@ function App() {
   }
 
   async function deleteBusiness(item) {
-    const confirmed = window.confirm(`Excluir definitivamente o anúncio "${item.name}"? Esta ação não pode ser desfeita.`);
-    if (!confirmed) return;
-
+    const confirmed = window.confirm(\`Excluir definitivamente o anúncio "\${item.name}"? Esta ação não pode ser desfeita.\`);
+    if (!confirmed || formBusy) return;
     setFormBusy(true);
     setAdminError('');
-    const { error } = await supabase.from('businesses').delete().eq('id', item.id);
-    if (error) {
-      setAdminError('Não foi possível excluir o anúncio: ' + error.message);
-    } else {
+    try {
+      const { error } = await supabase.from('businesses').delete().eq('id', item.id);
+      if (error) {
+        setAdminError('Não foi possível excluir o anúncio: ' + error.message);
+        return;
+      }
       setAdminBusinesses(items => items.filter(row => row.id !== item.id));
-      await recordAdminAction('excluído', 'anúncio', item.id, item.name, { status_anterior: item.status });
+      try { await recordAdminAction('excluído', 'anúncio', item.id, item.name, { status_anterior: item.status }); }
+      catch { setAdminError('O anúncio foi excluído, mas o histórico administrativo não pôde ser atualizado.'); }
       if (editingBusiness?.id === item.id) setEditingBusiness(null);
       if (selectedBusiness?.id === item.id) setSelectedBusiness(null);
       try {
@@ -615,65 +624,43 @@ function App() {
       } catch {
         setLoadError('O anúncio foi excluído, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
       }
-      setAdminError('');
+    } catch (error) {
+      setAdminError('Falha de conexão ao excluir o anúncio. ' + (error?.message || ''));
+    } finally {
+      setFormBusy(false);
     }
-    setFormBusy(false);
   }
 
   async function moderateBusiness(id, status) {
-    setFormBusy(true); setAdminError('');
-    const { error } = await supabase.from('businesses').update({ status }).eq('id', id);
-    if (error) setAdminError('Não foi possível atualizar este cadastro: ' + error.message);
-    else {
+    if (formBusy) return;
+    setFormBusy(true);
+    setAdminError('');
+    try {
+      const { error } = await supabase.from('businesses').update({ status }).eq('id', id);
+      if (error) {
+        setAdminError('Não foi possível atualizar este cadastro: ' + error.message);
+        return;
+      }
       const changed = adminBusinesses.find(item => item.id === id);
       setAdminBusinesses(items => items.map(item => item.id === id ? { ...item, status } : item));
-      await recordAdminAction(status === 'approved' ? 'aprovado' : status === 'rejected' ? 'rejeitado' : status === 'suspended' ? 'suspenso' : 'retornado para análise', 'anúncio', id, changed?.name || 'Anúncio', { status_novo: status, status_anterior: changed?.status || null });
-      // Um anúncio que deixou de estar aprovado não deve continuar aberto no modal público.
-      if (String(selectedBusiness?.id) === String(id) && status !== 'approved') {
-        closeBusinessDetails();
+      try {
+        await recordAdminAction(status === 'approved' ? 'aprovado' : status === 'rejected' ? 'rejeitado' : status === 'suspended' ? 'suspenso' : 'retornado para análise', 'anúncio', id, changed?.name || 'Anúncio', { status_novo: status, status_anterior: changed?.status || null });
+      } catch {
+        setAdminError('A moderação foi salva, mas o histórico administrativo não pôde ser atualizado.');
       }
+      if (String(selectedBusiness?.id) === String(id) && status !== 'approved') closeBusinessDetails();
       try {
         setBusinesses(await fetchPublicBusinesses());
         setLoadError('');
       } catch {
         setLoadError('A moderação foi salva, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
       }
+    } catch (error) {
+      setAdminError('Falha de conexão ao atualizar o cadastro. Tente novamente. ' + (error?.message || ''));
+    } finally {
+      setFormBusy(false);
     }
-    setFormBusy(false);
   }
-
-  useEffect(() => {
-    if (showForm && isAdmin) loadAdminBusinesses();
-  }, [showForm, isAdmin]);
-
-  useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) return;
-    const isRecoveryLink = () => {
-      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-      const params = new URLSearchParams(window.location.search);
-      return hash.get('type') === 'recovery' || params.get('type') === 'recovery';
-    };
-    if (isRecoveryLink()) {
-      setShowForm(true);
-      setPasswordRecovery(true);
-      setForgotPasswordMode(false);
-      setFormMessage('Defina uma nova senha para sua conta.');
-    }
-    supabase.auth.getSession().then(({ data }) => setAuthUser(data.session?.user || null));
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setAuthUser(session?.user || null);
-      if (event === 'PASSWORD_RECOVERY' || isRecoveryLink()) {
-        setShowForm(true);
-        setPasswordRecovery(true);
-        setForgotPasswordMode(false);
-        setFormMessage('Defina uma nova senha para sua conta.');
-        setFormError('');
-      }
-    });
-    supabase.from('categories').select('id,name').eq('active', true).order('name')
-      .then(({ data }) => setAvailableCategories(data || []));
-    return () => authListener.subscription.unsubscribe();
-  }, []);
 
   async function loadOwnerBusinesses() {
     if (!authUser || isAdmin || ownerLoading) return;
