@@ -383,7 +383,7 @@ function App() {
     const cleanName = String(ownerEditing.name || '').trim();
     const cleanCity = String(ownerEditing.city || '').trim();
     const cleanState = String(ownerEditing.state || '').trim().toUpperCase();
-    const phoneDigits = String(ownerEditing.phone || '').replace(/\\D/g, '');
+    const phoneDigits = String(ownerEditing.phone || '').replace(/\D/g, '');
     if (!cleanName || !cleanCity || !/^[A-Z]{2}$/.test(cleanState)) {
       setOwnerError('Preencha o nome, a cidade e uma UF válida com duas letras.');
       setFormBusy(false);
