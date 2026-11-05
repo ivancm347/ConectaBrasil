@@ -1,0 +1,25 @@
+{
+  "name": "Conecta Brasil",
+  "short_name": "Conecta Brasil",
+  "description": "Encontre empresas, lojas, profissionais e serviços por cidade e categoria.",
+  "lang": "pt-BR",
+  "start_url": "/ConectaBrasil/",
+  "scope": "/ConectaBrasil/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f5f7fa",
+  "theme_color": "#0b1730",
+  "categories": [
+    "business",
+    "shopping",
+    "social"
+  ],
+  "icons": [
+    {
+      "src": "/ConectaBrasil/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
