@@ -510,6 +510,14 @@ function App() {
     if (error || !data) setOwnerError('Não foi possível salvar. Confira se a atualização de permissões do anunciante foi aplicada no Supabase.' + (error?.message ? ' ' + error.message : ''));
     else {
       setOwnerBusinesses(rows => rows.map(row => row.id === ownerEditing.id ? { ...row, ...payload, updated_at: new Date().toISOString() } : row));
+      if (originalStatus === 'approved') {
+        setBusinesses(rows => {
+          const next = rows.filter(row => String(row.id) !== String(ownerEditing.id));
+          try { localStorage.setItem('conecta-public-businesses', JSON.stringify(next.map(({ icon, ...item }) => item))); } catch { /* A vitrine continua disponível durante esta sessão. */ }
+          return next;
+        });
+        if (String(selectedBusiness?.id) === String(ownerEditing.id)) setSelectedBusiness(null);
+      }
       setOwnerEditing(null);
       setFormMessage(originalStatus === 'approved'
         ? 'Alterações enviadas! Seu anúncio ficará temporariamente em análise até a nova aprovação.'
