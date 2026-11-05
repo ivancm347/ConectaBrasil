@@ -82,6 +82,7 @@ function App() {
   const [ownerError, setOwnerError] = useState('');
   const [ownerShareMessage, setOwnerShareMessage] = useState('');
   const [ownerFilter, setOwnerFilter] = useState('all');
+  const [ownerSearch, setOwnerSearch] = useState('');
   const [ownerEditing, setOwnerEditing] = useState(null);
   const [marketingTone, setMarketingTone] = useState('profissional');
   const [marketingPlatform, setMarketingPlatform] = useState('instagram');
@@ -637,10 +638,10 @@ function App() {
     attention: ownerBusinesses.filter(item => ['rejected','suspended'].includes(item.status)).length
   }), [ownerBusinesses]);
   const filteredOwnerBusinesses = useMemo(() => ownerBusinesses.filter(item => {
-    if (ownerFilter === 'all') return true;
-    if (ownerFilter === 'attention') return ['rejected','suspended'].includes(item.status);
-    return item.status === ownerFilter;
-  }), [ownerBusinesses, ownerFilter]);
+    const matchesStatus = ownerFilter === 'all' || (ownerFilter === 'attention' ? ['rejected','suspended'].includes(item.status) : item.status === ownerFilter);
+    const searchable = normalizeSearch([item.name, item.city, item.state, item.description, item.status].join(' '));
+    return matchesStatus && searchable.includes(normalizeSearch(ownerSearch));
+  }), [ownerBusinesses, ownerFilter, ownerSearch]);
   const hasActiveFilters = Boolean(query.trim() || city.trim() || active !== 'Todas' || showFavorites);
   function clearFilters() { setQuery(''); setCity(''); setActive('Todas'); setShowFavorites(false); }
   const publicCategories = availableCategories.length
@@ -767,6 +768,7 @@ function App() {
             </div>
             {ownerError && <div className="form-error" role="alert">{ownerError}</div>}
             {ownerShareMessage && <div className="form-message" role="status">{ownerShareMessage}</div>}
+            {ownerBusinesses.length > 0 && <div className="owner-search"><label htmlFor="owner-business-search">Buscar nos meus anúncios</label><div><input id="owner-business-search" type="search" maxLength="100" value={ownerSearch} onChange={event=>setOwnerSearch(event.target.value)} placeholder="Nome, cidade ou descrição..." aria-label="Buscar nos meus anúncios"/>{ownerSearch && <button type="button" onClick={()=>setOwnerSearch('')} aria-label="Limpar busca dos meus anúncios">Limpar</button>}</div><small role="status" aria-live="polite">{filteredOwnerBusinesses.length} de {ownerBusinesses.length} anúncio(s)</small></div>}
             {ownerLoading ? <div className="empty-state">Carregando seus anúncios...</div> : ownerBusinesses.length ? filteredOwnerBusinesses.length ? <div className="owner-list">{filteredOwnerBusinesses.map(item => <article className="owner-business" key={item.id}>
               <div className="owner-business-head"><div><b>{item.name}</b><small>{[item.city,item.state].filter(Boolean).join(' / ')} · {item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</small></div><span className={'status-badge status-'+item.status}>{({pending:'Em análise',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</span></div>
               <p>{item.description || 'Sem descrição informada.'}</p>
