@@ -80,6 +80,7 @@ function App() {
   const [authMode, setAuthMode] = useState('signup');
   const [authEmail, setAuthEmail] = useState('');
   const authEmailInput = useRef(null);
+  const lastPublicRefreshRef = useRef(0);
   const [authPassword, setAuthPassword] = useState('');
   const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
@@ -139,11 +140,18 @@ function App() {
       retryPublicBusinesses();
     };
     const handleOffline = () => setIsOnline(false);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible' || !navigator.onLine) return;
+      if (Date.now() - lastPublicRefreshRef.current < 60000) return;
+      retryPublicBusinesses();
+    };
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [loadingBusinesses]);
 
@@ -733,6 +741,7 @@ function App() {
 
   async function retryPublicBusinesses() {
     if (!isSupabaseConfigured || !supabase || loadingBusinesses) return;
+    lastPublicRefreshRef.current = Date.now();
     setLoadingBusinesses(true);
     setLoadError('');
     try {
