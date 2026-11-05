@@ -512,7 +512,7 @@ function App() {
     .map(value => value.trim()).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, 'pt-BR')), [listingSource]);
   const filteredAdminBusinesses = useMemo(() => adminBusinesses.filter(item =>
-    (adminFilter === 'all' || item.status === adminFilter) &&
+    (adminFilter === 'all' || (adminFilter === 'featured' ? item.featured : item.status === adminFilter)) &&
     normalizeSearch([item.name, item.city, item.state, item.phone].filter(Boolean).join(' ')).includes(normalizeSearch(adminSearch))
   ), [adminBusinesses, adminFilter, adminSearch]);
   const filtered = useMemo(() => listingSource.filter(item =>
@@ -555,10 +555,10 @@ function App() {
         <h2>Painel administrativo</h2>
         <p>Revise os anúncios enviados e escolha quais podem aparecer publicamente na vitrine.</p>
         <div className="admin-stats">
-          <div><b>{adminBusinesses.length}</b><span>Cadastros</span></div>
-          <div><b>{adminBusinesses.filter(item=>item.status==='pending').length}</b><span>Pendentes</span></div>
-          <div><b>{adminBusinesses.filter(item=>item.status==='approved').length}</b><span>Aprovados</span></div>
-          <div><b>{adminBusinesses.filter(item=>item.featured).length}</b><span>Em destaque</span></div>
+          <button type="button" className={`admin-stat-button ${adminFilter==='all'?'selected':''}`} onClick={()=>setAdminFilter('all')} aria-label="Mostrar todos os cadastros"><b>{adminBusinesses.length}</b><span>Cadastros</span></button>
+          <button type="button" className={`admin-stat-button ${adminFilter==='pending'?'selected':''}`} onClick={()=>setAdminFilter('pending')} aria-label="Mostrar cadastros pendentes"><b>{adminBusinesses.filter(item=>item.status==='pending').length}</b><span>Pendentes</span></button>
+          <button type="button" className={`admin-stat-button ${adminFilter==='approved'?'selected':''}`} onClick={()=>setAdminFilter('approved')} aria-label="Mostrar cadastros aprovados"><b>{adminBusinesses.filter(item=>item.status==='approved').length}</b><span>Aprovados</span></button>
+          <button type="button" className={`admin-stat-button ${adminFilter==='featured'?'selected':''}`} onClick={()=>setAdminFilter('featured')} aria-label="Mostrar anúncios em destaque"><b>{adminBusinesses.filter(item=>item.featured).length}</b><span>Em destaque</span></button>
         </div>
         <div className="admin-filters">{[['pending','Pendentes'],['approved','Aprovados'],['rejected','Rejeitados'],['suspended','Suspensos'],['all','Todos']].map(([value,label])=><button key={value} className={adminFilter===value?'active':''} onClick={()=>setAdminFilter(value)}>{label}</button>)}</div>
         <input className="admin-search" value={adminSearch} onChange={e=>setAdminSearch(e.target.value)} placeholder="Buscar por negócio, cidade ou telefone..." aria-label="Buscar cadastros" />
