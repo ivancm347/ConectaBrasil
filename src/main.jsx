@@ -554,7 +554,14 @@ function App() {
       }
       if (result.error) throw result.error;
       setPlanSchemaReady(Boolean(result.data?.length === 0 || Object.prototype.hasOwnProperty.call(result.data?.[0] || {}, 'plan_type')));
-      setAdminBusinesses(result.data || []);
+      // O bucket business-images é privado: o painel administrativo também
+      // precisa receber URLs assinadas para exibir logos e galerias.
+      const businessesWithImages = await Promise.all((result.data || []).map(async item => ({
+        ...item,
+        logo_url: item.logo_url ? await createBusinessImageUrl(item.logo_url) : '',
+        gallery_urls: await Promise.all((item.gallery_urls || []).map(createBusinessImageUrl)),
+      })));
+      setAdminBusinesses(businessesWithImages);
       const cats = await supabase.from('categories').select('id,name,active').order('name');
       if (cats.error) throw cats.error;
       setAdminCategories(cats.data || []);
