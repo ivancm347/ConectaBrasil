@@ -603,7 +603,7 @@ function App() {
   }
 
   async function deleteBusiness(item) {
-    const confirmed = window.confirm(\`Excluir definitivamente o anúncio "\${item.name}"? Esta ação não pode ser desfeita.\`);
+    const confirmed = window.confirm("Excluir definitivamente o anúncio \"" + item.name + "\"? Esta ação não pode ser desfeita.");
     if (!confirmed || formBusy) return;
     setFormBusy(true);
     setAdminError('');
