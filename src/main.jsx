@@ -75,6 +75,7 @@ function App() {
   const [ownerEditing, setOwnerEditing] = useState(null);
   const [marketingTone, setMarketingTone] = useState('profissional');
   const [marketingPlatform, setMarketingPlatform] = useState('instagram');
+  const [marketingBusinessId, setMarketingBusinessId] = useState('');
   const [marketingOutput, setMarketingOutput] = useState('');
   const [marketingCopied, setMarketingCopied] = useState(false);
   const isAdmin = authUser?.app_metadata?.role === 'admin';
@@ -99,7 +100,8 @@ function App() {
   }, [selectedPhoto, selectedBusiness, showForm]);
 
   function generateMarketingCopy() {
-    const source = ownerEditing || ownerBusinesses[0] || businessForm;
+    const selectedMarketingBusiness = ownerBusinesses.find(item => String(item.id) === String(marketingBusinessId));
+    const source = ownerEditing || selectedMarketingBusiness || ownerBusinesses[0] || businessForm;
     const name = String(source.name || '').trim() || 'Meu negócio';
     const description = String(source.description || '').trim();
     const cityName = [source.city, source.state].filter(Boolean).join(' - ');
@@ -735,6 +737,12 @@ function App() {
             <div className="eyebrow dark">FERRAMENTA DE DIVULGAÇÃO</div>
             <h3>Assistente de divulgação</h3>
             <p>Crie uma sugestão de texto para apresentar seu negócio nas redes sociais e no WhatsApp. Funciona sem chave ou serviço externo.</p>
+            {ownerBusinesses.length > 0 && <label>Qual negócio deseja divulgar?
+              <select value={marketingBusinessId} onChange={e=>setMarketingBusinessId(e.target.value)}>
+                <option value="">Selecionar primeiro anúncio</option>
+                {ownerBusinesses.map(item => <option key={item.id} value={String(item.id)}>{item.name}</option>)}
+              </select>
+            </label>}
             <label>Onde você vai publicar?
               <select value={marketingPlatform} onChange={e=>setMarketingPlatform(e.target.value)}>
                 <option value="instagram">Instagram</option>
