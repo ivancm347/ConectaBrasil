@@ -532,43 +532,55 @@ function App() {
 
   async function addAdminCategory(event) {
     event.preventDefault();
-    const name = newCategory.trim();
+    if (formBusy) return;
+    const name = String(newCategory || '').trim();
     if (!name) return;
-
-    const slug = name.normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '') || `categoria-${Date.now()}`;
-
+    const slug = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'categoria-' + Date.now();
     setFormBusy(true);
     setAdminError('');
-    const { data, error } = await supabase
-      .from('categories')
-      .insert({ name, slug, active: true })
-      .select('id,name,active')
-      .single();
-
-    if (error) {
-      const message = error.code === '23505'
-        ? 'Já existe uma categoria com esse nome ou endereço. Escolha outro nome.'
-        : error.message;
-      setAdminError('Não foi possível criar a categoria: ' + message);
-    } else {
+    try {
+      const { data, error } = await supabase.from('categories')
+        .insert({ name, slug, active: true }).select('id,name,active').single();
+      if (error) {
+        const message = error.code === '23505'
+          ? 'Já existe uma categoria com esse nome ou endereço. Escolha outro nome.'
+          : error.message;
+        setAdminError('Não foi possível criar a categoria: ' + message);
+        return;
+      }
       setAdminCategories(rows => [...rows, data].sort((a,b)=>a.name.localeCompare(b.name)));
       setNewCategory('');
       setAvailableCategories(rows => [...rows, {id:data.id,name:data.name}].sort((a,b)=>a.name.localeCompare(b.name)));
       await recordAdminAction('criada', 'categoria', data.id, data.name);
+    } catch (error) {
+      setAdminError('Falha de conexão ao criar categoria. ' + (error?.message || 'Tente novamente.'));
+    } finally {
+      setFormBusy(false);
     }
-    setFormBusy(false);
   }
 
   async function toggleCategory(category) {
-    setFormBusy(true); setAdminError('');
-    const { error } = await supabase.from('categories').update({ active: !category.active }).eq('id', category.id);
-    if (error) setAdminError('Não foi possível alterar a categoria: ' + error.message);
-    else { setAdminCategories(rows => rows.map(row => row.id === category.id ? {...row,active:!category.active} : row)); setAvailableCategories(rows => category.active ? rows.filter(row=>row.id!==category.id) : [...rows,{id:category.id,name:category.name}]); await recordAdminAction(category.active ? 'desativada' : 'ativada', 'categoria', category.id, category.name); }
-    setFormBusy(false);
+    if (formBusy) return;
+    setFormBusy(true);
+    setAdminError('');
+    try {
+      const { error } = await supabase.from('categories')
+        .update({ active: !category.active }).eq('id', category.id);
+      if (error) {
+        setAdminError('Não foi possível alterar a categoria: ' + error.message);
+        return;
+      }
+      setAdminCategories(rows => rows.map(row => row.id === category.id ? {...row,active:!category.active} : row));
+      setAvailableCategories(rows => category.active
+        ? rows.filter(row => row.id !== category.id)
+        : [...rows,{id:category.id,name:category.name}]);
+      await recordAdminAction(category.active ? 'desativada' : 'ativada', 'categoria', category.id, category.name);
+    } catch (error) {
+      setAdminError('Falha de conexão ao alterar categoria. ' + (error?.message || 'Tente novamente.'));
+    } finally {
+      setFormBusy(false);
+    }
   }
 
   async function toggleVerified(item) {
@@ -586,10 +598,15 @@ function App() {
   }
 
   async function toggleFeatured(item) {
-    setFormBusy(true); setAdminError('');
-    const { error } = await supabase.from('businesses').update({ featured: !item.featured }).eq('id', item.id);
-    if (error) setAdminError('Não foi possível alterar o destaque: ' + error.message);
-    else {
+    if (formBusy) return;
+    setFormBusy(true);
+    setAdminError('');
+    try {
+      const { error } = await supabase.from('businesses').update({ featured: !item.featured }).eq('id', item.id);
+      if (error) {
+        setAdminError('Não foi possível alterar o destaque: ' + error.message);
+        return;
+      }
       setAdminBusinesses(items => items.map(row => row.id === item.id ? { ...row, featured: !item.featured } : row));
       await recordAdminAction(item.featured ? 'destaque removido' : 'destacado', 'anúncio', item.id, item.name);
       try {
@@ -598,8 +615,11 @@ function App() {
       } catch {
         setLoadError('O destaque foi salvo, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
       }
+    } catch (error) {
+      setAdminError('Falha de conexão ao alterar destaque. ' + (error?.message || 'Tente novamente.'));
+    } finally {
+      setFormBusy(false);
     }
-    setFormBusy(false);
   }
 
   async function deleteBusiness(item) {
