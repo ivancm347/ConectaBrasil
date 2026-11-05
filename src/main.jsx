@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Search, MapPin, Store, Wrench, ShoppingBag, Heart, ArrowRight, Menu, X, Plus, ShieldCheck, Sparkles, Building2, Star, Share2, Download } from 'lucide-react';
+import { Search, MapPin, Store, Wrench, ShoppingBag, Heart, ArrowRight, Menu, X, Plus, ShieldCheck, Sparkles, Building2, Star, Share2, Download, Mic } from 'lucide-react';
 import './style.css';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import QRCode from 'qrcode';
@@ -121,6 +121,8 @@ function readCachedPublicBusinesses() {
 
 function App() {
   const [query, setQuery] = useState('');
+  const [voiceMessage, setVoiceMessage] = useState('');
+  const [isListening, setIsListening] = useState(false);
   const [listingPage, setListingPage] = useState(1);
   const listingPageSize = 12;
   const [city, setCity] = useState('');
@@ -239,6 +241,18 @@ function App() {
     };
   }, []);
 
+  function startVoiceSearch() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) { setVoiceMessage('Busca por voz indisponível neste navegador. Digite sua busca.'); return; }
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'pt-BR'; recognition.interimResults = false; recognition.maxAlternatives = 1;
+      setVoiceMessage('Pode falar o serviço ou negócio que procura...'); setIsListening(true);
+      recognition.onresult = event => { const spoken = event.results?.[0]?.[0]?.transcript || ''; if (spoken.trim()) { setQuery(spoken.trim()); setVoiceMessage('Busca preenchida. Toque em Buscar para ver os resultados.'); } };
+      recognition.onerror = event => setVoiceMessage(event.error === 'not-allowed' ? 'Permita o microfone no navegador para pesquisar por voz.' : 'Não foi possível reconhecer a fala. Tente novamente ou digite.');
+      recognition.onend = () => setIsListening(false); recognition.start();
+    } catch { setIsListening(false); setVoiceMessage('Não foi possível iniciar o microfone.'); }
+  }
   async function installApp() {
     if (!installPrompt) return;
     installPrompt.prompt();
@@ -1019,7 +1033,7 @@ function App() {
     </header>
     <main>
       <section className="hero"><div className="hero-glow"></div><div className="hero-content"><div className="eyebrow"><Sparkles size={15}/> UM BRASIL DE OPORTUNIDADES</div><h1>O que você procura.<br/><em>Mais perto de você.</em></h1><p>Encontre empresas, profissionais, lojas e serviços. Valorize quem faz a economia acontecer em cada cidade do Brasil.</p>
-        <div className="search-panel"><label className="search-field"><Search size={20}/><input type="search" maxLength="120" aria-label="Produto, serviço ou negócio que procura" value={query} onChange={e=>setQuery(e.target.value)} placeholder="O que você está procurando?"/></label><span className="search-divider"></span><label className="search-field city-field"><MapPin size={20}/><input type="search" list="city-suggestions" maxLength="80" aria-label="Filtrar por cidade ou região" value={city} onChange={e=>setCity(e.target.value)} placeholder="Cidade ou região"/><datalist id="city-suggestions">{citySuggestions.map(value=><option key={value} value={value}/>)}</datalist></label><button type="button" className="btn search-btn" aria-label="Buscar negócios com os filtros informados" onClick={()=>document.getElementById('explorar').scrollIntoView({behavior:'smooth'})}>Buscar <ArrowRight size={17}/></button></div>
+        <div className="search-panel"><label className="search-field"><Search size={20}/><input type="search" maxLength="120" aria-label="Produto, serviço ou negócio que procura" value={query} onChange={e=>setQuery(e.target.value)} placeholder="O que você está procurando?"/></label><span className="search-divider"></span><label className="search-field city-field"><MapPin size={20}/><input type="search" list="city-suggestions" maxLength="80" aria-label="Filtrar por cidade ou região" value={city} onChange={e=>setCity(e.target.value)} placeholder="Cidade ou região"/><datalist id="city-suggestions">{citySuggestions.map(value=><option key={value} value={value}/>)}</datalist></label><button type="button" className="btn search-btn" aria-label="Buscar negócios com os filtros informados" onClick={()=>document.getElementById('explorar').scrollIntoView({behavior:'smooth'})}>Buscar <ArrowRight size={17}/></button><button type="button" className="voice-search-btn" onClick={startVoiceSearch} aria-label="Pesquisar por voz" title="Pesquisar por voz"><Mic size={17}/></button></div>{(voiceMessage || isListening) && <div className="voice-search-status" role="status">{isListening ? "Ouvindo..." : voiceMessage}</div>}
         <div className="hero-note"><ShieldCheck size={15}/> Uma plataforma para conectar pessoas e negócios.</div>
       </div><div className="hero-art"><div className="orbit orbit-one"></div><div className="orbit orbit-two"></div><div className="map-card"><div className="map-lines"></div><div className="pin pin-a"><MapPin/></div><div className="pin pin-b"><MapPin/></div><div className="pin pin-c"><MapPin/></div><div className="map-center"><span>BR</span><b>Brasil</b><small>Grandes conexões começam localmente</small></div></div><div className="float-card float-top"><span className="float-icon"><Store/></span><span><b>Negócios locais</b><small>Ganham visibilidade</small></span></div><div className="float-card float-bottom"><span className="float-icon green"><Heart/></span><span><b>Comunidade forte</b><small>Todo mundo conectado</small></span></div></div></section>
       <section className="trust-strip"><div><b>1 só lugar</b><span>para encontrar</span></div><i></i><div><b>Seu município</b><span>como ponto de partida</span></div><i></i><div><b>Todo o Brasil</b><span>como horizonte</span></div></section>
