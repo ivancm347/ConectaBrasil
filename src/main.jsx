@@ -77,12 +77,16 @@ function expandSearchQuery(value) {
 }
 
 async function fetchPublicBusinesses() {
-  const { data, error } = await supabase
-    .from('businesses')
+  let result = await supabase.from('businesses')
     .select('id,name,description,business_type,phone,city,state,logo_url,gallery_urls,featured,verified,business_categories(categories(name))')
-    .eq('status', 'approved')
-    .order('featured', { ascending: false })
-    .order('name', { ascending: true });
+    .eq('status', 'approved').order('featured', { ascending: false }).order('name', { ascending: true });
+  // Compatibilidade temporária caso a migração de verificação ainda não tenha sido executada.
+  if (result.error && /verified|column/i.test(result.error.message || '')) {
+    result = await supabase.from('businesses')
+      .select('id,name,description,business_type,phone,city,state,logo_url,gallery_urls,featured,business_categories(categories(name))')
+      .eq('status', 'approved').order('featured', { ascending: false }).order('name', { ascending: true });
+  }
+  const { data, error } = result;
   if (error) throw error;
   const businesses = (data || []).map(item => ({
     id: item.id,
@@ -93,8 +97,6 @@ async function fetchPublicBusinesses() {
     tag: item.business_type || 'Negócio',
     featured: Boolean(item.featured),
     verified: Boolean(item.verified),
-    viewsCount: Number(item.views_count || 0),
-    whatsappClicks: Number(item.whatsapp_clicks || 0),
     phone: item.phone || '',
     icon: Store, logo: item.logo_url || '', photos: item.gallery_urls || [],
   }));
@@ -397,11 +399,16 @@ function App() {
     setAdminLoading(true);
     setAdminError('');
     try {
-      const { data, error } = await supabase.from('businesses')
+      let result = await supabase.from('businesses')
         .select('id,name,description,business_type,phone,city,state,status,featured,verified,views_count,whatsapp_clicks,created_at,logo_url,gallery_urls,business_categories(categories(name))')
         .order('created_at', { ascending: false });
-      if (error) throw error;
-      setAdminBusinesses(data || []);
+      if (result.error && /verified|views_count|whatsapp_clicks|column/i.test(result.error.message || '')) {
+        result = await supabase.from('businesses')
+          .select('id,name,description,business_type,phone,city,state,status,featured,created_at,logo_url,gallery_urls,business_categories(categories(name))')
+          .order('created_at', { ascending: false });
+      }
+      if (result.error) throw result.error;
+      setAdminBusinesses(result.data || []);
       const cats = await supabase.from('categories').select('id,name,active').order('name');
       if (cats.error) throw cats.error;
       setAdminCategories(cats.data || []);
@@ -613,11 +620,16 @@ function App() {
     setOwnerLoading(true);
     setOwnerError('');
     try {
-      const { data, error } = await supabase.from('businesses')
+      let result = await supabase.from('businesses')
         .select('id,name,description,business_type,phone,city,state,status,views_count,whatsapp_clicks,created_at,updated_at,business_categories(categories(name))')
         .eq('owner_id', authUser.id).order('created_at', { ascending: false });
-      if (error) throw error;
-      setOwnerBusinesses(data || []);
+      if (result.error && /views_count|whatsapp_clicks|column/i.test(result.error.message || '')) {
+        result = await supabase.from('businesses')
+          .select('id,name,description,business_type,phone,city,state,status,created_at,updated_at,business_categories(categories(name))')
+          .eq('owner_id', authUser.id).order('created_at', { ascending: false });
+      }
+      if (result.error) throw result.error;
+      setOwnerBusinesses(result.data || []);
     } catch {
       setOwnerError('Não foi possível atualizar seus anúncios. Verifique sua conexão e tente novamente.');
     } finally {
