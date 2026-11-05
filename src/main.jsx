@@ -397,6 +397,52 @@ function App() {
     finally { setFormBusy(false); }
   }
 
+  const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+  function handleLogoSelection(event) {
+    const file = event.target.files?.[0] || null;
+    setFormError('');
+    if (file && !allowedImageTypes.includes(file.type)) {
+      setLogoFile(null);
+      event.target.value = '';
+      setFormError('Formato de logo não permitido. Use JPG, PNG, WEBP ou GIF.');
+      return;
+    }
+    if (file && file.size > 5 * 1024 * 1024) {
+      setLogoFile(null);
+      event.target.value = '';
+      setFormError('A logo ultrapassa o limite de 5 MB. Escolha uma imagem menor.');
+      return;
+    }
+    setLogoFile(file);
+  }
+
+  function handleGallerySelection(event) {
+    const files = Array.from(event.target.files || []);
+    setFormError('');
+    if (files.length > 5) {
+      setGalleryFiles([]);
+      event.target.value = '';
+      setFormError('Você selecionou mais de 5 fotos. Escolha no máximo 5 imagens.');
+      return;
+    }
+    const invalidType = files.find(file => !allowedImageTypes.includes(file.type));
+    if (invalidType) {
+      setGalleryFiles([]);
+      event.target.value = '';
+      setFormError(`O arquivo "${invalidType.name}" não é JPG, PNG, WEBP ou GIF.`);
+      return;
+    }
+    const oversized = files.find(file => file.size > 5 * 1024 * 1024);
+    if (oversized) {
+      setGalleryFiles([]);
+      event.target.value = '';
+      setFormError(`A foto "${oversized.name}" ultrapassa o limite de 5 MB.`);
+      return;
+    }
+    setGalleryFiles(files);
+  }
+
   async function handleBusinessSubmit(event) {
     event.preventDefault();
     setFormError(''); setFormMessage('');
@@ -417,10 +463,10 @@ function App() {
       setFormError('Selecione no máximo 5 fotos para a galeria.');
       return;
     }
-    const invalidImage = selectedImages.find(file => !file.type.startsWith('image/') || file.size > 5 * 1024 * 1024);
+    const invalidImage = selectedImages.find(file => !allowedImageTypes.includes(file.type) || file.size > 5 * 1024 * 1024);
     if (invalidImage) {
-      setFormError(!invalidImage.type.startsWith('image/')
-        ? 'Envie somente arquivos de imagem.'
+      setFormError(!allowedImageTypes.includes(invalidImage.type)
+        ? 'Use somente imagens JPG, PNG, WEBP ou GIF.'
         : `A imagem ${invalidImage.name} ultrapassa o limite de 5 MB.`);
       return;
     }
@@ -439,7 +485,7 @@ function App() {
       const uploadedPhotos = [];
       const uploadImage = async (file, label) => {
         if (!file) return null;
-        if (!file.type.startsWith('image/')) throw new Error('Envie somente arquivos de imagem.');
+        if (!allowedImageTypes.includes(file.type)) throw new Error('Use somente imagens JPG, PNG, WEBP ou GIF.');
         if (file.size > 5 * 1024 * 1024) throw new Error(`A imagem ${file.name} ultrapassa o limite de 5 MB.`);
         const safeName = file.name.toLowerCase().replace(/[^a-z0-9.-]+/g, '-');
         const path = `${authUser.id}/${businessId}/${label}-${Date.now()}-${safeName}`;
@@ -664,8 +710,8 @@ function App() {
             <label>Categoria<select value={businessForm.category_id} onChange={e=>setBusinessForm({...businessForm,category_id:e.target.value})}><option value="">Selecione uma categoria</option>{availableCategories.map(cat=><option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label>
             <div className="form-row"><label>Cidade<input required maxLength="80" autoComplete="address-level2" value={businessForm.city} onChange={e=>setBusinessForm({...businessForm,city:e.target.value})}/></label><label>Estado (UF)<input required maxLength="2" pattern="[A-Za-z]{2}" title="Informe a sigla com duas letras" value={businessForm.state} onChange={e=>setBusinessForm({...businessForm,state:e.target.value.toUpperCase()})}/></label></div>
             <label>Telefone / WhatsApp<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={businessForm.phone} onChange={e=>setBusinessForm({...businessForm,phone:e.target.value})}/></label>
-            <label>Logo da empresa<input id="business-logo-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-describedby="business-logo-help" onChange={e=>setLogoFile(e.target.files?.[0] || null)}/><small className="upload-help" id="business-logo-help">Formatos JPG, PNG, WEBP ou GIF. Uma imagem, até 5 MB.</small></label>
-            <label>Fotos do negócio (até 5)<input id="business-gallery-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple aria-describedby="business-gallery-help" onChange={e=>setGalleryFiles(Array.from(e.target.files || []).slice(0,5))}/><small className="upload-help" id="business-gallery-help">Formatos JPG, PNG, WEBP ou GIF. Selecione até 5 fotos, cada uma com no máximo 5 MB.</small></label>
+            <label>Logo da empresa<input id="business-logo-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-describedby="business-logo-help" onChange={handleLogoSelection}/><small className="upload-help" id="business-logo-help">Formatos JPG, PNG, WEBP ou GIF. Uma imagem, até 5 MB.</small></label>
+            <label>Fotos do negócio (até 5)<input id="business-gallery-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple aria-describedby="business-gallery-help" onChange={handleGallerySelection}/><small className="upload-help" id="business-gallery-help">Formatos JPG, PNG, WEBP ou GIF. Selecione até 5 fotos, cada uma com no máximo 5 MB.</small></label>
             {galleryFiles.length > 0 && <div className="selected-files" role="status" aria-live="polite"><strong>{galleryFiles.length} {galleryFiles.length === 1 ? "foto selecionada" : "fotos selecionadas"}:</strong>{galleryFiles.map((file,index)=><span key={`${file.name}-${index}`}>{file.name}</span>)}</div>}
             <button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Enviando...' : 'Enviar para aprovação'}</button>
           </form>
