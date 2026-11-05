@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Search, MapPin, Store, Wrench, ShoppingBag, Heart, ArrowRight, Menu, X, Plus, ShieldCheck, Sparkles, Building2, Star, Share2 } from 'lucide-react';
 import './style.css';
@@ -40,6 +40,7 @@ function App() {
   const [authUser, setAuthUser] = useState(null);
   const [authMode, setAuthMode] = useState('signup');
   const [authEmail, setAuthEmail] = useState('');
+  const authEmailInput = useRef(null);
   const [authPassword, setAuthPassword] = useState('');
   const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -326,11 +327,13 @@ function App() {
   }, [authUser?.id, isAdmin]);
 
   async function requestPasswordRecovery() {
-    if (!authEmail.trim()) { setFormError('Informe seu e-mail para receber o link de recuperação.'); return; }
+    const email = String(authEmailInput.current?.value || authEmail || '').trim();
+    if (!email) { setFormError('Informe seu e-mail para receber o link de recuperação.'); authEmailInput.current?.focus(); return; }
+    setAuthEmail(email);
     setFormBusy(true); setFormError(''); setFormMessage('');
     try {
       const redirectTo = `${window.location.origin}${window.location.pathname}`;
-      const { error } = await supabase.auth.resetPasswordForEmail(authEmail.trim(), { redirectTo });
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
       setFormMessage('Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha. Confira também a caixa de spam.');
     } catch (error) { setFormError(error.message || 'Não foi possível solicitar a recuperação.'); }
@@ -560,7 +563,7 @@ function App() {
         </form> : !authUser ? <>
           <p>{authMode === 'signup' ? 'Crie uma conta gratuita para cadastrar sua empresa ou serviço.' : 'Entre na sua conta para continuar.'}</p>
           <form onSubmit={handleAuthSubmit} className="business-form">
-            <label>E-mail<input type="email" required value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="voce@email.com"/></label>
+            <label>E-mail<input ref={authEmailInput} type="email" required autoComplete="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="voce@email.com"/></label>
             <label>Senha<input type="password" required minLength="6" value={authPassword} onChange={e=>setAuthPassword(e.target.value)} placeholder="Mínimo de 6 caracteres"/></label>
             <button className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Aguarde...' : authMode === 'signup' ? 'Criar conta' : 'Entrar'}</button>
           </form>
