@@ -584,17 +584,26 @@ function App() {
   }
 
   async function toggleVerified(item) {
-    setFormBusy(true); setAdminError('');
+    if (formBusy) return;
+    setFormBusy(true);
+    setAdminError('');
     try {
       const nextVerified = !item.verified;
       const { error } = await supabase.from('businesses').update({ verified: nextVerified }).eq('id', item.id);
       if (error) throw error;
       setAdminBusinesses(items => items.map(row => row.id === item.id ? { ...row, verified: nextVerified } : row));
       await recordAdminAction(nextVerified ? 'selo verificado concedido' : 'selo verificado removido', 'anúncio', item.id, item.name);
-      setBusinesses(await fetchPublicBusinesses());
+      try {
+        setBusinesses(await fetchPublicBusinesses());
+        setLoadError('');
+      } catch {
+        setLoadError('O selo foi salvo, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
+      }
     } catch (error) {
       setAdminError('Não foi possível alterar o selo de verificação: ' + (error?.message || 'verifique a conexão e a migração de inovações.'));
-    } finally { setFormBusy(false); }
+    } finally {
+      setFormBusy(false);
+    }
   }
 
   async function toggleFeatured(item) {
