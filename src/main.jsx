@@ -780,7 +780,12 @@ function App() {
     setLoadError('');
     setPublicRefreshMessage('');
     try {
-      setBusinesses(await fetchPublicBusinesses());
+      const [publicRows, categoryResult] = await Promise.all([
+        fetchPublicBusinesses(),
+        supabase.from('categories').select('id,name').eq('active', true).order('name')
+      ]);
+      setBusinesses(publicRows);
+      if (!categoryResult.error) setAvailableCategories(categoryResult.data || []);
       setPublicRefreshMessage('Lista atualizada.');
     } catch {
       setLoadError('Não foi possível carregar os cadastros agora. Verifique sua conexão e tente novamente.');
