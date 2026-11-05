@@ -302,3 +302,12 @@
 .marketing-output textarea{width:100%;min-height:150px;resize:vertical;padding:12px;border:1px solid #d6e0de;border-radius:10px;background:#fff;color:#263b38;font:inherit;line-height:1.55}
 .marketing-output>small{font-size:11px;color:#71817e;line-height:1.5}
 @media(max-width:600px){.marketing-assistant{padding:16px;margin:16px 0}.marketing-assistant h3{font-size:19px}}
+
+
+/* Resumo rápido dos anúncios na área do anunciante */
+.owner-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 14px}
+.owner-stats>div{min-width:0;padding:11px 8px;border:1px solid #e2eaf0;border-radius:9px;background:#fff;text-align:center}
+.owner-stats b,.owner-stats span{display:block}
+.owner-stats b{color:#183b50;font:800 21px Manrope,sans-serif}
+.owner-stats span{margin-top:3px;color:#718096;font-size:10px;line-height:1.35}
+@media(max-width:560px){.owner-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.owner-stats>div{padding:10px 6px}.owner-stats b{font-size:19px}}
