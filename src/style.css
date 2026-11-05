@@ -355,3 +355,15 @@
 @media(max-width:700px){
   .install-nav{width:100%;margin-top:8px}
 }
+
+
+.install-menu-wrap{position:relative;display:inline-flex;align-items:center}
+.install-help{position:absolute;z-index:20;top:calc(100% + 12px);right:0;width:min(340px,calc(100vw - 32px));padding:18px;border:1px solid #dce5ed;border-radius:14px;background:#fff;color:#183047;box-shadow:0 16px 40px rgba(5,20,40,.2);white-space:normal}
+.install-help strong{display:block;margin-bottom:10px;color:#0b1730;font-size:14px}
+.install-help p{margin:9px 0;color:#526579;font-size:12px;line-height:1.55}
+.install-help p b{color:#183047}
+.install-help-close{margin-top:5px;border:0;border-radius:7px;padding:8px 12px;background:#0b1730;color:#fff;font:700 12px 'DM Sans',sans-serif}
+@media(max-width:700px){
+  .install-menu-wrap{display:flex;width:100%;flex-direction:column;align-items:stretch}
+  .install-help{position:static;width:100%;margin-top:8px;box-shadow:none}
+}
