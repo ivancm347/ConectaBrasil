@@ -587,7 +587,11 @@ function App() {
               {item.status!=='suspended' && item.status==='approved' && <button disabled={formBusy} onClick={()=>moderateBusiness(item.id,'suspended')}>Suspender</button>}
               {item.status!=='pending' && <button disabled={formBusy} onClick={()=>moderateBusiness(item.id,'pending')}>Voltar para análise</button>}
             </div>
-          </article>) : <div className="empty-state">Nenhum cadastro nesta categoria de status.</div>}
+          </article>) : <div className="admin-empty-state">
+            <strong>{adminBusinesses.length ? 'Nenhum resultado encontrado' : 'Ainda não há anúncios cadastrados'}</strong>
+            <p>{adminBusinesses.length ? 'Não encontramos cadastros com a busca e os filtros atuais. Limpe os filtros para ver a lista completa.' : 'Quando alguém enviar um cadastro de anunciante, ele aparecerá aqui para sua análise.'}</p>
+            {(adminSearch.trim() || adminFilter !== 'all') && <button type="button" onClick={()=>{setAdminSearch('');setAdminFilter('all')}}>Limpar busca e filtros</button>}
+          </div>}
         </div>}
         <section className="admin-category-manager"><h3>Gerenciar categorias</h3><p>Cadastre novas categorias ou desative as que não devem aparecer no formulário de anunciantes.</p>
           <form onSubmit={addAdminCategory}><input value={newCategory} onChange={e=>setNewCategory(e.target.value)} maxLength="60" placeholder="Nome da nova categoria" required/><button className="approve-action" disabled={formBusy}>Adicionar</button></form>
