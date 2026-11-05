@@ -578,7 +578,7 @@ function App() {
     const name = businessForm.name.trim();
     const city = businessForm.city.trim();
     const state = businessForm.state.trim().toUpperCase();
-    const phoneDigits = businessForm.phone.replace(/\\D/g, '');
+    const phoneDigits = businessForm.phone.replace(/\D/g, '');
     const selectedImages = [logoFile, ...galleryFiles].filter(Boolean);
     if (!name || !city || !/^[A-Z]{2}$/.test(state)) {
       setFormError('Informe o nome do negócio, a cidade e uma UF válida com duas letras.');
@@ -603,7 +603,7 @@ function App() {
     let createdBusinessId = null;
     const uploadedPaths = [];
     try {
-      const slugBase = businessForm.name.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const slugBase = businessForm.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const slug = slugBase + '-' + crypto.randomUUID().slice(0, 8);
       const { data, error } = await supabase.from('businesses').insert({
         owner_id: authUser.id, name, slug,
