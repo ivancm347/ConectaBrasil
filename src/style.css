@@ -508,3 +508,7 @@ button,a{touch-action:manipulation}
   .admin-panel-heading .admin-refresh-button{width:100%}
 }
 @media(prefers-reduced-motion:reduce){.filter-pills{scroll-behavior:auto}}
+
+
+/* Estado de sincronização visível e acessível */
+.sync-indicator{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid #dce7e5;border-radius:999px;background:#f7faf9;color:#526761;font-size:11px;font-weight:800;white-space:nowrap}.sync-indicator i{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#d59a39}.sync-indicator.online i{background:#19966d;box-shadow:0 0 0 3px #19966d20}.sync-indicator.offline{border-color:#f0d3a0;background:#fff8e9;color:#805400}.sync-indicator.offline i{background:#d18a19}.connection-banner span{display:block;margin-top:3px;font-size:.82em;opacity:.9}@media(max-width:600px){.sync-indicator{justify-content:center;white-space:normal;text-align:center;min-height:36px}.filter-tools{align-items:stretch}.filter-tools .sync-indicator{flex:1 1 100%}}
