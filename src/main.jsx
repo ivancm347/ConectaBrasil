@@ -82,6 +82,27 @@ function expandSearchQuery(value) {
   return [...expanded].join(' ');
 }
 
+function getBusinessImagePath(value) {
+  if (!value) return null;
+  try {
+    const url = new URL(value, window.location.origin);
+    const marker = '/storage/v1/object/public/business-images/';
+    const signedMarker = '/storage/v1/object/sign/business-images/';
+    const index = url.pathname.indexOf(marker);
+    const signedIndex = url.pathname.indexOf(signedMarker);
+    if (index >= 0) return decodeURIComponent(url.pathname.slice(index + marker.length));
+    if (signedIndex >= 0) return decodeURIComponent(url.pathname.slice(signedIndex + signedMarker.length));
+    return null;
+  } catch { return null; }
+}
+
+async function createBusinessImageUrl(value) {
+  const path = getBusinessImagePath(value);
+  if (!path) return '';
+  const { data, error } = await supabase.storage.from('business-images').createSignedUrl(path, 60 * 60 * 24 * 7);
+  return error ? '' : (data?.signedUrl || '');
+}
+
 async function fetchPublicBusinesses() {
   let result = await supabase.from('businesses')
     .select('id,name,description,business_type,phone,city,state,logo_url,gallery_urls,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,business_categories(categories(name))')
@@ -94,7 +115,7 @@ async function fetchPublicBusinesses() {
   }
   const { data, error } = result;
   if (error) throw error;
-  const businesses = (data || []).map(item => {
+  const businesses = await Promise.all((data || []).map(async item => {
     const now = Date.now();
     const planExpiresAt = item.plan_expires_at || item.featured_expires_at || null;
     const planActive = !planExpiresAt || new Date(planExpiresAt).getTime() > now;
@@ -112,9 +133,11 @@ async function fetchPublicBusinesses() {
       planExpiresAt,
       verified: Boolean(item.verified),
       phone: item.phone || '',
-      icon: Store, logo: item.logo_url || '', photos: item.gallery_urls || [],
+      icon: Store,
+      logo: await createBusinessImageUrl(item.logo_url),
+      photos: (await Promise.all((item.gallery_urls || []).map(createBusinessImageUrl))).filter(Boolean),
     };
-  });
+  }));
   try {
     localStorage.setItem('conecta-public-businesses', JSON.stringify(businesses.map(({ icon, ...item }) => item)));
   } catch { /* A vitrine continua funcionando mesmo se o armazenamento local estiver cheio. */ }
