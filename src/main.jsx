@@ -124,6 +124,7 @@ function App() {
   const [voiceMessage, setVoiceMessage] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [locationMessage, setLocationMessage] = useState('');
+  const [guideOpen, setGuideOpen] = useState(false);
   const [listingPage, setListingPage] = useState(1);
   const listingPageSize = 12;
   const [city, setCity] = useState('');
@@ -1045,6 +1046,26 @@ function App() {
     <main>
       <section className="hero"><div className="hero-glow"></div><div className="hero-content"><div className="eyebrow"><Sparkles size={15}/> UM BRASIL DE OPORTUNIDADES</div><h1>O que você procura.<br/><em>Mais perto de você.</em></h1><p>Encontre empresas, profissionais, lojas e serviços. Valorize quem faz a economia acontecer em cada cidade do Brasil.</p>
         <div className="search-panel"><label className="search-field"><Search size={20}/><input type="search" maxLength="120" aria-label="Produto, serviço ou negócio que procura" value={query} onChange={e=>setQuery(e.target.value)} placeholder="O que você está procurando?"/></label><span className="search-divider"></span><label className="search-field city-field"><MapPin size={20}/><input type="search" list="city-suggestions" maxLength="80" aria-label="Filtrar por cidade ou região" value={city} onChange={e=>setCity(e.target.value)} placeholder="Cidade ou região"/><datalist id="city-suggestions">{citySuggestions.map(value=><option key={value} value={value}/>)}</datalist></label><button type="button" className="btn search-btn" aria-label="Buscar negócios com os filtros informados" onClick={()=>document.getElementById('explorar').scrollIntoView({behavior:'smooth'})}>Buscar <ArrowRight size={17}/></button><button type="button" className="voice-search-btn" onClick={startVoiceSearch} aria-label="Pesquisar por voz" title="Pesquisar por voz"><Mic size={17}/></button><button type="button" className="voice-search-btn location-search-btn" onClick={openNearbyMap} aria-label="Abrir mapa perto de mim" title="Abrir mapa perto de mim"><LocateFixed size={17}/></button></div>{(voiceMessage || isListening || locationMessage) && <div className="voice-search-status" role="status">{isListening ? "Ouvindo..." : [voiceMessage,locationMessage].filter(Boolean).join(" ")}</div>}
+        <div style={{marginTop:14,maxWidth:670}}>
+          <button type="button" onClick={()=>setGuideOpen(open=>!open)} aria-expanded={guideOpen} style={{display:'inline-flex',alignItems:'center',gap:8,border:'1px solid rgba(255,255,255,.28)',borderRadius:999,padding:'9px 14px',background:'rgba(255,255,255,.09)',color:'#fff',font:'700 12px inherit',cursor:'pointer'}}>
+            <Sparkles size={15}/> {guideOpen ? 'Fechar guia de busca' : 'Não sabe o que procurar? Receba uma ajuda'}
+          </button>
+          {guideOpen && <div style={{marginTop:10,padding:15,borderRadius:14,background:'#fff',color:'#183047',boxShadow:'0 12px 30px rgba(0,0,0,.14)'}}>
+            <strong style={{display:'block',fontSize:14,marginBottom:5}}>Vamos encontrar o que você precisa</strong>
+            <p style={{margin:'0 0 12px',fontSize:12,lineHeight:1.5,color:'#617286'}}>Escolha uma necessidade. O guia preenche a busca com termos relacionados aos cadastros disponíveis — sem inventar empresas ou resultados.</p>
+            <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+              {[
+                ['Reformar ou construir','pedreiro reforma construção'],
+                ['Instalação elétrica ou hidráulica','eletricista encanador instalação'],
+                ['Gesso, forro ou drywall','gesseiro gesso forro drywall'],
+                ['Limpeza e serviços domésticos','diarista limpeza faxina'],
+                ['Lojas e produtos','loja comércio produtos'],
+                ['Alimentação e restaurantes','restaurante mercado alimentação'],
+                ['Serviços profissionais','advogado dentista profissional']
+              ].map(([label,term])=><button key={term} type="button" onClick={()=>{setQuery(term);setGuideOpen(false);document.getElementById('explorar')?.scrollIntoView({behavior:'smooth'});}} style={{border:'1px solid #dce7ed',borderRadius:999,padding:'8px 11px',background:'#f5f9fb',color:'#17466b',font:'700 11px inherit',cursor:'pointer'}}>{label}</button>)}
+            </div>
+          </div>}
+        </div>
         <div className="hero-note"><ShieldCheck size={15}/> Uma plataforma para conectar pessoas e negócios.</div>
       </div><div className="hero-art"><div className="orbit orbit-one"></div><div className="orbit orbit-two"></div><div className="map-card"><div className="map-lines"></div><div className="pin pin-a"><MapPin/></div><div className="pin pin-b"><MapPin/></div><div className="pin pin-c"><MapPin/></div><div className="map-center"><span>BR</span><b>Brasil</b><small>Grandes conexões começam localmente</small></div></div><div className="float-card float-top"><span className="float-icon"><Store/></span><span><b>Negócios locais</b><small>Ganham visibilidade</small></span></div><div className="float-card float-bottom"><span className="float-icon green"><Heart/></span><span><b>Comunidade forte</b><small>Todo mundo conectado</small></span></div></div></section>
       <section className="trust-strip"><div><b>1 só lugar</b><span>para encontrar</span></div><i></i><div><b>Seu município</b><span>como ponto de partida</span></div><i></i><div><b>Todo o Brasil</b><span>como horizonte</span></div></section>
