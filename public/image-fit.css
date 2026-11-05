@@ -1,0 +1,7 @@
+/* Imagens completas, sem cortes, em cards, galeria e painel */
+img{max-width:100%}
+.listing-cover,.listing-gallery img,.business-detail-hero img,.business-detail-gallery img,.admin-image-preview img,.upload-gallery-preview img{object-fit:contain!important;background:#f4f6f8}
+.listing-cover,.listing-gallery img,.business-detail-hero img,.business-detail-gallery img{padding:4px}
+.admin-image-preview img{object-fit:contain!important;width:104px;height:104px;padding:4px}
+.listing-visual,.business-detail-hero{background:#f2f5f8}
+@media(max-width:560px){.admin-image-preview img{width:88px;height:88px}}
