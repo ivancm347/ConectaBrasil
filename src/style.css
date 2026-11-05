@@ -263,3 +263,14 @@
 .business-detail-gallery img[role="button"]{cursor:zoom-in}
 .business-detail-gallery img[role="button"]:focus-visible{outline:3px solid #53d6b0;outline-offset:3px}
 .owner-refresh:focus-visible{outline:3px solid #53d6b0;outline-offset:3px}
+
+
+/* Foco visível nos controles de busca e filtros administrativos */
+.admin-filters button:focus-visible,
+.clear-city-filter:focus-visible,
+.reset-search-button:focus-visible,
+.search-btn:focus-visible {
+  outline: 3px solid #53d6b0;
+  outline-offset: 3px;
+}
+.admin-filters button[aria-pressed="true"]{box-shadow:inset 0 0 0 1px currentColor}
