@@ -1275,6 +1275,19 @@ function App() {
             <div><div className="eyebrow dark">VISÃO GERAL</div><h3 style={{margin:'4px 0'}}>Central de gestão</h3><p style={{margin:0}}>Indicadores calculados sobre os cadastros carregados no painel.</p></div>
             <small style={{color:'#64748b'}}>Atualizado em {new Date(adminOverview.checkedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</small>
           </div>
+          {(adminOverview.pending > 0 || adminOverview.expiring.length > 0 || adminOverview.expired > 0) && <div role="status" aria-live="polite" style={{margin:'12px 0',padding:14,border:'1px solid #f2d39a',borderRadius:12,background:'#fffaf0'}}>
+            <strong style={{display:'block',marginBottom:6}}>Atenção administrativa</strong>
+            <p style={{margin:'0 0 10px',fontSize:13,color:'#72551e'}}>{[
+              adminOverview.pending ? adminOverview.pending + ' cadastro(s) aguardando aprovação' : '',
+              adminOverview.expiring.length ? adminOverview.expiring.length + ' plano(s) vencem nos próximos 7 dias' : '',
+              adminOverview.expired ? adminOverview.expired + ' plano(s) vencido(s)' : ''
+            ].filter(Boolean).join(' · ')}.</p>
+            <div className="admin-actions">
+              {adminOverview.pending > 0 && <button type="button" onClick={()=>setAdminFilter('pending')}>Revisar pendentes</button>}
+              {adminOverview.expiring.length > 0 && <button type="button" onClick={()=>setAdminFilter('expiring')}>Ver renovações próximas</button>}
+              {adminOverview.expired > 0 && <button type="button" onClick={()=>setAdminFilter('expired')}>Ver planos vencidos</button>}
+            </div>
+          </div>}
           <div className="admin-stats" style={{margin:'14px 0 8px'}}>
             <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('all')}><b>{adminOverview.total}</b><span>Total de negócios</span></button>
             <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('approved')}><b>{adminOverview.approved}</b><span>Aprovados</span></button>
