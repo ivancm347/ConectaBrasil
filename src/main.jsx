@@ -562,6 +562,7 @@ function App() {
         </div>
         <div className="admin-filters">{[['pending','Pendentes'],['approved','Aprovados'],['rejected','Rejeitados'],['suspended','Suspensos'],['all','Todos']].map(([value,label])=><button key={value} className={adminFilter===value?'active':''} onClick={()=>setAdminFilter(value)}>{label}</button>)}</div>
         <input className="admin-search" value={adminSearch} onChange={e=>setAdminSearch(e.target.value)} placeholder="Buscar por negócio, cidade ou telefone..." aria-label="Buscar cadastros" />
+        <div className="admin-search-summary"><span>{filteredAdminBusinesses.length} {filteredAdminBusinesses.length === 1 ? "cadastro encontrado" : "cadastros encontrados"}</span>{(adminSearch.trim() || adminFilter !== "all") && <button type="button" onClick={()=>{setAdminSearch("");setAdminFilter("all")}}>Limpar busca e filtros</button>}</div>
         {adminError && <div className="form-error">{adminError}</div>}
         {editingBusiness && <form className="admin-edit-form" onSubmit={saveBusinessEdit}>
           <h3>Editar anúncio</h3>
