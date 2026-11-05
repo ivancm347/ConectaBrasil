@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Search, MapPin, Store, Wrench, ShoppingBag, Heart, ArrowRight, Menu, X, Plus, ShieldCheck, Sparkles, Building2, Star, Share2, Download, Mic } from 'lucide-react';
+import { Search, MapPin, Store, Wrench, ShoppingBag, Heart, ArrowRight, Menu, X, Plus, ShieldCheck, Sparkles, Building2, Star, Share2, Download, Mic, LocateFixed } from 'lucide-react';
 import './style.css';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import QRCode from 'qrcode';
@@ -123,6 +123,7 @@ function App() {
   const [query, setQuery] = useState('');
   const [voiceMessage, setVoiceMessage] = useState('');
   const [isListening, setIsListening] = useState(false);
+  const [locationMessage, setLocationMessage] = useState('');
   const [listingPage, setListingPage] = useState(1);
   const listingPageSize = 12;
   const [city, setCity] = useState('');
@@ -252,6 +253,16 @@ function App() {
       recognition.onerror = event => setVoiceMessage(event.error === 'not-allowed' ? 'Permita o microfone no navegador para pesquisar por voz.' : 'Não foi possível reconhecer a fala. Tente novamente ou digite.');
       recognition.onend = () => setIsListening(false); recognition.start();
     } catch { setIsListening(false); setVoiceMessage('Não foi possível iniciar o microfone.'); }
+  }
+  function openNearbyMap() {
+    if (!navigator.geolocation) { setLocationMessage('Localização não disponível neste navegador.'); return; }
+    setLocationMessage('Aguardando sua permissão de localização...');
+    navigator.geolocation.getCurrentPosition(position => {
+      const lat = position.coords.latitude; const lon = position.coords.longitude;
+      const url = 'https://www.openstreetmap.org/?mlat=' + encodeURIComponent(lat) + '&mlon=' + encodeURIComponent(lon) + '#map=14/' + encodeURIComponent(lat) + '/' + encodeURIComponent(lon);
+      setLocationMessage('Mapa aberto. Sua localização não é armazenada pelo Conecta Brasil.');
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }, error => { setLocationMessage(error.code === 1 ? 'Permissão negada. Você pode pesquisar digitando a cidade.' : 'Não foi possível obter a localização. Confira o GPS e tente novamente.'); }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 });
   }
   async function installApp() {
     if (!installPrompt) return;
@@ -1033,7 +1044,7 @@ function App() {
     </header>
     <main>
       <section className="hero"><div className="hero-glow"></div><div className="hero-content"><div className="eyebrow"><Sparkles size={15}/> UM BRASIL DE OPORTUNIDADES</div><h1>O que você procura.<br/><em>Mais perto de você.</em></h1><p>Encontre empresas, profissionais, lojas e serviços. Valorize quem faz a economia acontecer em cada cidade do Brasil.</p>
-        <div className="search-panel"><label className="search-field"><Search size={20}/><input type="search" maxLength="120" aria-label="Produto, serviço ou negócio que procura" value={query} onChange={e=>setQuery(e.target.value)} placeholder="O que você está procurando?"/></label><span className="search-divider"></span><label className="search-field city-field"><MapPin size={20}/><input type="search" list="city-suggestions" maxLength="80" aria-label="Filtrar por cidade ou região" value={city} onChange={e=>setCity(e.target.value)} placeholder="Cidade ou região"/><datalist id="city-suggestions">{citySuggestions.map(value=><option key={value} value={value}/>)}</datalist></label><button type="button" className="btn search-btn" aria-label="Buscar negócios com os filtros informados" onClick={()=>document.getElementById('explorar').scrollIntoView({behavior:'smooth'})}>Buscar <ArrowRight size={17}/></button><button type="button" className="voice-search-btn" onClick={startVoiceSearch} aria-label="Pesquisar por voz" title="Pesquisar por voz"><Mic size={17}/></button></div>{(voiceMessage || isListening) && <div className="voice-search-status" role="status">{isListening ? "Ouvindo..." : voiceMessage}</div>}
+        <div className="search-panel"><label className="search-field"><Search size={20}/><input type="search" maxLength="120" aria-label="Produto, serviço ou negócio que procura" value={query} onChange={e=>setQuery(e.target.value)} placeholder="O que você está procurando?"/></label><span className="search-divider"></span><label className="search-field city-field"><MapPin size={20}/><input type="search" list="city-suggestions" maxLength="80" aria-label="Filtrar por cidade ou região" value={city} onChange={e=>setCity(e.target.value)} placeholder="Cidade ou região"/><datalist id="city-suggestions">{citySuggestions.map(value=><option key={value} value={value}/>)}</datalist></label><button type="button" className="btn search-btn" aria-label="Buscar negócios com os filtros informados" onClick={()=>document.getElementById('explorar').scrollIntoView({behavior:'smooth'})}>Buscar <ArrowRight size={17}/></button><button type="button" className="voice-search-btn" onClick={startVoiceSearch} aria-label="Pesquisar por voz" title="Pesquisar por voz"><Mic size={17}/></button><button type="button" className="voice-search-btn location-search-btn" onClick={openNearbyMap} aria-label="Abrir mapa perto de mim" title="Abrir mapa perto de mim"><LocateFixed size={17}/></button></div>{(voiceMessage || isListening || locationMessage) && <div className="voice-search-status" role="status">{isListening ? "Ouvindo..." : [voiceMessage,locationMessage].filter(Boolean).join(" ")}</div>}
         <div className="hero-note"><ShieldCheck size={15}/> Uma plataforma para conectar pessoas e negócios.</div>
       </div><div className="hero-art"><div className="orbit orbit-one"></div><div className="orbit orbit-two"></div><div className="map-card"><div className="map-lines"></div><div className="pin pin-a"><MapPin/></div><div className="pin pin-b"><MapPin/></div><div className="pin pin-c"><MapPin/></div><div className="map-center"><span>BR</span><b>Brasil</b><small>Grandes conexões começam localmente</small></div></div><div className="float-card float-top"><span className="float-icon"><Store/></span><span><b>Negócios locais</b><small>Ganham visibilidade</small></span></div><div className="float-card float-bottom"><span className="float-icon green"><Heart/></span><span><b>Comunidade forte</b><small>Todo mundo conectado</small></span></div></div></section>
       <section className="trust-strip"><div><b>1 só lugar</b><span>para encontrar</span></div><i></i><div><b>Seu município</b><span>como ponto de partida</span></div><i></i><div><b>Todo o Brasil</b><span>como horizonte</span></div></section>
