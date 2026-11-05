@@ -552,8 +552,13 @@ function App() {
       <button className="modal-close" onClick={()=>setShowForm(false)}><X/></button>
       {isAdmin ? <>
         <div className="eyebrow dark">ÁREA RESTRITA</div>
-        <h2>Painel administrativo</h2>
-        <p>Revise os anúncios enviados e escolha quais podem aparecer publicamente na vitrine.</p>
+        <div className="admin-panel-heading">
+          <div><h2>Painel administrativo</h2>
+          <p>Revise os anúncios enviados e escolha quais podem aparecer publicamente na vitrine.</p></div>
+          <button type="button" className="admin-refresh-button" onClick={loadAdminBusinesses} disabled={adminLoading || formBusy} aria-label="Atualizar painel administrativo">
+            <span aria-hidden="true">↻</span> {adminLoading ? 'Atualizando...' : 'Atualizar'}
+          </button>
+        </div>
         <div className="admin-stats">
           <button type="button" className={`admin-stat-button ${adminFilter==='all'?'selected':''}`} onClick={()=>setAdminFilter('all')} aria-label="Mostrar todos os cadastros"><b>{adminBusinesses.length}</b><span>Cadastros</span></button>
           <button type="button" className={`admin-stat-button ${adminFilter==='pending'?'selected':''}`} onClick={()=>setAdminFilter('pending')} aria-label="Mostrar cadastros pendentes"><b>{adminBusinesses.filter(item=>item.status==='pending').length}</b><span>Pendentes</span></button>
@@ -595,7 +600,7 @@ function App() {
         </div>}
         <section className="admin-category-manager"><h3>Gerenciar categorias</h3><p>Cadastre novas categorias ou desative as que não devem aparecer no formulário de anunciantes.</p>
           <form onSubmit={addAdminCategory}><input value={newCategory} onChange={e=>setNewCategory(e.target.value)} maxLength="60" placeholder="Nome da nova categoria" required/><button className="approve-action" disabled={formBusy}>Adicionar</button></form>
-          <div className="admin-category-list">{adminCategories.map(cat=><div key={cat.id}><span>{cat.name}<small>{cat.active?'Ativa':'Inativa'}</small></span><button disabled={formBusy} onClick={()=>toggleCategory(cat)}>{cat.active?'Desativar':'Ativar'}</button></div>)}</div>
+          <div className="admin-category-list">{adminCategories.length ? adminCategories.map(cat=><div key={cat.id}><span>{cat.name}<small>{cat.active?'Ativa':'Inativa'}</small></span><button disabled={formBusy} onClick={()=>toggleCategory(cat)}>{cat.active?'Desativar':'Ativar'}</button></div>) : <div className="admin-inline-empty">Nenhuma categoria cadastrada ainda.</div>}</div>
         </section>
         <section className="admin-category-manager admin-audit"><h3>Histórico administrativo</h3><p>Últimas 100 ações realizadas no painel, com data e responsável.</p>
           {auditLoading ? <div className="empty-state">Carregando histórico...</div> : adminAuditLogs.length ? <div className="audit-list">{adminAuditLogs.map(log=><article className="audit-item" key={log.id}><div><b>{log.entity_name || log.entity_type}</b><span>{log.action} · {log.entity_type}</span></div><small>{log.actor_email || 'Administrador'}<br/>{new Date(log.created_at).toLocaleString('pt-BR')}</small></article>)}</div> : <div className="empty-state">Nenhuma ação registrada ainda.</div>}
