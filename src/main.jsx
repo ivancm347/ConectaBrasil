@@ -609,6 +609,12 @@ function App() {
     (!city || normalizeSearch(item.city).includes(normalizeSearch(city))) &&
     (!showFavorites || favoriteIds.includes(String(item.id || item.name)))
   ), [listingSource, query, active, city, showFavorites, favoriteIds]);
+  const ownerStats = useMemo(() => ({
+    total: ownerBusinesses.length,
+    pending: ownerBusinesses.filter(item => item.status === 'pending').length,
+    approved: ownerBusinesses.filter(item => item.status === 'approved').length,
+    attention: ownerBusinesses.filter(item => ['rejected','suspended'].includes(item.status)).length
+  }), [ownerBusinesses]);
   const hasActiveFilters = Boolean(query.trim() || city.trim() || active !== 'Todas' || showFavorites);
   function clearFilters() { setQuery(''); setCity(''); setActive('Todas'); setShowFavorites(false); }
   const publicCategories = availableCategories.length
@@ -727,6 +733,12 @@ function App() {
         </> : <>
           <section className="owner-dashboard">
             <div className="owner-dashboard-head"><div><div className="eyebrow dark">ÁREA DO ANUNCIANTE</div><h3>Meus anúncios</h3><p>Acompanhe a situação dos seus cadastros.</p></div><button type="button" className="owner-refresh" onClick={loadOwnerBusinesses} disabled={ownerLoading} aria-label="Atualizar meus anúncios">{ownerLoading ? "Atualizando..." : "Atualizar"}</button></div>
+            <div className="owner-stats" aria-label="Resumo dos anúncios">
+              <div><b>{ownerStats.total}</b><span>Total</span></div>
+              <div><b>{ownerStats.pending}</b><span>Em análise</span></div>
+              <div><b>{ownerStats.approved}</b><span>Aprovados</span></div>
+              <div><b>{ownerStats.attention}</b><span>Precisam de atenção</span></div>
+            </div>
             {ownerError && <div className="form-error" role="alert">{ownerError}</div>}
             {ownerLoading ? <div className="empty-state">Carregando seus anúncios...</div> : ownerBusinesses.length ? <div className="owner-list">{ownerBusinesses.map(item => <article className="owner-business" key={item.id}>
               <div className="owner-business-head"><div><b>{item.name}</b><small>{[item.city,item.state].filter(Boolean).join(' / ')} · {item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</small></div><span className={'status-badge status-'+item.status}>{({pending:'Em análise',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</span></div>
