@@ -327,3 +327,7 @@
 .owner-search button{flex:0 0 auto;padding:9px 11px;border:1px solid #cbded9;border-radius:8px;background:#fff;color:#17634e;font-size:12px;font-weight:800;cursor:pointer}
 .owner-search button:focus-visible{outline:3px solid #2d8a70;outline-offset:2px}
 .owner-search small{display:block;margin-top:6px;color:#718096;font-size:11px}
+
+.owner-sort-label{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;color:#526b7b;font-size:12px;font-weight:700}
+.owner-sort-label select{max-width:190px;padding:8px 10px;border:1px solid #d6e0e8;border-radius:8px;background:#fff;color:#183b50;font:inherit;font-size:12px}
+.owner-sort-label select:focus-visible{outline:3px solid #2d8a70;outline-offset:2px}
