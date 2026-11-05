@@ -443,6 +443,10 @@ function App() {
       const changed = adminBusinesses.find(item => item.id === id);
       setAdminBusinesses(items => items.map(item => item.id === id ? { ...item, status } : item));
       await recordAdminAction(status === 'approved' ? 'aprovado' : status === 'rejected' ? 'rejeitado' : status === 'suspended' ? 'suspenso' : 'retornado para análise', 'anúncio', id, changed?.name || 'Anúncio', { status_novo: status, status_anterior: changed?.status || null });
+      // Um anúncio que deixou de estar aprovado não deve continuar aberto no modal público.
+      if (String(selectedBusiness?.id) === String(id) && status !== 'approved') {
+        closeBusinessDetails();
+      }
       try {
         setBusinesses(await fetchPublicBusinesses());
         setLoadError('');
