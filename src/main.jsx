@@ -210,6 +210,30 @@ function App() {
 
   useEffect(() => { try { localStorage.setItem('conecta-favorites', JSON.stringify(favoriteIds)); } catch { /* Favoritos continuam disponíveis durante esta sessão. */ } }, [favoriteIds]);
 
+  // Restaura a sessão do Supabase ao abrir ou atualizar o app.
+  // A inscrição também mantém a interface sincronizada com login, logout e renovação de sessão.
+  useEffect(() => {
+    if (!supabase) return undefined;
+    let active = true;
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!active) return;
+      if (error) {
+        console.warn('Não foi possível restaurar a sessão:', error.message);
+        return;
+      }
+      setAuthUser(data.session?.user || null);
+    }).catch(error => {
+      if (active) console.warn('Falha ao restaurar a sessão:', error?.message || error);
+    });
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setAuthUser(session?.user || null);
+    });
+    return () => {
+      active = false;
+      authListener?.subscription?.unsubscribe();
+    };
+  }, []);
+
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
