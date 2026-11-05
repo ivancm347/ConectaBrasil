@@ -191,6 +191,7 @@ function App() {
   const [adminCategories, setAdminCategories] = useState([]);
   const [newCategory, setNewCategory] = useState('');
   const [adminAuditLogs, setAdminAuditLogs] = useState([]);
+  const [selectedReportMonth, setSelectedReportMonth] = useState(() => new Date().toISOString().slice(0,7));
   const [auditLoading, setAuditLoading] = useState(false);
   const [ownerBusinesses, setOwnerBusinesses] = useState([]);
   const [ownerLoading, setOwnerLoading] = useState(false);
@@ -1092,16 +1093,43 @@ function App() {
       const amount = planType === 'destaque' ? 29.90 : planType === 'parceiro' ? 49.90 : 0;
       return { ...log, planType, amount };
     }).filter(log => log.amount > 0), [adminAuditLogs]);
-  const financeSummary = useMemo(() => {
-    const now = new Date();
-    const monthRows = recordedPlanActivations.filter(log => {
-      const date = new Date(log.created_at);
-      return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
-    });
-    return { total: recordedPlanActivations.reduce((sum, log) => sum + log.amount, 0),
-      month: monthRows.reduce((sum, log) => sum + log.amount, 0),
-      count: recordedPlanActivations.length, monthCount: monthRows.length };
-  }, [recordedPlanActivations]);
+  const reportRows = useMemo(() => recordedPlanActivations.filter(log => {
+    const date = new Date(log.created_at);
+    const [year, month] = selectedReportMonth.split('-').map(Number);
+    return date.getFullYear() === year && date.getMonth() === month - 1;
+  }), [recordedPlanActivations, selectedReportMonth]);
+  const financeSummary = useMemo(() => ({
+    total: reportRows.reduce((sum, log) => sum + log.amount, 0),
+    count: reportRows.length,
+    destaque: reportRows.filter(log => log.planType === 'destaque').length,
+    parceiro: reportRows.filter(log => log.planType === 'parceiro').length,
+  }), [reportRows]);
+  function exportPlanReport(format) {
+    const monthLabel = selectedReportMonth.split('-').reverse().join('/');
+    const rows = reportRows.map(log => ({
+      negocio: log.entity_name || 'Negócio',
+      plano: log.planType === 'destaque' ? 'Destaque' : 'Parceiro',
+      valor: log.amount.toFixed(2).replace('.', ','),
+      data: new Date(log.created_at).toLocaleDateString('pt-BR'),
+      responsavel: log.actor_email || 'Administrador'
+    }));
+    if (format === 'csv') {
+      const quote = value => '"' + String(value ?? '').replace(/"/g, '""') + '"';
+      const csv = ['Negócio;Plano;Valor (R$);Data;Responsável', ...rows.map(row => [row.negocio,row.plano,row.valor,row.data,row.responsavel].map(quote).join(';'))].join('\r\n');
+      const blob = new Blob(['\\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url; anchor.download = 'conecta-brasil-relatorio-' + selectedReportMonth + '.csv';
+      document.body.appendChild(anchor); anchor.click(); anchor.remove(); URL.revokeObjectURL(url);
+      return;
+    }
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) { setAdminError('Permita a abertura de janelas para gerar o PDF.'); return; }
+    const safe = value => String(value ?? '').replace(/[&<>"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[char]));
+    const body = rows.map(row => '<tr><td>'+safe(row.negocio)+'</td><td>'+safe(row.plano)+'</td><td>R$ '+safe(row.valor)+'</td><td>'+safe(row.data)+'</td><td>'+safe(row.responsavel)+'</td></tr>').join('');
+    printWindow.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório Conecta Brasil - '+safe(monthLabel)+'</title><style>body{font:14px Arial,sans-serif;padding:28px;color:#172b3a}h1{font-size:22px}p{color:#526575}.summary{display:flex;gap:28px;margin:22px 0;font-weight:bold}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #d8e1e8;padding:9px;text-align:left}th{background:#eef3f7}@media print{button{display:none}}</style></head><body><h1>Conecta Brasil — Relatório de planos</h1><p>Referência: '+safe(monthLabel)+'</p><div class="summary"><span>Total registrado: R$ '+financeSummary.total.toLocaleString('pt-BR',{minimumFractionDigits:2})+'</span><span>Ativações: '+financeSummary.count+'</span></div><table><thead><tr><th>Negócio</th><th>Plano</th><th>Valor</th><th>Data</th><th>Responsável</th></tr></thead><tbody>'+body+'</tbody></table><p>Relatório estimativo com base nas ativações administrativas registradas. Não representa confirmação bancária.</p><script>window.onload=()=>window.print();</script></body></html>');
+    printWindow.document.close();
+  }
   const filteredAdminBusinesses = useMemo(() => adminBusinesses.filter(item =>
     (adminFilter === 'all' || (adminFilter === 'featured' ? item.featured : item.status === adminFilter)) &&
     normalizeSearch([item.name, item.city, item.state, item.phone].filter(Boolean).join(' ')).includes(normalizeSearch(adminSearch))
@@ -1263,19 +1291,25 @@ function App() {
           <div className="admin-category-list">{adminCategories.length ? adminCategories.map(cat=><div key={cat.id}><span>{cat.name}<small>{cat.active?'Ativa':'Inativa'}</small></span><button type="button" disabled={formBusy} onClick={()=>toggleCategory(cat)}>{cat.active?'Desativar':'Ativar'}</button></div>) : <div className="admin-inline-empty">Nenhuma categoria cadastrada ainda.</div>}</div>
         </section>
         <section className="admin-category-manager" style={{marginTop:18}}>
-          <h3>Resumo financeiro dos planos</h3>
-          <p>Estimativa baseada nas ativações registradas no histórico administrativo. Não é integração bancária nem comprovante de recebimento.</p>
-          <div className="admin-stats" style={{margin:"12px 0"}}>
-            <div className="admin-stat-button"><b>R$ {financeSummary.total.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}</b><span>Valor registrado · até 100 ações</span></div>
-            <div className="admin-stat-button"><b>R$ {financeSummary.month.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}</b><span>Neste mês</span></div>
-            <div className="admin-stat-button"><b>{financeSummary.count}</b><span>Ativações registradas</span></div>
-            <div className="admin-stat-button"><b>{financeSummary.monthCount}</b><span>Ativações neste mês</span></div>
+          <h3>Relatório financeiro dos planos</h3>
+          <p>Consulte as ativações registradas por mês e exporte os dados para arquivo.</p>
+          <label style={{display:'block',maxWidth:240,margin:'12px 0'}}>Mês de referência<input type="month" value={selectedReportMonth} onChange={event=>setSelectedReportMonth(event.target.value)}/></label>
+          <div className="admin-stats" style={{margin:'12px 0'}}>
+            <div className="admin-stat-button"><b>R$ {financeSummary.total.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</b><span>Valor registrado no mês</span></div>
+            <div className="admin-stat-button"><b>{financeSummary.count}</b><span>Ativações no mês</span></div>
+            <div className="admin-stat-button"><b>{financeSummary.destaque}</b><span>Planos Destaque</span></div>
+            <div className="admin-stat-button"><b>{financeSummary.parceiro}</b><span>Planos Parceiro</span></div>
           </div>
-          {recordedPlanActivations.length ? <div className="audit-list">{recordedPlanActivations.map(log=><article className="audit-item" key={log.id}>
-            <div><b>{log.entity_name || "Negócio"}</b><span>{log.planType === "destaque" ? "Plano Destaque" : "Plano Parceiro"} · R$ {log.amount.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>
-            <small>{new Date(log.created_at).toLocaleDateString("pt-BR")}<br/>{log.actor_email || "Administrador"}</small>
-          </article>)}</div> : <div className="empty-state">Nenhuma ativação de plano registrada no histórico ainda.</div>}
-          <small style={{display:"block",marginTop:10,color:"#64748b"}}>A ativação deve ocorrer somente após a confirmação da contratação. O cálculo usa os preços atuais e considera apenas as últimas 100 ações carregadas; não substitui um controle financeiro oficial.</small>
+          <div className="admin-actions" style={{margin:'12px 0'}}>
+            <button type="button" disabled={!reportRows.length} onClick={()=>exportPlanReport('pdf')}>Imprimir / salvar PDF</button>
+            <button type="button" disabled={!reportRows.length} onClick={()=>exportPlanReport('csv')}>Exportar planilha Excel (CSV)</button>
+            <button type="button" disabled={auditLoading} onClick={loadAdminAuditLogs}>Atualizar dados</button>
+          </div>
+          {reportRows.length ? <div className="audit-list">{reportRows.map(log=><article className="audit-item" key={log.id}>
+            <div><b>{log.entity_name || 'Negócio'}</b><span>{log.planType === 'destaque' ? 'Plano Destaque' : 'Plano Parceiro'} · R$ {log.amount.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>
+            <small>{new Date(log.created_at).toLocaleDateString('pt-BR')}<br/>{log.actor_email || 'Administrador'}</small>
+          </article>)}</div> : <div className="empty-state">Nenhuma ativação de plano registrada neste mês.</div>}
+          <small style={{display:'block',marginTop:10,color:'#64748b'}}>O PDF é gerado pela opção de impressão do navegador. A planilha CSV abre no Excel. Os dados vêm das últimas 100 ações carregadas no histórico e usam os preços atuais (Destaque R$ 29,90 e Parceiro R$ 49,90); não representam confirmação bancária.</small>
         </section>
         <section className="admin-category-manager admin-audit"><h3>Histórico administrativo</h3><p>Últimas 100 ações realizadas no painel, com data e responsável.</p>
           {auditLoading ? <div className="empty-state">Carregando histórico...</div> : adminAuditLogs.length ? <div className="audit-list">{adminAuditLogs.map(log=><article className="audit-item" key={log.id}><div><b>{log.entity_name || log.entity_type}</b><span>{log.action} · {log.entity_type}</span></div><small>{log.actor_email || 'Administrador'}<br/>{new Date(log.created_at).toLocaleString('pt-BR')}</small></article>)}</div> : <div className="empty-state">Nenhuma ação registrada ainda.</div>}
