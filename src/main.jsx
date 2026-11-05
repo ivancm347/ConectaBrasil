@@ -1085,6 +1085,23 @@ function App() {
     .map(item => item.city).filter(Boolean)
     .map(value => value.trim()).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, 'pt-BR')), [listingSource]);
+  const recordedPlanActivations = useMemo(() => adminAuditLogs
+    .filter(log => log.entity_type === 'plano' && log.action === 'plano ativado por 30 dias')
+    .map(log => {
+      const planType = log.details?.plan_type;
+      const amount = planType === 'destaque' ? 29.90 : planType === 'parceiro' ? 49.90 : 0;
+      return { ...log, planType, amount };
+    }).filter(log => log.amount > 0), [adminAuditLogs]);
+  const financeSummary = useMemo(() => {
+    const now = new Date();
+    const monthRows = recordedPlanActivations.filter(log => {
+      const date = new Date(log.created_at);
+      return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+    });
+    return { total: recordedPlanActivations.reduce((sum, log) => sum + log.amount, 0),
+      month: monthRows.reduce((sum, log) => sum + log.amount, 0),
+      count: recordedPlanActivations.length, monthCount: monthRows.length };
+  }, [recordedPlanActivations]);
   const filteredAdminBusinesses = useMemo(() => adminBusinesses.filter(item =>
     (adminFilter === 'all' || (adminFilter === 'featured' ? item.featured : item.status === adminFilter)) &&
     normalizeSearch([item.name, item.city, item.state, item.phone].filter(Boolean).join(' ')).includes(normalizeSearch(adminSearch))
@@ -1244,6 +1261,21 @@ function App() {
         <section className="admin-category-manager"><h3>Gerenciar categorias</h3><p>Cadastre novas categorias ou desative as que não devem aparecer no formulário de anunciantes.</p>
           <form onSubmit={addAdminCategory}><input aria-label="Nome da nova categoria" maxLength="60" value={newCategory} onChange={e=>setNewCategory(e.target.value)} maxLength="60" placeholder="Nome da nova categoria" required/><button type="submit" className="approve-action" disabled={formBusy}>Adicionar</button></form>
           <div className="admin-category-list">{adminCategories.length ? adminCategories.map(cat=><div key={cat.id}><span>{cat.name}<small>{cat.active?'Ativa':'Inativa'}</small></span><button type="button" disabled={formBusy} onClick={()=>toggleCategory(cat)}>{cat.active?'Desativar':'Ativar'}</button></div>) : <div className="admin-inline-empty">Nenhuma categoria cadastrada ainda.</div>}</div>
+        </section>
+        <section className="admin-category-manager" style={{marginTop:18}}>
+          <h3>Resumo financeiro dos planos</h3>
+          <p>Estimativa baseada nas ativações registradas no histórico administrativo. Não é integração bancária nem comprovante de recebimento.</p>
+          <div className="admin-stats" style={{margin:"12px 0"}}>
+            <div className="admin-stat-button"><b>R$ {financeSummary.total.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}</b><span>Valor registrado · até 100 ações</span></div>
+            <div className="admin-stat-button"><b>R$ {financeSummary.month.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}</b><span>Neste mês</span></div>
+            <div className="admin-stat-button"><b>{financeSummary.count}</b><span>Ativações registradas</span></div>
+            <div className="admin-stat-button"><b>{financeSummary.monthCount}</b><span>Ativações neste mês</span></div>
+          </div>
+          {recordedPlanActivations.length ? <div className="audit-list">{recordedPlanActivations.map(log=><article className="audit-item" key={log.id}>
+            <div><b>{log.entity_name || "Negócio"}</b><span>{log.planType === "destaque" ? "Plano Destaque" : "Plano Parceiro"} · R$ {log.amount.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>
+            <small>{new Date(log.created_at).toLocaleDateString("pt-BR")}<br/>{log.actor_email || "Administrador"}</small>
+          </article>)}</div> : <div className="empty-state">Nenhuma ativação de plano registrada no histórico ainda.</div>}
+          <small style={{display:"block",marginTop:10,color:"#64748b"}}>A ativação deve ocorrer somente após a confirmação da contratação. O cálculo usa os preços atuais e considera apenas as últimas 100 ações carregadas; não substitui um controle financeiro oficial.</small>
         </section>
         <section className="admin-category-manager admin-audit"><h3>Histórico administrativo</h3><p>Últimas 100 ações realizadas no painel, com data e responsável.</p>
           {auditLoading ? <div className="empty-state">Carregando histórico...</div> : adminAuditLogs.length ? <div className="audit-list">{adminAuditLogs.map(log=><article className="audit-item" key={log.id}><div><b>{log.entity_name || log.entity_type}</b><span>{log.action} · {log.entity_type}</span></div><small>{log.actor_email || 'Administrador'}<br/>{new Date(log.created_at).toLocaleString('pt-BR')}</small></article>)}</div> : <div className="empty-state">Nenhuma ação registrada ainda.</div>}
