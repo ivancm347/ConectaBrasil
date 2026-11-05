@@ -511,6 +511,10 @@ function App() {
     .map(item => item.city).filter(Boolean)
     .map(value => value.trim()).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, 'pt-BR')), [listingSource]);
+  const filteredAdminBusinesses = useMemo(() => adminBusinesses.filter(item =>
+    (adminFilter === 'all' || item.status === adminFilter) &&
+    normalizeSearch([item.name, item.city, item.state, item.phone].filter(Boolean).join(' ')).includes(normalizeSearch(adminSearch))
+  ), [adminBusinesses, adminFilter, adminSearch]);
   const filtered = useMemo(() => listingSource.filter(item =>
     (active === 'Todas' || item.category === active) &&
     normalizeSearch([item.name, item.desc, item.category, item.city, item.phone].join(' ')).includes(normalizeSearch(query)) &&
@@ -568,7 +572,7 @@ function App() {
           <div className="admin-actions"><button className="approve-action" disabled={formBusy}>Salvar alterações</button><button type="button" disabled={formBusy} onClick={()=>setEditingBusiness(null)}>Cancelar</button></div>
         </form>}
         {adminLoading ? <div className="empty-state">Carregando cadastros...</div> : <div className="admin-list">
-          {adminBusinesses.filter(item=>(adminFilter==='all'||item.status===adminFilter) && [item.name,item.city,item.state,item.phone].filter(Boolean).join(' ').toLowerCase().includes(adminSearch.toLowerCase())).length ? adminBusinesses.filter(item=>(adminFilter==='all'||item.status===adminFilter) && [item.name,item.city,item.state,item.phone].filter(Boolean).join(' ').toLowerCase().includes(adminSearch.toLowerCase())).map(item=><article className="admin-business" key={item.id}>
+          {filteredAdminBusinesses.length ? filteredAdminBusinesses.map(item=><article className="admin-business" key={item.id}>
             <div className="admin-business-head"><div><h3>{item.name}</h3><span>{item.business_type} · {[item.city,item.state].filter(Boolean).join('/')}</span></div><small className={'status-badge status-'+item.status}>{({pending:'Pendente',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</small></div>
             <p>{item.description || 'Sem descrição informada.'}</p>
             {(item.logo_url || item.gallery_urls?.length) && <div className="admin-image-preview">{item.logo_url && <img src={item.logo_url} alt={`Logo ${item.name}`}/>} {(item.gallery_urls || []).map((url,index)=><img key={url} src={url} alt={`Foto ${index+1} de ${item.name}`}/>)}</div>}
