@@ -427,7 +427,7 @@ function App() {
 
   async function saveOwnerBusiness(event) {
     event.preventDefault();
-    if (!ownerEditing) return;
+    if (!ownerEditing || formBusy) return;
     setFormBusy(true); setOwnerError('');
     const originalStatus = ownerEditing.status;
     const cleanName = String(ownerEditing.name || '').trim();
@@ -574,6 +574,7 @@ function App() {
 
   async function handleBusinessSubmit(event) {
     event.preventDefault();
+    if (formBusy) return;
     setFormError(''); setFormMessage('');
     const name = businessForm.name.trim();
     const city = businessForm.city.trim();
