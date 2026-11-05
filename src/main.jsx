@@ -84,7 +84,7 @@ function expandSearchQuery(value) {
 
 async function fetchPublicBusinesses() {
   let result = await supabase.from('businesses')
-    .select('id,name,description,business_type,phone,city,state,logo_url,gallery_urls,featured,verified,business_categories(categories(name))')
+    .select('id,name,description,business_type,phone,city,state,logo_url,gallery_urls,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,business_categories(categories(name))')
     .eq('status', 'approved').order('featured', { ascending: false }).order('name', { ascending: true });
   // Compatibilidade temporária caso a migração de verificação ainda não tenha sido executada.
   if (result.error && /verified|column/i.test(result.error.message || '')) {
@@ -101,7 +101,9 @@ async function fetchPublicBusinesses() {
     city: [item.city, item.state].filter(Boolean).join(' - '),
     desc: item.description || 'Conheça este negócio cadastrado no Conecta Brasil.',
     tag: item.business_type || 'Negócio',
-    featured: Boolean(item.featured),
+    featured: Boolean(item.featured) && (!item.featured_expires_at || new Date(item.featured_expires_at).getTime() > Date.now()),
+    planType: item.plan_type || (item.featured ? 'destaque' : 'gratuito'),
+    planExpiresAt: item.plan_expires_at || item.featured_expires_at || null,
     verified: Boolean(item.verified),
     phone: item.phone || '',
     icon: Store, logo: item.logo_url || '', photos: item.gallery_urls || [],
@@ -181,6 +183,7 @@ function App() {
   const [formError, setFormError] = useState('');
   const [adminBusinesses, setAdminBusinesses] = useState([]);
   const [adminLoading, setAdminLoading] = useState(false);
+  const [planSchemaReady, setPlanSchemaReady] = useState(false);
   const [adminFilter, setAdminFilter] = useState('pending');
   const [adminSearch, setAdminSearch] = useState('');
   const [adminError, setAdminError] = useState('');
@@ -460,14 +463,21 @@ function App() {
     setAdminError('');
     try {
       let result = await supabase.from('businesses')
-        .select('id,name,description,business_type,phone,city,state,status,featured,verified,views_count,whatsapp_clicks,created_at,logo_url,gallery_urls,business_categories(categories(name))')
+        .select('id,name,description,business_type,phone,city,state,status,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,views_count,whatsapp_clicks,created_at,logo_url,gallery_urls,business_categories(categories(name))')
         .order('created_at', { ascending: false });
-      if (result.error && /verified|views_count|whatsapp_clicks|column/i.test(result.error.message || '')) {
+      if (result.error && /plan_type|plan_started_at|plan_expires_at|featured_expires_at|column/i.test(result.error.message || '')) {
+          setPlanSchemaReady(false);
+          result = await supabase.from('businesses')
+            .select('id,name,description,business_type,phone,city,state,status,featured,verified,views_count,whatsapp_clicks,created_at,logo_url,gallery_urls,business_categories(categories(name))')
+            .order('created_at', { ascending: false });
+        }
+        if (result.error && /verified|views_count|whatsapp_clicks|column/i.test(result.error.message || '')) {
         result = await supabase.from('businesses')
           .select('id,name,description,business_type,phone,city,state,status,featured,created_at,logo_url,gallery_urls,business_categories(categories(name))')
           .order('created_at', { ascending: false });
       }
       if (result.error) throw result.error;
+      setPlanSchemaReady(Boolean(result.data?.length === 0 || Object.prototype.hasOwnProperty.call(result.data?.[0] || {}, 'plan_type')));
       setAdminBusinesses(result.data || []);
       const cats = await supabase.from('categories').select('id,name,active').order('name');
       if (cats.error) throw cats.error;
@@ -601,6 +611,45 @@ function App() {
       }
     } catch (error) {
       setAdminError('Não foi possível alterar o selo de verificação: ' + (error?.message || 'verifique a conexão e a migração de inovações.'));
+    } finally {
+      setFormBusy(false);
+    }
+  }
+
+  async function setBusinessPlan(item, planType) {
+    if (formBusy) return;
+    if (planType !== 'gratuito' && item.status !== 'approved') {
+      setAdminError('Aprove o cadastro antes de ativar um plano pago.');
+      return;
+    }
+    const confirmed = window.confirm(planType === 'gratuito'
+      ? 'Remover o plano e o destaque de ' + item.name + '?'
+      : 'Ativar o plano ' + (planType === 'destaque' ? 'Destaque' : 'Parceiro') + ' por 30 dias para ' + item.name + '? Confirme somente após verificar a contratação.');
+    if (!confirmed) return;
+    setFormBusy(true);
+    setAdminError('');
+    const startedAt = new Date();
+    const expiresAt = planType === 'gratuito' ? null : new Date(startedAt.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const payload = {
+      plan_type: planType,
+      plan_started_at: planType === 'gratuito' ? null : startedAt.toISOString(),
+      plan_expires_at: expiresAt,
+      featured: planType !== 'gratuito',
+      featured_expires_at: expiresAt
+    };
+    try {
+      const { error } = await supabase.from('businesses').update(payload).eq('id', item.id);
+      if (error) throw error;
+      setAdminBusinesses(rows => rows.map(row => row.id === item.id ? { ...row, ...payload } : row));
+      await recordAdminAction(planType === 'gratuito' ? 'plano removido' : 'plano ativado por 30 dias', 'plano', item.id, item.name, { plan_type: planType, expires_at: expiresAt });
+      try {
+        setBusinesses(await fetchPublicBusinesses());
+        setLoadError('');
+      } catch {
+        setLoadError('O plano foi salvo, mas a vitrine ainda não foi atualizada. Atualize os anúncios.');
+      }
+    } catch (error) {
+      setAdminError('Não foi possível salvar o plano. Confira se executou supabase/plans.sql. ' + (error?.message || ''));
     } finally {
       setFormBusy(false);
     }
@@ -1150,6 +1199,7 @@ function App() {
         <input type="search" maxLength="120" className="admin-search" value={adminSearch} onChange={e=>setAdminSearch(e.target.value)} placeholder="Buscar por negócio, cidade ou telefone..." aria-label="Buscar cadastros" />
         <div className="admin-search-summary" role="status" aria-live="polite" aria-atomic="true"><span>{filteredAdminBusinesses.length} {filteredAdminBusinesses.length === 1 ? "cadastro encontrado" : "cadastros encontrados"}</span>{(adminSearch.trim() || adminFilter !== "all") && <button type="button" onClick={()=>{setAdminSearch("");setAdminFilter("all")}}>Limpar busca e filtros</button>}</div>
         {adminError && <div className="form-error" role="alert">{adminError}</div>}
+         {!planSchemaReady && <div className="form-notice" role="status"><strong>Controle de planos aguardando configuração.</strong><br/>Execute uma vez o arquivo <code>supabase/plans.sql</code> no SQL Editor do Supabase para habilitar ativação, vencimento e renovação.</div>}
         {editingBusiness && <form className="admin-edit-form" onSubmit={saveBusinessEdit}>
           <h3>Editar anúncio</h3>
           <label>Nome<input required maxLength="100" value={editingBusiness.name} onChange={e=>setEditingBusiness({...editingBusiness,name:e.target.value})}/></label>
@@ -1164,6 +1214,18 @@ function App() {
             <p>{item.description || 'Sem descrição informada.'}</p>
             {(item.logo_url || item.gallery_urls?.length) && <div className="admin-image-preview">{item.logo_url && <img loading="lazy" src={item.logo_url} alt={`Logo ${item.name}`}/>} {(item.gallery_urls || []).map((url,index)=><img key={url} loading="lazy" src={url} alt={`Foto ${index+1} de ${item.name}`}/>)}</div>}
             <div className="admin-meta"><span>{item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</span>{item.phone && <span>{item.phone}</span>}<span>{new Date(item.created_at).toLocaleDateString('pt-BR')}</span></div>
+             <div className="admin-plan-box" style={{margin:'12px 0',padding:12,border:'1px solid #dce6ec',borderRadius:12,background:'#f7fafc'}}>
+               <div style={{display:'flex',justifyContent:'space-between',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+                 <strong>Plano: {({gratuito:'Gratuito',destaque:'Destaque',parceiro:'Parceiro'})[item.plan_type] || (item.featured?'Destaque legado':'Gratuito')}</strong>
+                 {item.plan_expires_at && <small>Vence em {new Date(item.plan_expires_at).toLocaleDateString('pt-BR')} {new Date(item.plan_expires_at).getTime() <= Date.now() ? '· VENCIDO' : ''}</small>}
+               </div>
+               {planSchemaReady && <div className="admin-actions" style={{marginTop:8}}>
+                 <button type="button" disabled={formBusy} onClick={()=>setBusinessPlan(item,'destaque')}>Destaque · 30 dias</button>
+                 <button type="button" disabled={formBusy} onClick={()=>setBusinessPlan(item,'parceiro')}>Parceiro · 30 dias</button>
+                 <button type="button" disabled={formBusy} onClick={()=>setBusinessPlan(item,'gratuito')}>Remover plano</button>
+               </div>}
+               <small style={{display:'block',marginTop:6,color:'#64748b'}}>Ative somente depois de confirmar a contratação. O destaque vence automaticamente na vitrine.</small>
+             </div>
             <div className="admin-actions">
               <button type="button" disabled={formBusy} onClick={()=>setEditingBusiness({...item})}>Editar anúncio</button>
               <button type="button" disabled={formBusy} className="delete-action" onClick={()=>deleteBusiness(item)}>Excluir definitivamente</button>
