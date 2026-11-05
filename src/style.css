@@ -243,3 +243,17 @@
 .admin-refresh-button:focus-visible{outline:3px solid #53d6b0;outline-offset:2px}
 .admin-inline-empty{padding:12px;border:1px dashed #d8e2e7;border-radius:8px;color:#78869a;background:#fff;font-size:10px;text-align:center}
 @media(max-width:460px){.admin-panel-heading{align-items:flex-start}.admin-refresh-button{padding:8px 9px}.admin-panel-heading h2{font-size:22px}}
+
+
+/* Estados de foco acessíveis para navegação e filtros */
+.mobile-menu:focus-visible,
+.filter-pills button:focus-visible,
+.favorites-filter:focus-visible {
+  outline: 3px solid #53d6b0;
+  outline-offset: 3px;
+}
+.filter-pills button,
+.favorites-filter,
+.mobile-menu {
+  -webkit-tap-highlight-color: transparent;
+}
