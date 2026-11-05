@@ -33,6 +33,7 @@ function App() {
   const [active, setActive] = useState('Todas');
   const [menu, setMenu] = useState(false);
   const [installPrompt, setInstallPrompt] = useState(null);
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [appInstalled, setAppInstalled] = useState(false);
   const [installHelpOpen, setInstallHelpOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -96,6 +97,16 @@ function App() {
   const isAdmin = authUser?.app_metadata?.role === 'admin';
 
   useEffect(() => { try { localStorage.setItem('conecta-favorites', JSON.stringify(favoriteIds)); } catch { /* Favoritos continuam disponíveis durante esta sessão. */ } }, [favoriteIds]);
+
+  useEffect(() => {
+    const updateConnection = () => setIsOnline(navigator.onLine);
+    window.addEventListener('online', updateConnection);
+    window.addEventListener('offline', updateConnection);
+    return () => {
+      window.removeEventListener('online', updateConnection);
+      window.removeEventListener('offline', updateConnection);
+    };
+  }, []);
 
   useEffect(() => {
     const handleInstallAvailable = event => {
@@ -751,6 +762,7 @@ function App() {
       }))
     : categories;
   return <div className="app">
+    {!isOnline && <div className="connection-banner" role="status"><strong>Você está offline.</strong> A estrutura do Conecta Brasil pode abrir, mas anúncios, cadastro e WhatsApp precisam de internet.</div>}
     <header className="topbar"><a className="brand" href="#"><span className="brand-mark"><span></span><span></span><span></span></span><span>conecta<span className="brand-light">brasil</span><small>CONEXÕES QUE MOVIMENTAM</small></span></a>
       <button className="mobile-menu" type="button" onClick={() => setMenu(!menu)} aria-label={menu ? "Fechar menu" : "Abrir menu"} aria-expanded={menu} aria-controls="main-navigation">{menu ? <X/> : <Menu/>}</button>
       <nav id="main-navigation" className={menu ? 'nav open' : 'nav'}><a href="#categorias" onClick={()=>setMenu(false)}>Categorias</a><a href="#explorar" onClick={()=>setMenu(false)}>Explorar</a><a href="#sobre" onClick={()=>setMenu(false)}>Sobre</a>{!appInstalled && <div className="install-menu-wrap"><button type="button" className="btn btn-small install-nav" aria-expanded={installHelpOpen} aria-controls="install-help" onClick={()=>{if(installPrompt){installApp();setMenu(false)}else setInstallHelpOpen(value=>!value)}}><Download size={16}/> {installPrompt ? 'Instalar aplicativo' : 'Como instalar'}</button>{installHelpOpen && !installPrompt && <div className="install-help" id="install-help" role="region" aria-label="Instruções para instalar o Conecta Brasil"><strong>Instale no seu dispositivo</strong><p><b>Android (Chrome):</b> abra o menu ⋮ do navegador e escolha “Instalar app” ou “Adicionar à tela inicial”.</p><p><b>iPhone (Safari):</b> toque em Compartilhar e depois em “Adicionar à Tela de Início”.</p><p><b>Computador:</b> procure o ícone de instalação na barra de endereço ou a opção “Instalar Conecta Brasil” no menu do navegador.</p><button type="button" className="install-help-close" onClick={()=>setInstallHelpOpen(false)}>Fechar</button></div>}</div>}{isAdmin && <button type="button" className="btn btn-small admin-nav" onClick={()=>{setShowForm(true);setMenu(false)}}><ShieldCheck size={16}/> Administração</button>}<button type="button" className="btn btn-small" onClick={()=>{setShowForm(true);setMenu(false)}}><Plus size={16}/> Anunciar negócio</button></nav>
