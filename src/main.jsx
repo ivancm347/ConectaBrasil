@@ -589,8 +589,8 @@ function App() {
               <button type="button" disabled={formBusy} className={item.featured?'featured-action':''} onClick={()=>toggleFeatured(item)}>{item.featured?'Remover destaque':'Destacar anúncio'}</button>
               {item.status!=='approved' && <button type="button" disabled={formBusy} className="approve-action" onClick={()=>moderateBusiness(item.id,'approved')}>Aprovar</button>}
               {item.status!=='rejected' && <button type="button" disabled={formBusy} onClick={()=>moderateBusiness(item.id,'rejected')}>Rejeitar</button>}
-              {item.status!=='suspended' && item.status==='approved' && <button disabled={formBusy} onClick={()=>moderateBusiness(item.id,'suspended')}>Suspender</button>}
-              {item.status!=='pending' && <button disabled={formBusy} onClick={()=>moderateBusiness(item.id,'pending')}>Voltar para análise</button>}
+              {item.status!=='suspended' && item.status==='approved' && <button type="button" disabled={formBusy} onClick={()=>moderateBusiness(item.id,'suspended')}>Suspender</button>}
+              {item.status!=='pending' && <button type="button" disabled={formBusy} onClick={()=>moderateBusiness(item.id,'pending')}>Voltar para análise</button>}
             </div>
           </article>) : <div className="admin-empty-state">
             <strong>{adminBusinesses.length ? 'Nenhum resultado encontrado' : 'Ainda não há anúncios cadastrados'}</strong>
@@ -654,7 +654,7 @@ function App() {
             <label>Descrição<textarea rows="3" maxLength="600" value={ownerEditing.description || ''} onChange={e=>setOwnerEditing({...ownerEditing,description:e.target.value})}/></label>
             <div className="form-row"><label>Cidade<input required value={ownerEditing.city || ''} onChange={e=>setOwnerEditing({...ownerEditing,city:e.target.value})}/></label><label>Estado (UF)<input required maxLength="2" value={ownerEditing.state || ''} onChange={e=>setOwnerEditing({...ownerEditing,state:e.target.value.toUpperCase()})}/></label></div>
             <label>Telefone / WhatsApp<input value={ownerEditing.phone || ''} onChange={e=>setOwnerEditing({...ownerEditing,phone:e.target.value})}/></label>
-            <div className="admin-actions"><button className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Salvando...' : 'Salvar alterações'}</button><button type="button" disabled={formBusy} onClick={()=>setOwnerEditing(null)}>Cancelar</button></div>
+            <div className="admin-actions"><button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Salvando...' : 'Salvar alterações'}</button><button type="button" disabled={formBusy} onClick={()=>setOwnerEditing(null)}>Cancelar</button></div>
           </form>}
           <div className="owner-new-listing"><h3>Cadastrar outro negócio</h3><p>Seu novo anúncio ficará pendente até a aprovação da equipe.</p></div>
           <form onSubmit={handleBusinessSubmit} className="business-form">
@@ -667,7 +667,7 @@ function App() {
             <label>Logo da empresa<input type="file" accept="image/*" onChange={e=>setLogoFile(e.target.files?.[0] || null)}/><small className="upload-help">Uma imagem, até 5 MB.</small></label>
             <label>Fotos do negócio (até 5)<input type="file" accept="image/*" multiple onChange={e=>setGalleryFiles(Array.from(e.target.files || []).slice(0,5))}/><small className="upload-help">Selecione até 5 fotos. Cada arquivo pode ter no máximo 5 MB.</small></label>
             {galleryFiles.length > 0 && <div className="selected-files">{galleryFiles.map(file=><span key={file.name}>{file.name}</span>)}</div>}
-            <button className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Enviando...' : 'Enviar para aprovação'}</button>
+            <button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Enviando...' : 'Enviar para aprovação'}</button>
           </form>
           <button type="button" className="text-switch" onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);setFormMessage('')}}>Sair da conta</button>
         </>}
