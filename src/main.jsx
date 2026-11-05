@@ -124,6 +124,7 @@ function App() {
   const [voiceMessage, setVoiceMessage] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [locationMessage, setLocationMessage] = useState('');
+  const [nearbyMapUrl, setNearbyMapUrl] = useState('');
   const [guideOpen, setGuideOpen] = useState(false);
   const [listingPage, setListingPage] = useState(1);
   const listingPageSize = 12;
@@ -257,13 +258,15 @@ function App() {
   }
   function openNearbyMap() {
     if (!navigator.geolocation) { setLocationMessage('Localização não disponível neste navegador.'); return; }
+    setNearbyMapUrl('');
     setLocationMessage('Aguardando sua permissão de localização...');
     navigator.geolocation.getCurrentPosition(position => {
       const lat = position.coords.latitude; const lon = position.coords.longitude;
       const url = 'https://www.openstreetmap.org/?mlat=' + encodeURIComponent(lat) + '&mlon=' + encodeURIComponent(lon) + '#map=14/' + encodeURIComponent(lat) + '/' + encodeURIComponent(lon);
-      setLocationMessage('Mapa aberto. Sua localização não é armazenada pelo Conecta Brasil.');
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }, error => { setLocationMessage(error.code === 1 ? 'Permissão negada. Você pode pesquisar digitando a cidade.' : 'Não foi possível obter a localização. Confira o GPS e tente novamente.'); }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 });
+      setNearbyMapUrl(url);
+      setLocationMessage('Localização encontrada. Abra o mapa pelo botão abaixo. Sua localização não é armazenada pelo Conecta Brasil.');
+    }, error => { setNearbyMapUrl('');
+      setLocationMessage(error.code === 1 ? 'Permissão negada. Você pode pesquisar digitando a cidade.' : 'Não foi possível obter a localização. Confira o GPS e tente novamente.'); }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 });
   }
   async function installApp() {
     if (!installPrompt) return;
@@ -1067,7 +1070,7 @@ function App() {
     </header>
     <main>
       <section className="hero"><div className="hero-glow"></div><div className="hero-content"><div className="eyebrow"><Sparkles size={15}/> UM BRASIL DE OPORTUNIDADES</div><h1>O que você procura.<br/><em>Mais perto de você.</em></h1><p>Encontre empresas, profissionais, lojas e serviços. Valorize quem faz a economia acontecer em cada cidade do Brasil.</p>
-        <div className="search-panel"><label className="search-field"><Search size={20}/><input type="search" maxLength="120" aria-label="Produto, serviço ou negócio que procura" value={query} onChange={e=>setQuery(e.target.value)} placeholder="O que você está procurando?"/></label><span className="search-divider"></span><label className="search-field city-field"><MapPin size={20}/><input type="search" list="city-suggestions" maxLength="80" aria-label="Filtrar por cidade ou região" value={city} onChange={e=>setCity(e.target.value)} placeholder="Cidade ou região"/><datalist id="city-suggestions">{citySuggestions.map(value=><option key={value} value={value}/>)}</datalist></label><button type="button" className="btn search-btn" aria-label="Buscar negócios com os filtros informados" onClick={()=>document.getElementById('explorar').scrollIntoView({behavior:'smooth'})}>Buscar <ArrowRight size={17}/></button><button type="button" className="voice-search-btn" onClick={startVoiceSearch} aria-label="Pesquisar por voz" title="Pesquisar por voz"><Mic size={17}/></button><button type="button" className="voice-search-btn location-search-btn" onClick={openNearbyMap} aria-label="Abrir mapa perto de mim" title="Abrir mapa perto de mim"><LocateFixed size={17}/></button></div>{(voiceMessage || isListening || locationMessage) && <div className="voice-search-status" role="status">{isListening ? "Ouvindo..." : [voiceMessage,locationMessage].filter(Boolean).join(" ")}</div>}
+        <div className="search-panel"><label className="search-field"><Search size={20}/><input type="search" maxLength="120" aria-label="Produto, serviço ou negócio que procura" value={query} onChange={e=>setQuery(e.target.value)} placeholder="O que você está procurando?"/></label><span className="search-divider"></span><label className="search-field city-field"><MapPin size={20}/><input type="search" list="city-suggestions" maxLength="80" aria-label="Filtrar por cidade ou região" value={city} onChange={e=>setCity(e.target.value)} placeholder="Cidade ou região"/><datalist id="city-suggestions">{citySuggestions.map(value=><option key={value} value={value}/>)}</datalist></label><button type="button" className="btn search-btn" aria-label="Buscar negócios com os filtros informados" onClick={()=>document.getElementById('explorar').scrollIntoView({behavior:'smooth'})}>Buscar <ArrowRight size={17}/></button><button type="button" className="voice-search-btn" onClick={startVoiceSearch} aria-label="Pesquisar por voz" title="Pesquisar por voz"><Mic size={17}/></button><button type="button" className="voice-search-btn location-search-btn" onClick={openNearbyMap} aria-label="Abrir mapa perto de mim" title="Abrir mapa perto de mim"><LocateFixed size={17}/></button></div>{(voiceMessage || isListening || locationMessage) && <div className="voice-search-status" role="status">{isListening ? "Ouvindo..." : [voiceMessage,locationMessage].filter(Boolean).join(" ")}{nearbyMapUrl && <a className="nearby-map-result" href={nearbyMapUrl} target="_blank" rel="noopener noreferrer">Ver mapa da minha localização</a>}</div>}
         <div style={{marginTop:14,maxWidth:670}}>
           <button type="button" onClick={()=>setGuideOpen(open=>!open)} aria-expanded={guideOpen} style={{display:'inline-flex',alignItems:'center',gap:8,border:'1px solid rgba(255,255,255,.28)',borderRadius:999,padding:'9px 14px',background:'rgba(255,255,255,.09)',color:'#fff',font:'700 12px inherit',cursor:'pointer'}}>
             <Sparkles size={15}/> {guideOpen ? 'Fechar guia de busca' : 'Não sabe o que procurar? Receba uma ajuda'}

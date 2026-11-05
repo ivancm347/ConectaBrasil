@@ -17,7 +17,7 @@ O Conecta Brasil conecta pessoas, empresas, profissionais, lojas e serviços. A 
 - Perfis públicos de negócios com galeria de até cinco fotos, logo, WhatsApp, compartilhamento por link e QR Code baixável.
 - Busca inteligente com expansão de termos relacionados a serviços e categorias.
 - Busca por voz em português nos navegadores compatíveis com reconhecimento de fala.
-- Acesso opcional ao mapa na posição atual do dispositivo, mediante permissão explícita do visitante; as coordenadas são abertas no OpenStreetMap e não são armazenadas pelo Conecta Brasil.
+- Acesso opcional ao mapa na posição atual do dispositivo, mediante permissão explícita do visitante; após localizar, o visitante toca em um link para abrir o OpenStreetMap. As coordenadas não são armazenadas pelo Conecta Brasil.
 - Acesso à localização aproximada do negócio por pesquisa no OpenStreetMap.
 - Solicitação de orçamento pelo WhatsApp com mensagem inicial pronta.
 - Selo de verificação administrado pela equipe e anúncios em destaque.
