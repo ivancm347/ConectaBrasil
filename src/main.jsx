@@ -386,15 +386,30 @@ function App() {
   async function shareBusiness(item) {
     const url = new URL(window.location.href);
     url.searchParams.set('negocio', item.id);
+    const details = [
+      item.name,
+      item.category ? `Categoria: ${item.category}` : '',
+      item.city ? `Localização: ${item.city}` : '',
+      item.desc ? String(item.desc).trim() : '',
+      'Encontre este negócio no Conecta Brasil:',
+      url.toString(),
+    ].filter(Boolean).join('\n');
     try {
       if (navigator.share) {
-        await navigator.share({ title: item.name, text: `Conheça ${item.name} no Conecta Brasil`, url: url.toString() });
+        await navigator.share({
+          title: `${item.name} | Conecta Brasil`,
+          text: details,
+          url: url.toString(),
+        });
+        setShareMessage('Compartilhamento preparado com os dados do negócio.');
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(details);
+        setShareMessage('Texto e link copiados! Agora é só compartilhar.');
       } else {
-        await navigator.clipboard.writeText(url.toString());
-        setShareMessage('Link copiado! Agora é só compartilhar.');
+        setShareMessage('Seu navegador não permite compartilhar automaticamente. Copie o endereço exibido na barra do navegador.');
       }
     } catch (error) {
-      if (error.name !== 'AbortError') setShareMessage('Não foi possível compartilhar automaticamente.');
+      if (error.name !== 'AbortError') setShareMessage('Não foi possível compartilhar automaticamente. Tente copiar o link do perfil.');
     }
   }
 
