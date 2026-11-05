@@ -392,3 +392,7 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* QR Code compartilhável no perfil público */
+.business-qr-card{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;padding:14px;border:1px solid #dce8e5;border-radius:12px;background:#f7fbfa}.business-qr-card>div{display:grid;gap:5px}.business-qr-card strong{color:#173b38;font-size:13px}.business-qr-card small{color:#687c79;font-size:11px;line-height:1.5}.business-qr-card>a{flex:0 0 auto;display:block;padding:5px;border:1px solid #e1e8e7;border-radius:8px;background:#fff}.business-qr-card img{display:block;width:112px;height:112px;object-fit:contain}.business-qr-card a:focus-visible{outline:3px solid #2d8a70;outline-offset:3px}@media(max-width:420px){.business-qr-card{align-items:flex-start}.business-qr-card img{width:92px;height:92px}}
