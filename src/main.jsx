@@ -57,6 +57,9 @@ const searchSynonyms = {
   encanador: ['hidráulica', 'vazamento', 'tubulação'],
   pintor: ['pintura', 'reforma', 'acabamento'],
   gesseiro: ['gesso', 'drywall', 'forro', 'sanca', 'divisória'],
+  gesso: ['gesseiro', 'drywall', 'forro', 'rebaixo', 'sanca'],
+  instalador: ['instalação', 'montagem', 'manutenção'],
+  montador: ['montagem', 'móveis', 'instalação'],
   drywall: ['gesso', 'forro', 'divisória', 'parede'],
   forro: ['gesso', 'drywall', 'rebaixo', 'sanca'],
   mecanico: ['mecânica', 'oficina', 'automóvel', 'carro'],
@@ -309,6 +312,10 @@ function App() {
   }
 
   useEffect(() => {
+    if (selectedBusiness?.id) trackBusinessMetric(selectedBusiness, 'views_count');
+  }, [selectedBusiness?.id]);
+
+  useEffect(() => {
     let active = true;
     if (!selectedBusiness?.id) {
       setBusinessQr('');
@@ -330,7 +337,6 @@ function App() {
 
   function openBusinessDetails(item) {
     setSelectedBusiness(item);
-    trackBusinessMetric(item, 'views_count');
     setShareMessage('');
     const url = new URL(window.location.href);
     url.searchParams.set('negocio', item.id);
@@ -966,8 +972,11 @@ function App() {
   ), [adminBusinesses, adminFilter, adminSearch]);
   const filtered = useMemo(() => listingSource.filter(item => {
     const searchable = normalizeSearch([item.name, item.desc, item.category, item.city, item.phone].join(' '));
-    const searchTerms = expandSearchQuery(query).split(' ').filter(term => term.length > 2);
-    const matchesSearch = !query.trim() || searchable.includes(normalizeSearch(query)) || searchTerms.some(term => searchable.includes(term));
+    const queryTokens = normalizeSearch(query).split(/\s+/).filter(Boolean);
+    const matchesSearch = !queryTokens.length || queryTokens.every(term =>
+      searchable.includes(term) ||
+      (searchSynonyms[term] || []).some(alias => searchable.includes(normalizeSearch(alias)))
+    );
     return (active === 'Todas' || item.category === active) &&
       matchesSearch &&
       (!city || normalizeSearch(item.city).includes(normalizeSearch(city))) &&
