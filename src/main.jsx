@@ -81,6 +81,7 @@ function App() {
   const [authEmail, setAuthEmail] = useState('');
   const authEmailInput = useRef(null);
   const lastPublicRefreshRef = useRef(0);
+  const publicRefreshInFlightRef = useRef(false);
   const [authPassword, setAuthPassword] = useState('');
   const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
@@ -740,7 +741,8 @@ function App() {
   }, []);
 
   async function retryPublicBusinesses() {
-    if (!isSupabaseConfigured || !supabase || loadingBusinesses) return;
+    if (!isSupabaseConfigured || !supabase || loadingBusinesses || publicRefreshInFlightRef.current) return;
+    publicRefreshInFlightRef.current = true;
     lastPublicRefreshRef.current = Date.now();
     setLoadingBusinesses(true);
     setLoadError('');
@@ -749,6 +751,7 @@ function App() {
     } catch {
       setLoadError('Não foi possível carregar os cadastros agora. Verifique sua conexão e tente novamente.');
     } finally {
+      publicRefreshInFlightRef.current = false;
       setLoadingBusinesses(false);
     }
   }
