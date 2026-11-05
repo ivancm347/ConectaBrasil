@@ -832,9 +832,10 @@ function App() {
   }, [businesses]);
 
   const testPaginationMode = new URLSearchParams(window.location.search).get('teste-paginacao') === '1';
-  const listingSource = testPaginationMode
-    ? [...(isSupabaseConfigured ? businesses : examples), ...paginationTestListings]
-    : (isSupabaseConfigured ? businesses : examples);
+  const listingSource = useMemo(() => {
+    const baseListings = isSupabaseConfigured ? businesses : examples;
+    return testPaginationMode ? [...baseListings, ...paginationTestListings] : baseListings;
+  }, [testPaginationMode, businesses]);
   const citySuggestions = useMemo(() => [...new Set(listingSource
     .map(item => item.city).filter(Boolean)
     .map(value => value.trim()).filter(Boolean))]
