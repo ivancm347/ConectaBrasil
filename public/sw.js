@@ -40,7 +40,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  if (/\\.(?:js|css|svg|png|webp|jpg|jpeg|woff2?)$/i.test(url.pathname)) {
+  if (/\.(?:js|css|svg|png|webp|jpg|jpeg|woff2?)$/i.test(url.pathname)) {
     event.respondWith((async () => {
       const cached = await caches.match(request);
       if (cached) return cached;
