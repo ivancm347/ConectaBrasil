@@ -1,11 +1,16 @@
-const CACHE_NAME = 'conecta-brasil-shell-v1';
+const CACHE_NAME = 'conecta-brasil-shell-v2';
 const APP_BASE = new URL('./', self.registration.scope);
 const INDEX_URL = new URL('index.html', APP_BASE).toString();
+const APP_ASSETS = [
+  INDEX_URL,
+  new URL('manifest.webmanifest', APP_BASE).toString(),
+  new URL('icon.svg', APP_BASE).toString()
+];
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    try { await cache.add(INDEX_URL); } catch (error) { /* A instalação não deve falhar por indisponibilidade temporária. */ }
+    await Promise.allSettled(APP_ASSETS.map(url => cache.add(url)));
     await self.skipWaiting();
   })());
 });
@@ -40,7 +45,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  if (/\.(?:js|css|svg|png|webp|jpg|jpeg|woff2?)$/i.test(url.pathname)) {
+  if (/\.(?:js|css|svg|png|webp|jpg|jpeg|avif|ico|woff2?|webmanifest)$/i.test(url.pathname)) {
     event.respondWith((async () => {
       const cached = await caches.match(request);
       if (cached) return cached;
