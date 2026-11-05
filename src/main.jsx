@@ -309,7 +309,14 @@ function App() {
         : marketingPlatform === 'tiktok'
           ? `${opening}\n\n✨ ${name}\n${service}${location}\n\nSiga o perfil e compartilhe com quem precisa conhecer nosso trabalho!\n\n#ConectaBrasil #NegócioLocal #TikTokBrasil`
           : `${opening}\n\n*${name}*\n${service}${location}\n\nSalve este perfil e entre em contato para saber mais!\n\n#ConectaBrasil #NegócioLocal #Empreendedorismo #Brasil`;
-    setMarketingOutput(platformText);
+    const publicProfileLink = source.id && source.status === 'approved'
+      ? (() => {
+          const profileUrl = new URL(window.location.href);
+          profileUrl.searchParams.set('negocio', source.id);
+          return profileUrl.toString();
+        })()
+      : '';
+    setMarketingOutput(`${platformText}${publicProfileLink ? `\n\nVeja o perfil no Conecta Brasil:\n${publicProfileLink}` : ''}`);
     setMarketingCopied(false);
   }
 
