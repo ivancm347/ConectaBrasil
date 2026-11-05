@@ -71,6 +71,7 @@ Execute cada arquivo uma vez no **SQL Editor** do projeto Supabase, caso o recur
 | `supabase/plans.sql` | Tipo de plano e datas de início/vencimento. Preserva cadastros e destaques existentes. |
 | `supabase/owner_edit_approved.sql` | Permite ao proprietário solicitar edição de anúncio aprovado; a edição volta para análise. |
 | `supabase/owner_delete_pending.sql` | Permite ao proprietário excluir somente o próprio cadastro com status `pending`, necessário para desfazer envios incompletos. |
+| `supabase/protect_business_owner_fields.sql` | Impede proprietários de alterar plano, destaque, selo, métricas, identidade e situação administrativa do próprio anúncio. |
 
 Essas migrações são aditivas ou recriam somente as políticas nomeadas nelas. Não apague tabelas nem registros para aplicar atualizações. Se uma migração já foi executada, não é necessário repeti-la, exceto quando uma atualização específica indicar o contrário.
 
