@@ -43,6 +43,7 @@ function App() {
   const authEmailInput = useRef(null);
   const [authPassword, setAuthPassword] = useState('');
   const [passwordRecovery, setPasswordRecovery] = useState(false);
+  const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [availableCategories, setAvailableCategories] = useState([]);
   const [businessForm, setBusinessForm] = useState({ name: '', description: '', business_type: 'empresa', phone: '', city: '', state: '', category_id: '' });
@@ -326,7 +327,14 @@ function App() {
     else setOwnerBusinesses([]);
   }, [authUser?.id, isAdmin]);
 
-  async function requestPasswordRecovery() {
+  function openPasswordRecovery() {
+    setForgotPasswordMode(true);
+    setFormError('');
+    setFormMessage('Digite seu e-mail para receber o link de recuperação.');
+  }
+
+  async function requestPasswordRecovery(event) {
+    event.preventDefault();
     const email = String(authEmailInput.current?.value || authEmail || '').trim();
     if (!email) { setFormError('Informe seu e-mail para receber o link de recuperação.'); authEmailInput.current?.focus(); return; }
     setAuthEmail(email);
@@ -560,7 +568,14 @@ function App() {
           {formError && <div className="form-error">{formError}</div>}
           <label>Nova senha<input type="password" required minLength="6" autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Mínimo de 6 caracteres"/></label>
           <button className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Salvando...' : 'Salvar nova senha'}</button>
-        </form> : !authUser ? <>
+        </form> : !authUser ? forgotPasswordMode ? <>
+          <p>Informe seu e-mail e enviaremos um link para você criar uma nova senha.</p>
+          <form onSubmit={requestPasswordRecovery} className="business-form">
+            <label>E-mail<input ref={authEmailInput} type="email" required autoComplete="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="voce@email.com"/></label>
+            <button className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Enviando...' : 'Enviar link de recuperação'}</button>
+          </form>
+          <button type="button" className="text-switch" onClick={()=>{setForgotPasswordMode(false);setFormError('');setFormMessage('')}}>Voltar para entrar</button>
+        </> : <>
           <p>{authMode === 'signup' ? 'Crie uma conta gratuita para cadastrar sua empresa ou serviço.' : 'Entre na sua conta para continuar.'}</p>
           <form onSubmit={handleAuthSubmit} className="business-form">
             <label>E-mail<input ref={authEmailInput} type="email" required autoComplete="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="voce@email.com"/></label>
@@ -568,7 +583,7 @@ function App() {
             <button className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Aguarde...' : authMode === 'signup' ? 'Criar conta' : 'Entrar'}</button>
           </form>
           <button className="text-switch" onClick={()=>{setAuthMode(authMode === 'signup' ? 'login' : 'signup');setFormError('');setFormMessage('')}}>{authMode === 'signup' ? 'Já tenho conta — entrar' : 'Não tenho conta — criar agora'}</button>
-          {authMode === 'login' && <button type="button" className="text-switch" disabled={formBusy} onClick={requestPasswordRecovery}>Esqueci minha senha</button>}
+          {authMode === 'login' && <button type="button" className="text-switch" disabled={formBusy} onClick={openPasswordRecovery}>Esqueci minha senha</button>}
         </> : <>
           <section className="owner-dashboard">
             <div className="owner-dashboard-head"><div><div className="eyebrow dark">ÁREA DO ANUNCIANTE</div><h3>Meus anúncios</h3><p>Acompanhe a situação dos seus cadastros.</p></div><button type="button" className="owner-refresh" onClick={loadOwnerBusinesses} disabled={ownerLoading}>Atualizar</button></div>
