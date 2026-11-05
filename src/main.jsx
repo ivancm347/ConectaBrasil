@@ -596,8 +596,8 @@ function App() {
     <footer><a className="brand footer-brand" href="#"><span className="brand-mark"><span></span><span></span><span></span></span><span>conecta<span className="brand-light">brasil</span><small>CONEXÕES QUE MOVIMENTAM</small></span></a><span>© 2026 Conecta Brasil. Um país inteiro de possibilidades.</span><span className="footer-status"><i></i> Conectando pessoas e negócios</span></footer>
     {selectedBusiness && <div className="business-detail-backdrop" role="dialog" aria-modal="true" aria-label={`Detalhes de ${selectedBusiness.name}`} onClick={closeBusinessDetails}><section className="business-detail" onClick={e=>e.stopPropagation()}><button type="button" className="business-detail-close" onClick={closeBusinessDetails} aria-label="Fechar detalhes"><X size={22}/></button><div className="business-detail-hero">{selectedBusiness.photos?.[0] ? <img src={selectedBusiness.photos[0]} alt={`Foto de ${selectedBusiness.name}`}/> : selectedBusiness.logo ? <img src={selectedBusiness.logo} alt={`Logo de ${selectedBusiness.name}`}/> : <Store size={46}/>}</div><div className="business-detail-content"><small>{selectedBusiness.category}</small><h2>{selectedBusiness.name}</h2>{selectedBusiness.featured && <strong className="detail-featured"><Star size={13} fill="currentColor"/> Negócio em destaque</strong>}<p>{selectedBusiness.desc}</p><div className="business-detail-location"><MapPin size={17}/>{selectedBusiness.city || 'Localização não informada'}</div>{selectedBusiness.photos?.length > 0 && <div className="business-detail-gallery">{selectedBusiness.photos.slice(0,5).map((url,index)=><img key={url} src={url} alt={`Foto ${index+1} de ${selectedBusiness.name}`} loading="lazy" decoding="async" role="button" tabIndex={0} title="Clique para ampliar" aria-label={`Ampliar foto ${index+1} de ${selectedBusiness.name}`} onClick={()=>setSelectedPhoto({src:url,name:selectedBusiness.name})} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setSelectedPhoto({src:url,name:selectedBusiness.name})}}}/>)}</div>}<div className="business-detail-actions">{whatsappLink(selectedBusiness.phone) && <a className="listing-contact business-detail-contact" href={whatsappLink(selectedBusiness.phone)} target="_blank" rel="noopener noreferrer">Conversar pelo WhatsApp <ArrowRight size={16}/></a>}<button type="button" className="business-share-button" onClick={()=>shareBusiness(selectedBusiness)}><Share2 size={16}/> Compartilhar negócio</button></div>{shareMessage && <small className="share-feedback">{shareMessage}</small>}{!whatsappLink(selectedBusiness.phone) && <span className="coming">Contato não informado</span>}</div></section></div>}
     {selectedPhoto && <div className="photo-lightbox" role="dialog" aria-modal="true" aria-label={`Foto ampliada de ${selectedPhoto.name}`} onClick={()=>setSelectedPhoto(null)}><button type="button" className="photo-lightbox-close" aria-label="Fechar imagem" onClick={()=>setSelectedPhoto(null)}><X size={24}/></button><div className="photo-lightbox-content" onClick={e=>e.stopPropagation()}><img src={selectedPhoto.src} alt={selectedPhoto.name}/><span>{selectedPhoto.name}</span></div></div>}
-    {showForm && <div className="modal-backdrop" onClick={()=>setShowForm(false)}><div className="modal" onClick={e=>e.stopPropagation()}>
-      <button type="button" className="modal-close" onClick={()=>setShowForm(false)}><X/></button>
+    {showForm && <div className="modal-backdrop" onClick={()=>setShowForm(false)}><div className="modal" role="dialog" aria-modal="true" aria-label="Área de cadastro e administração do Conecta Brasil" onClick={e=>e.stopPropagation()}>
+      <button type="button" className="modal-close" onClick={()=>setShowForm(false)} aria-label="Fechar janela"><X/></button>
       {isAdmin ? <>
         <div className="eyebrow dark">ÁREA RESTRITA</div>
         <div className="admin-panel-heading">
@@ -616,7 +616,7 @@ function App() {
         <div className="admin-filters">{[['pending','Pendentes'],['approved','Aprovados'],['rejected','Rejeitados'],['suspended','Suspensos'],['all','Todos']].map(([value,label])=><button key={value} type="button" className={adminFilter===value?'active':''} aria-pressed={adminFilter===value} onClick={()=>setAdminFilter(value)}>{label}</button>)}</div>
         <input type="search" maxLength="120" className="admin-search" value={adminSearch} onChange={e=>setAdminSearch(e.target.value)} placeholder="Buscar por negócio, cidade ou telefone..." aria-label="Buscar cadastros" />
         <div className="admin-search-summary" role="status" aria-live="polite" aria-atomic="true"><span>{filteredAdminBusinesses.length} {filteredAdminBusinesses.length === 1 ? "cadastro encontrado" : "cadastros encontrados"}</span>{(adminSearch.trim() || adminFilter !== "all") && <button type="button" onClick={()=>{setAdminSearch("");setAdminFilter("all")}}>Limpar busca e filtros</button>}</div>
-        {adminError && <div className="form-error">{adminError}</div>}
+        {adminError && <div className="form-error" role="alert">{adminError}</div>}
         {editingBusiness && <form className="admin-edit-form" onSubmit={saveBusinessEdit}>
           <h3>Editar anúncio</h3>
           <label>Nome<input required maxLength="100" value={editingBusiness.name} onChange={e=>setEditingBusiness({...editingBusiness,name:e.target.value})}/></label>
@@ -659,13 +659,13 @@ function App() {
       <div className="eyebrow dark">CADASTRO DE ANUNCIANTE</div>
       <h2>{authUser ? 'Apresente seu negócio.' : 'Entre para anunciar.'}</h2>
       {!isSupabaseConfigured ? <p>O cadastro está temporariamente indisponível. A conexão com o banco ainda não foi configurada na publicação.</p> : <>
-        {formMessage && <div className="form-notice">{formMessage}</div>}
-        {formError && <div className="form-error">{formError}</div>}
+        {formMessage && <div className="form-notice" role="status" aria-live="polite">{formMessage}</div>}
+        {formError && <div className="form-error" role="alert">{formError}</div>}
         {passwordRecovery ? <form onSubmit={updateRecoveredPassword} className="business-form">
           <div className="eyebrow dark">RECUPERAÇÃO DE ACESSO</div><h2>Crie uma nova senha.</h2>
           <p>Escolha uma senha com pelo menos 6 caracteres.</p>
-          {formMessage && <div className="form-notice">{formMessage}</div>}
-          {formError && <div className="form-error">{formError}</div>}
+          {formMessage && <div className="form-notice" role="status" aria-live="polite">{formMessage}</div>}
+          {formError && <div className="form-error" role="alert">{formError}</div>}
           <label>Nova senha<input type="password" required minLength="6" autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Mínimo de 6 caracteres"/></label>
           <button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Salvando...' : 'Salvar nova senha'}</button>
         </form> : !authUser ? forgotPasswordMode ? <>
@@ -687,7 +687,7 @@ function App() {
         </> : <>
           <section className="owner-dashboard">
             <div className="owner-dashboard-head"><div><div className="eyebrow dark">ÁREA DO ANUNCIANTE</div><h3>Meus anúncios</h3><p>Acompanhe a situação dos seus cadastros.</p></div><button type="button" className="owner-refresh" onClick={loadOwnerBusinesses} disabled={ownerLoading} aria-label="Atualizar meus anúncios">{ownerLoading ? "Atualizando..." : "Atualizar"}</button></div>
-            {ownerError && <div className="form-error">{ownerError}</div>}
+            {ownerError && <div className="form-error" role="alert">{ownerError}</div>}
             {ownerLoading ? <div className="empty-state">Carregando seus anúncios...</div> : ownerBusinesses.length ? <div className="owner-list">{ownerBusinesses.map(item => <article className="owner-business" key={item.id}>
               <div className="owner-business-head"><div><b>{item.name}</b><small>{[item.city,item.state].filter(Boolean).join(' / ')} · {item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</small></div><span className={'status-badge status-'+item.status}>{({pending:'Em análise',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</span></div>
               <p>{item.description || 'Sem descrição informada.'}</p>
