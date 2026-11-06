@@ -512,3 +512,15 @@ button,a{touch-action:manipulation}
 
 /* Estado de sincronização visível e acessível */
 .sync-indicator{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid #dce7e5;border-radius:999px;background:#f7faf9;color:#526761;font-size:11px;font-weight:800;white-space:nowrap}.sync-indicator i{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#d59a39}.sync-indicator.online i{background:#19966d;box-shadow:0 0 0 3px #19966d20}.sync-indicator.offline{border-color:#f0d3a0;background:#fff8e9;color:#805400}.sync-indicator.offline i{background:#d18a19}.connection-banner span{display:block;margin-top:3px;font-size:.82em;opacity:.9}@media(max-width:600px){.sync-indicator{justify-content:center;white-space:normal;text-align:center;min-height:36px}.filter-tools{align-items:stretch}.filter-tools .sync-indicator{flex:1 1 100%}}
+
+
+/* Formulário de avaliações: campos alinhados e confortáveis no celular */
+.business-review-form{display:grid;gap:12px;margin-top:18px;padding:16px;border:1px solid #e1e9ef;border-radius:14px;background:#f8fafc}
+.business-review-form>strong{display:block;margin-bottom:2px;color:#183047;font-size:17px;line-height:1.4}
+.business-review-form .review-field{display:grid;gap:7px;min-width:0;color:#263b50;font-size:14px;font-weight:700}
+.business-review-form .review-rating-select{display:block;width:100%;min-height:48px;padding:10px 42px 10px 13px;border:1px solid #cbd8e3;border-radius:10px;background:#fff;color:#183047;font:600 16px 'DM Sans',sans-serif;line-height:1.4}
+.business-review-form .review-comment-input{display:block;width:100%;min-width:0;min-height:124px;padding:12px 13px;border:1px solid #cbd8e3;border-radius:10px;background:#fff;color:#183047;font:400 16px/1.55 'DM Sans',sans-serif;resize:vertical}
+.business-review-form .review-rating-select:focus-visible,.business-review-form .review-comment-input:focus-visible{outline:3px solid rgba(45,138,112,.22);border-color:#2d8a70}
+.business-review-form .review-comment-input::placeholder{color:#8493a1;opacity:1}
+.business-review-form>button{width:100%;min-height:48px;margin-top:2px}
+@media(max-width:600px){.business-review-form{padding:13px;gap:11px}.business-review-form .review-rating-select,.business-review-form .review-comment-input{font-size:16px}}
