@@ -67,12 +67,22 @@ Deno.serve(async (req: Request) => {
     return json({ error: "Global administrator required" }, 403);
   }
 
-  let body: { confirm?: string };
+  let body: unknown;
 
   try {
     body = await req.json();
   } catch {
     return json({ error: "Invalid JSON body" }, 400);
+  }
+
+  if (
+    typeof body !== "object" ||
+    body === null ||
+    Array.isArray(body) ||
+    !("confirm" in body) ||
+    typeof body.confirm !== "string"
+  ) {
+    return json({ error: "Invalid confirmation format" }, 400);
   }
 
   if (body.confirm !== CONFIRMATION) {
