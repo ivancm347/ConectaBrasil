@@ -51,6 +51,7 @@ with check (
     from public.businesses as b
     where b.id::text = (storage.foldername(name))[2]
       and b.owner_id = auth.uid()
+      and b.country_code = (auth.jwt() -> 'app_metadata' ->> 'market_code')
   )
 );
 
@@ -67,6 +68,7 @@ using (
     from public.businesses as b
     where b.id::text = (storage.foldername(name))[2]
       and b.owner_id = auth.uid()
+      and b.country_code = (auth.jwt() -> 'app_metadata' ->> 'market_code')
   )
 )
 with check (
@@ -77,6 +79,7 @@ with check (
     from public.businesses as b
     where b.id::text = (storage.foldername(name))[2]
       and b.owner_id = auth.uid()
+      and b.country_code = (auth.jwt() -> 'app_metadata' ->> 'market_code')
   )
 );
 
@@ -93,6 +96,7 @@ using (
     from public.businesses as b
     where b.id::text = (storage.foldername(name))[2]
       and b.owner_id = auth.uid()
+      and b.country_code = (auth.jwt() -> 'app_metadata' ->> 'market_code')
   )
 );
 
