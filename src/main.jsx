@@ -162,12 +162,12 @@ async function fetchPublicBusinesses(market) {
   if (result.error && /postal_code|street_number|address_complement|location_visibility|service_cities|column/i.test(result.error.message || '')) {
     result = await supabase.from('businesses')
       .select('id,name,description,business_type,phone,city,state,logo_url,gallery_urls,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,business_categories(categories(name))')
-      .eq('status', 'approved').order('featured', { ascending: false }).order('name', { ascending: true });
+      .eq('status', 'approved').eq('country', market.legacyCountry).order('featured', { ascending: false }).order('name', { ascending: true });
   }
   if (result.error && /verified|column/i.test(result.error.message || '')) {
     result = await supabase.from('businesses')
       .select('id,name,description,business_type,phone,city,state,logo_url,gallery_urls,featured,business_categories(categories(name))')
-      .eq('status', 'approved').order('featured', { ascending: false }).order('name', { ascending: true });
+      .eq('status', 'approved').eq('country', market.legacyCountry).order('featured', { ascending: false }).order('name', { ascending: true });
   }
   const { data, error } = result;
   if (error) throw error;
@@ -849,7 +849,7 @@ function App({ market }) {
       setAdminBusinesses(items => items.map(row => row.id === item.id ? { ...row, verified: nextVerified } : row));
       await recordAdminAction(nextVerified ? 'selo verificado concedido' : 'selo verificado removido', 'anúncio', item.id, item.name);
       try {
-        setBusinesses(await fetchPublicBusinesses());
+        setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
         setLoadError('O selo foi salvo, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
@@ -890,7 +890,7 @@ function App({ market }) {
       setAdminBusinesses(rows => rows.map(row => row.id === item.id ? { ...row, ...payload } : row));
       await recordAdminAction(planType === 'gratuito' ? 'plano removido' : (isRenewal ? 'plano renovado por 30 dias' : 'plano ativado por 30 dias'), 'plano', item.id, item.name, { plan_type: planType, expires_at: expiresAt, renewal: isRenewal });
       try {
-        setBusinesses(await fetchPublicBusinesses());
+        setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
         setLoadError('O plano foi salvo, mas a vitrine ainda não foi atualizada. Atualize os anúncios.');
@@ -916,7 +916,7 @@ function App({ market }) {
       setAdminBusinesses(items => items.map(row => row.id === item.id ? { ...row, featured: !item.featured } : row));
       await recordAdminAction(item.featured ? 'destaque removido' : 'destacado', 'anúncio', item.id, item.name);
       try {
-        setBusinesses(await fetchPublicBusinesses());
+        setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
         setLoadError('O destaque foi salvo, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
@@ -946,7 +946,7 @@ function App({ market }) {
       if (editingBusiness?.id === item.id) setEditingBusiness(null);
       if (selectedBusiness?.id === item.id) setSelectedBusiness(null);
       try {
-        setBusinesses(await fetchPublicBusinesses());
+        setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
         setLoadError('O anúncio foi excluído, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
@@ -978,7 +978,7 @@ function App({ market }) {
       }
       if (String(selectedBusiness?.id) === String(id) && status !== 'approved') closeBusinessDetails();
       try {
-        setBusinesses(await fetchPublicBusinesses());
+        setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
         setLoadError('A moderação foi salva, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
@@ -1318,7 +1318,7 @@ function App({ market }) {
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
     let alive = true;
-    fetchPublicBusinesses()
+    fetchPublicBusinesses(market)
       .then(rows => { if (alive) { setBusinesses(rows); const syncedAt = new Date().toISOString(); setLastSuccessfulSync(syncedAt); try { localStorage.setItem(getMarketStorageKey('last-sync'), syncedAt); } catch { /* A lista segue disponível na sessão. */ } } })
       .catch(() => { if (alive) setLoadError('Não foi possível carregar os cadastros agora.'); })
       .finally(() => { if (alive) setLoadingBusinesses(false); });
@@ -1334,7 +1334,7 @@ function App({ market }) {
     setPublicRefreshMessage('');
     try {
       const [publicRows, categoryResult] = await Promise.all([
-        fetchPublicBusinesses(),
+        fetchPublicBusinesses(market),
         supabase.from('categories').select('id,name').eq('active', true).order('name')
       ]);
       setBusinesses(publicRows);
