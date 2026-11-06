@@ -12,10 +12,12 @@ const countryMigration = read('../supabase/migrations/20261106090000_add_busines
 const reviewMigration = read('../supabase/migrations/20261106160000_scope_business_reviews_by_market.sql');
 
 function policyBlock(policyName) {
-  const escaped = policyName;
-  const match = imageMigration.match(new RegExp('create policy "' + escaped + '"[\s\S]*?;','i'));
-  assert.ok(match, `Política ausente: ${policyName}`);
-  return match[0];
+  const marker = `create policy "${policyName}"`;
+  const start = imageMigration.toLowerCase().indexOf(marker.toLowerCase());
+  assert.notEqual(start, -1, `Política ausente: ${policyName}`);
+  const end = imageMigration.indexOf(';', start);
+  assert.notEqual(end, -1, `Bloco SQL incompleto: ${policyName}`);
+  return imageMigration.slice(start, end + 1);
 }
 
 test('Paraguai continua bloqueado até a aprovação dos testes de isolamento', () => {
