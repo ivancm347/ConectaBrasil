@@ -34,6 +34,8 @@ Deno.serve(async (req: Request) => {
     return json({ error: "Method not allowed" }, 405);
   }
 
+  // A server-side feature flag keeps assignment disabled until deployment
+  // and the administrator explicitly enables the operation.
   if (Deno.env.get("ENABLE_OWNER_MARKET_ASSIGNMENT") !== "true") {
     return json({ error: "Assignment is disabled" }, 403);
   }
@@ -108,61 +110,78 @@ Deno.serve(async (req: Request) => {
   const currentMetadata = targetData.user.app_metadata ?? {};
 
   if (currentMetadata.role === "admin") {
-    return json({
-      error: "A global administrator cannot receive an exclusive market assignment",
-    }, 409);
+    return json(
+      {
+        error:
+          "A global administrator cannot receive an exclusive market assignment",
+      },
+      409,
+    );
   }
 
   const existingMarket = currentMetadata.market_code;
 
   if (existingMarket && existingMarket !== "BR") {
-    return json({
-      error: "Target already has a different market assignment",
-    }, 409);
+    return json(
+      { error: "Target already has a different market assignment" },
+      409,
+    );
   }
 
+  // Idempotent recovery: if BR was already assigned but audit insertion
+  // previously failed, create the missing audit record without changing Auth.
   if (existingMarket === "BR") {
-  const { data: existingAudit, error: auditCheckError } =
-    await adminClient
-      .from("admin_audit_logs")
-      .select("id")
-      .eq("action", "assign_market")
-      .eq("entity_id", OWNER_USER_ID)
-      .contains("details", {
-        operation: "assign-owner-market",
-      })
-      .limit(1)
-      .maybeSingle();
-
-  if (auditCheckError) {
-    return json({
-      error: "Could not verify audit record",
-    }, 500);
-  }
-
-  if (!existingAudit) {
-    const { error: recoveryAuditError } = await adminClient
-      .from("admin_audit_logs")
-      .insert({
-        actor_id: callerData.user.id,
-        actor_email: callerData.user.email ?? null,
-        action: "assign_market",
-        entity_type: "auth_user",
-        entity_id: OWNER_USER_ID,
-        entity_name: targetData.user.email ?? OWNER_USER_ID,
-        details: {
-          previous_market_code: null,
-          new_market_code: "BR",
+    const { data: existingAudit, error: auditCheckError } =
+      await adminClient
+        .from("admin_audit_logs")
+        .select("id")
+        .eq("action", "assign_market")
+        .eq("entity_id", OWNER_USER_ID)
+        .contains("details", {
           operation: "assign-owner-market",
-          recovered_after_partial_success: true,
-        },
-      });
+        })
+        .limit(1)
+        .maybeSingle();
 
-    if (recoveryAuditError) {
+    if (auditCheckError) {
+      return json({ error: "Could not verify audit record" }, 500);
+    }
+
+    if (!existingAudit) {
+      const { error: recoveryAuditError } = await adminClient
+        .from("admin_audit_logs")
+        .insert({
+          actor_id: callerData.user.id,
+          actor_email: callerData.user.email ?? null,
+          action: "assign_market",
+          entity_type: "auth_user",
+          entity_id: OWNER_USER_ID,
+          entity_name: targetData.user.email ?? OWNER_USER_ID,
+          details: {
+            previous_market_code: null,
+            new_market_code: "BR",
+            operation: "assign-owner-market",
+            recovered_after_partial_success: true,
+          },
+        });
+
+      if (recoveryAuditError) {
+        return json(
+          {
+            error: "Market is BR, but audit recovery failed",
+            audit_recorded: false,
+          },
+          500,
+        );
+      }
+
       return json({
-        error: "Market is BR, but audit recovery failed",
-        audit_recorded: false,
-      }, 500);
+        ok: true,
+        unchanged: true,
+        market_code: "BR",
+        audit_recorded: true,
+        audit_recovered: true,
+      });
     }
 
     return json({
@@ -170,17 +189,9 @@ Deno.serve(async (req: Request) => {
       unchanged: true,
       market_code: "BR",
       audit_recorded: true,
-      audit_recovered: true,
     });
   }
 
-  return json({
-    ok: true,
-    unchanged: true,
-    market_code: "BR",
-    audit_recorded: true,
-  });
-}
   const { error: updateError } =
     await adminClient.auth.admin.updateUserById(OWNER_USER_ID, {
       app_metadata: {
@@ -212,11 +223,14 @@ Deno.serve(async (req: Request) => {
   if (auditError) {
     console.error("Audit insert failed:", auditError.message);
 
-    return json({
-      error: "Market assigned, but audit logging failed",
-      audit_recorded: false,
-      token_refresh_required: true,
-    }, 500);
+    return json(
+      {
+        error: "Market assigned, but audit logging failed",
+        audit_recorded: false,
+        token_refresh_required: true,
+      },
+      500,
+    );
   }
 
   return json({
