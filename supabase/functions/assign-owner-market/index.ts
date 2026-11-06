@@ -94,7 +94,7 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true, unchanged: true, market_code: "BR" });
   }
 
-  const { error: updateError } =
+   const { error: updateError } =
   await adminClient.auth.admin.updateUserById(OWNER_USER_ID, {
     app_metadata: {
       ...currentMetadata,
@@ -104,6 +104,41 @@ Deno.serve(async (req: Request) => {
 
 if (updateError) {
   return json({ error: "Could not update target account" }, 500);
+}
+
+// Registrar a operação na auditoria.
+const { error: auditError } = await adminClient
+  .from("admin_audit_logs")
+  .insert({
+    actor_id: callerData.user.id,
+    actor_email: callerData.user.email ?? null,
+    action: "assign_market",
+    entity_type: "auth_user",
+    entity_id: OWNER_USER_ID,
+    entity_name: targetData.user.email ?? OWNER_USER_ID,
+    details: {
+      previous_market_code: existingMarket ?? null,
+      new_market_code: "BR",
+      operation: "assign-owner-market",
+    },
+  });
+
+if (auditError) {
+  console.error("Audit insert failed:", auditError.message);
+
+  return json({
+    error: "Market assigned, but audit logging failed",
+    audit_recorded: false,
+    token_refresh_required: true,
+  }, 500);
+}
+
+return json({
+  ok: true,
+  market_code: "BR",
+  audit_recorded: true,
+  token_refresh_required: true,
+}); ({ error: "Could not update target account" }, 500);
 }
 
 // Registrar a operação na auditoria.
