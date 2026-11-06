@@ -30,6 +30,7 @@ O Conecta Brasil conecta pessoas, empresas, profissionais, lojas e serviços. A 
 - Planos Gratuito, Destaque e Parceiro, com controle de validade e renovação por 30 dias.
 - Indicadores de cadastros, planos ativos, vencidos e próximos do vencimento.
 - Histórico de ações administrativas.
+- Painel de desempenho com visualizações, cliques no WhatsApp, ranking de anúncios e histórico mensal.
 - Resumo financeiro estimado e relatório mensal com impressão/salvamento em PDF e exportação CSV.
 - Alertas para cadastros pendentes e planos que precisam de atenção.
 
@@ -65,7 +66,7 @@ Execute cada arquivo uma vez no **SQL Editor** do projeto Supabase, caso o recur
 
 | Arquivo | Finalidade |
 | --- | --- |
-| `supabase/business_images.sql` | Colunas de logo/galeria e bucket público de imagens, com políticas de acesso por proprietário. |
+| `supabase/business_images.sql` | Colunas de logo/galeria e bucket privado, com leitura autorizada para anúncios aprovados, proprietários e administradores. |
 | `supabase/innovations.sql` | Selo de verificação, contadores aproximados e função controlada para registrar métricas. |
 | `supabase/business_metrics_monthly.sql` | Histórico mensal de visualizações e cliques no WhatsApp, mantendo os totais acumulados existentes. |
 | `supabase/admin_audit.sql` | Histórico de ações administrativas. |
@@ -109,7 +110,7 @@ npm run preview
 - Proprietários autenticados acompanham e alteram somente os próprios cadastros, respeitando o fluxo de análise.
 - A exclusão pelo proprietário é restrita a cadastros próprios ainda pendentes.
 - Aprovação, moderação, planos e categorias são protegidos por políticas RLS e função administrativa.
-- Imagens são armazenadas em bucket próprio; o acesso de escrita é limitado à pasta do usuário autenticado.
+- Imagens são armazenadas em bucket privado; a leitura é autorizada para anúncios aprovados, proprietários e administradores, e a escrita é limitada à pasta do usuário autenticado. O aplicativo usa URLs temporárias para exibi-las.
 - A localização do visitante só é solicitada após ação explícita; as coordenadas não são armazenadas pelo Conecta Brasil.
 - Nunca exponha a chave `service_role` no navegador ou em variáveis `VITE_*`.
 
