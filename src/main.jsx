@@ -565,7 +565,7 @@ function App({ market }) {
 
   async function loadBusinessReviews(businessId) {
     if (!supabase || !businessId) { setBusinessReviews([]); return; }
-    const { data, error } = await supabase.from('business_reviews').select('id,rating,comment,created_at').eq('business_id', businessId).eq('status', 'approved').eq('country', market.legacyCountry).order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('business_reviews').select('id,rating,comment,created_at').eq('business_id', businessId).eq('status', 'approved').order('created_at', { ascending: false });
     if (error) { setBusinessReviews([]); setReviewError('As avaliações ainda não puderam ser carregadas.'); return; }
     setBusinessReviews(data || []);
   }
