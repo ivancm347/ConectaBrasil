@@ -12,8 +12,8 @@ const countryMigration = read('../supabase/migrations/20261106090000_add_busines
 const reviewMigration = read('../supabase/migrations/20261106160000_scope_business_reviews_by_market.sql');
 
 function policyBlock(policyName) {
-  const escaped = policyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = imageMigration.match(new RegExp('create policy "' + escaped + '"[\\s\\S]*?;','i'));
+  const escaped = policyName.replace(/[.*+?^${}()|[\]\]/g, '\\$&');
+  const match = imageMigration.match(new RegExp('create policy "' + escaped + '"[\s\S]*?;','i'));
   assert.ok(match, `Política ausente: ${policyName}`);
   return match[0];
 }
@@ -92,16 +92,16 @@ test('consultas de anúncios usam country_code como filtro operacional BR/PY', (
 });
 
 test('avaliações aprovadas continuam públicas, mas leitura privada exige mercado da sessão', () => {
-  assert.match(reviewMigration, /status\\s*=\\s*'approved'/i);
-  assert.match(reviewMigration, /user_id\\s*=\\s*auth\\.uid\\(\\)[\\s\\S]*?b\\.country_code\\s*=\\s*\\(auth\\.jwt\\(\\)\\s*->\\s*'app_metadata'\\s*->>\\s*'market_code'\\)/i);
-  assert.match(reviewMigration, /role'\\s*\\)\\s*=\\s*'admin'/i);
+  assert.match(reviewMigration, /status\s*=\s*'approved'/i);
+  assert.match(reviewMigration, /user_id\s*=\s*auth\.uid\(\)[\s\S]*?b\.country_code\s*=\s*\(auth\.jwt\(\)\s*->\s*'app_metadata'\s*->>\s*'market_code'\)/i);
+  assert.match(reviewMigration, /role'\s*\)\s*=\s*'admin'/i);
 });
 
 test('envio de avaliação exige anúncio aprovado no mercado confiável da sessão', () => {
-  const insertPolicy = reviewMigration.match(/create policy "Authenticated users submit pending business reviews"[\\s\\S]*?;/i)?.[0] ?? '';
-  assert.match(insertPolicy, /status\\s*=\\s*'pending'/i);
-  assert.match(insertPolicy, /b\\.status\\s*=\\s*'approved'/i);
-  assert.match(insertPolicy, /b\\.country_code\\s*=\\s*\\(auth\\.jwt\\(\\)\\s*->\\s*'app_metadata'\\s*->>\\s*'market_code'\\)/i);
+  const insertPolicy = reviewMigration.match(/create policy "Authenticated users submit pending business reviews"[\s\S]*?;/i)?.[0] ?? '';
+  assert.match(insertPolicy, /status\s*=\s*'pending'/i);
+  assert.match(insertPolicy, /b\.status\s*=\s*'approved'/i);
+  assert.match(insertPolicy, /b\.country_code\s*=\s*\(auth\.jwt\(\)\s*->\s*'app_metadata'\s*->>\s*'market_code'\)/i);
 });
 
 test.todo('Integração RLS: proprietário A não lê nem altera anúncios do proprietário B.');
