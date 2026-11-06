@@ -4,6 +4,7 @@ import { Search, MapPin, Store, Wrench, ShoppingBag, Heart, ArrowRight, Menu, X,
 import './style.css';
 import '../public/image-fit.css';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
+import { getMarketFromPath, getMarketPath } from './lib/market';
 import QRCode from 'qrcode';
 
 const categories = [
@@ -1844,7 +1845,38 @@ function App() {
     </div></div>}
   </div>;
 }
-createRoot(document.getElementById('root')).render(<App/>);
+// Restaura rotas profundas após o fallback 404 do GitHub Pages.
+const fallbackRoute = new URLSearchParams(window.location.search).get('__route');
+if (fallbackRoute) {
+  const restoredUrl = new URL(fallbackRoute, `${window.location.origin}${import.meta.env.BASE_URL}`);
+  window.history.replaceState(null, '', `${restoredUrl.pathname}${restoredUrl.search}${restoredUrl.hash}`);
+}
+
+// Mantém o endereço antigo funcionando e encaminha a entrada principal para /br.
+const basePath = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+if (window.location.pathname === basePath || window.location.pathname === basePath.slice(0, -1)) {
+  window.history.replaceState(null, '', `${getMarketPath('BR')}${window.location.search}${window.location.hash}`);
+}
+
+function MarketApp() {
+  const market = getMarketFromPath();
+  if (!market.enabled) {
+    return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',padding:'24px',background:'#0b1730',color:'#fff',fontFamily:'DM Sans, sans-serif'}}>
+      <section style={{width:'min(100%,520px)',padding:'36px',border:'1px solid #29415f',borderRadius:'20px',background:'#10233e',textAlign:'center'}}>
+        <div style={{fontSize:'42px',marginBottom:'12px'}}>🇵🇾</div>
+        <p style={{color:'#53d6b0',fontWeight:800,letterSpacing:'2px',fontSize:'11px'}}>CONECTA PARAGUAY</p>
+        <h1 style={{fontSize:'30px',margin:'12px 0'}}>Estamos preparando este ambiente</h1>
+        <p style={{color:'#b5c2d4',lineHeight:1.7,fontSize:'14px'}}>A versão paraguaia será liberada depois da conclusão dos testes de segurança, idioma, moeda e separação dos anúncios.</p>
+        <a href={getMarketPath('BR')} style={{display:'inline-block',marginTop:'14px',padding:'12px 18px',borderRadius:'9px',background:'#53d6b0',color:'#082238',fontWeight:800,textDecoration:'none'}}>Ir para ConectaBrasil</a>
+      </section>
+    </main>;
+  }
+  return <App />;
+}
+
+createRoot(document.getElementById('root')).render(<MarketApp/>);
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
