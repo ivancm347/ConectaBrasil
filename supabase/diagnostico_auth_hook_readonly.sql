@@ -27,11 +27,12 @@ select rolname
 from pg_roles
 where rolname = 'supabase_auth_admin';
 
--- 3) Resume somente a presença de metadados de mercado em app_metadata.
+-- 3) Resume somente a presença de metadados de mercado em auth.users.raw_app_meta_data.
+-- No banco, o nome da coluna é raw_app_meta_data (não app_metadata).
 -- Não retorna IDs, e-mails ou conteúdo integral dos metadados.
 select
-  coalesce(app_metadata ->> 'market_code', '<não definido>') as market_code,
-  coalesce(app_metadata ->> 'role', '<não definido>') as app_role,
+  coalesce(raw_app_meta_data ->> 'market_code', '<não definido>') as market_code,
+  coalesce(raw_app_meta_data ->> 'role', '<não definido>') as app_role,
   count(*) as accounts_count
 from auth.users
 group by 1, 2
