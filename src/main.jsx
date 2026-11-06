@@ -656,6 +656,14 @@ function App() {
       setAdminError('Confira o telefone/WhatsApp: informe DDD e número.');
       return;
     }
+    if ((editingBusiness.location_visibility || 'neighborhood') === 'exact' &&
+      (!/^[0-9]{5}-?[0-9]{3}$/.test(String(editingBusiness.postal_code || '').trim()) ||
+       !String(editingBusiness.street || '').trim() ||
+       !String(editingBusiness.street_number || '').trim() ||
+       !String(editingBusiness.neighborhood || '').trim())) {
+      setAdminError('Para mostrar o endereço completo, informe CEP, rua/avenida, número e bairro.');
+      return;
+    }
     setFormBusy(true);
     setAdminError('');
     const payload = {
