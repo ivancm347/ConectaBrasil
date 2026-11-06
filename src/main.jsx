@@ -154,10 +154,10 @@ async function createBusinessImageUrl(value) {
   return data?.signedUrl || '';
 }
 
-async function fetchPublicBusinesses() {
+async function fetchPublicBusinesses(market) {
   let result = await supabase.from('businesses')
     .select('id,name,description,business_type,phone,city,state,postal_code,street,street_number,neighborhood,address_complement,location_visibility,service_cities,logo_url,gallery_urls,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,business_categories(categories(name))')
-    .eq('status', 'approved').order('featured', { ascending: false }).order('name', { ascending: true });
+    .eq('status', 'approved').eq('country', market.legacyCountry).order('featured', { ascending: false }).order('name', { ascending: true });
   // Compatibilidade com projetos que ainda não executaram as migrações opcionais.
   if (result.error && /postal_code|street_number|address_complement|location_visibility|service_cities|column/i.test(result.error.message || '')) {
     result = await supabase.from('businesses')
@@ -228,7 +228,7 @@ function readCachedPublicBusinesses() {
   }
 }
 
-function App() {
+function App({ market }) {
   const [query, setQuery] = useState('');
   const [voiceMessage, setVoiceMessage] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -773,7 +773,7 @@ function App() {
       }
       setEditingBusiness(null);
       try {
-        setBusinesses(await fetchPublicBusinesses());
+        setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
         setLoadError('A edição foi salva, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
@@ -1260,7 +1260,7 @@ function App() {
       const slugBase = businessForm.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const slug = slugBase + '-' + crypto.randomUUID().slice(0, 8);
       const { data, error } = await supabase.from('businesses').insert({
-        owner_id: authUser.id, name, slug,
+        owner_id: authUser.id, name, slug, country: market.legacyCountry,
         description: businessForm.description.trim(), business_type: businessForm.business_type,
         phone: businessForm.phone.trim(), city,
         state, postal_code: postalCode, street: businessForm.street.trim(),
@@ -1873,7 +1873,7 @@ function MarketApp() {
       </section>
     </main>;
   }
-  return <App />;
+  return <App market={market} />;
 }
 
 createRoot(document.getElementById('root')).render(<MarketApp/>);
