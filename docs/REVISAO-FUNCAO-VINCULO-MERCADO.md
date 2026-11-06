@@ -13,7 +13,7 @@ Esta revisão não executa a função, não altera usuários no Supabase, não i
 - A operação fica bloqueada enquanto `ENABLE_OWNER_MARKET_ASSIGNMENT` não for exatamente `true`.
 - O token Bearer é validado no Supabase Auth com `auth.getUser(token)`.
 - O chamador precisa ter `app_metadata.role === "admin"`; claims enviados no corpo não são usados para autorizar.
-- O UUID do alvo é fixo no código; o navegador não escolhe usuário nem mercado.
+- O UUID do alvo e o e-mail esperado (`magicfilly347@gmail.com`) são fixos no código; a função confere os dois antes de alterar metadados. O navegador não escolhe usuário nem mercado.
 - A confirmação textual é obrigatória.
 - A função lê os metadados atuais e preserva os campos existentes ao adicionar `market_code: "BR"`.
 - A chave service-role é lida somente no ambiente da Edge Function e não é enviada ao navegador.
@@ -27,8 +27,14 @@ Esta revisão não executa a função, não altera usuários no Supabase, não i
 4. Testar em projeto de desenvolvimento: sem token, token inválido, usuário comum, administrador global, confirmação ausente, flag desabilitada, mercado conflitante e repetição após BR atribuído.
 5. Após eventual alteração de `app_metadata`, emitir uma nova sessão/token e confirmar que o Custom Access Token Hook produz o claim esperado. Não ativar o Hook antes da revisão e dos testes.
 
+## Atualização após criação da conta proprietária
+
+- Conta-alvo conferida pelo usuário: `magicfilly347@gmail.com`.
+- UUID fixado no código: `0dd0c1c4-284e-4519-8aca-4eec2db9743e`.
+- A função agora confere também o e-mail retornado pelo Supabase Auth antes de prosseguir, para falhar de forma segura se UUID e e-mail não corresponderem.
+
 ## Estado
 
 **Aprovada apenas para continuar a revisão em desenvolvimento. Não está aprovada para implantação ou execução em produção.**
 
-Nenhuma conta foi alterada. A variável de habilitação deve permanecer ausente ou diferente de `true`. O Paraguai permanece desativado.
+A alteração foi feita somente no repositório. Nenhuma conta foi alterada no Supabase. A variável de habilitação deve permanecer ausente ou diferente de `true`. O Paraguai permanece desativado.
