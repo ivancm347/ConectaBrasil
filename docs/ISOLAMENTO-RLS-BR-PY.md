@@ -1,51 +1,64 @@
-# Isolamento real dos mercados BR/PY — decisão de segurança
+# Segurança e contexto dos mercados BR/PY — ConectaBrasil
 
 ## Estado
-Este documento orienta a próxima etapa. Não é uma autorização para executar SQL no projeto Supabase de produção. Nenhuma política é alterada por este documento.
+Documento de arquitetura. Não é uma autorização para executar SQL no Supabase de produção. As políticas e funções ainda precisam de migração integrada e testes reais.
 
-## Problema identificado
-O aplicativo atualmente escolhe o mercado pela rota `/br` ou `/py` e filtra consultas no frontend usando o campo legado `businesses.country`. Isso organiza a interface, mas não é uma fronteira de segurança: um cliente pode alterar a rota, os parâmetros de consulta ou chamar a API do Supabase diretamente.
+## Decisões de produto já definidas
 
-As políticas RLS existentes permitem leitura pública de qualquer anúncio aprovado. A função `can_view_business_image(text)` também autoriza leitura de imagem quando o anúncio está aprovado, sem validar país. As avaliações e métricas também não têm uma fronteira BR/PY.
+- `/br` apresenta a vitrine brasileira e `/py` apresentará a paraguaia.
+- Anúncios aprovados são públicos por decisão explícita do produto. Visitantes anônimos podem consultar anúncios aprovados dos dois países pela API pública.
+- O filtro de `country_code` na interface organiza a vitrine; **não é uma barreira de confidencialidade** e não impede que alguém consulte diretamente anúncios aprovados do outro país.
+- Anúncios pendentes/rejeitados e operações de proprietário/administração continuam protegidos por RLS.
+- Administrador global pode administrar os dois mercados e não deve receber um `market_code` exclusivo.
+- Proprietários autenticados só podem criar e administrar anúncios do mercado confiavelmente vinculado à conta, definido por processo administrativo/server-side.
+- Paraguai permanece desativado no frontend até a conclusão dos testes de segurança.
 
-## Regra obrigatória
-O país ativo não pode ser aceito de um parâmetro livre enviado pelo navegador, de query string, de localStorage, de cabeçalho arbitrário ou somente do caminho da URL.
+## Contexto confiável
 
-A autorização precisa usar uma identidade de mercado emitida/validada por componente confiável no servidor. A implementação escolhida deve garantir:
-- mercado BR ou PY em claim assinado e validado pelo Supabase; ou
-- leitura pública por endpoint servidor controlado que valida o mercado e não expõe credenciais privilegiadas ao navegador.
+A rota, query string, localStorage, cabeçalho arbitrário e `user_metadata` não podem autorizar operações de proprietário. A autorização de proprietário deve usar claim assinada derivada de `app_metadata` gerenciada no servidor, após validação do mecanismo de emissão de token em ambiente separado.
 
-Não colocar service-role key no frontend. Não confiar em `user_metadata` editável pelo usuário para autorização. Um campo em `app_metadata` também só é confiável se for definido por fluxo administrativo/servidor e não pelo cliente.
+O Custom Access Token Hook preparado no repositório ainda não foi aplicado nem habilitado em produção. Sua compatibilidade com sessões autenticadas e anônimas deve ser testada antes de qualquer ativação.
 
-## Modelo de autorização proposto
-1. Usuários proprietários: cada anúncio tem `country_code`; o proprietário só pode criar/alterar anúncios no mercado autorizado para sua conta. Não permitir que o cliente troque o país do anúncio.
-2. Administrador global: pode administrar ambos os mercados, com auditoria.
-3. Leitura pública: somente anúncios aprovados no mercado autorizado para aquela requisição.
-4. Storage: o caminho precisa corresponder a proprietário + ID do anúncio, e o anúncio deve estar aprovado ou pertencer ao usuário; a mesma autorização de mercado deve ser aplicada à leitura.
-5. Avaliações: leitura e envio precisam pertencer ao mesmo mercado do anúncio.
-6. Métricas: incrementos e relatórios precisam ser limitados ao mercado; relatório administrativo deve permitir filtro/escopo explícito e auditável.
-7. Categorias: continuam compartilhadas; vínculos herdam o mercado do anúncio.
+Como a vitrine pública foi deliberadamente definida como pública para os dois países, não se deve tentar apresentar um filtro de rota como isolamento de API para visitantes anônimos. Se o produto futuramente exigir que visitantes anônimos não consigam consultar o outro país, será necessário mudar a arquitetura para um endpoint público server-side que valide o mercado solicitado sem expor credenciais privilegiadas.
 
-## Pré-requisitos antes de uma migração que substitua RLS
-- Definir e implementar como o mercado confiável será emitido para visitante anônimo e usuário autenticado.
-- Definir como o mercado será vinculado à conta de proprietário; um mesmo login não pode escolher outro país apenas alterando a interface.
-- Coordenar frontend e backend para enviar `country_code` nos novos cadastros.
-- Migrar/validar todos os anúncios legados sem atribuir país por suposição.
-- Revisar políticas permissivas existentes: políticas permissivas são combinadas com OR; adicionar uma nova política restritiva sem remover/substituir as antigas não fecha o acesso.
-- Revisar funções SECURITY DEFINER e grants, em especial `can_view_business_image`, `increment_business_metric` e `get_admin_business_metrics`.
-- Executar testes com dois proprietários e visitantes separados em ambiente de desenvolvimento.
+## Modelo de autorização
 
-## Testes de aceitação obrigatórios
-- Token/mercado BR não consegue consultar anúncio PY por REST, mesmo conhecendo UUID e slug.
-- Token/mercado PY não consegue consultar anúncio BR.
-- Usuário A não consegue ler/alterar/excluir anúncio ou imagem do usuário B.
-- Upload com UID correto, mas business_id de outro proprietário, é negado.
-- Renomear/mover objeto para pasta de outro usuário é negado.
-- Imagem de anúncio aprovado só pode ser lida no mercado autorizado.
-- Imagem de anúncio pendente só pode ser lida pelo proprietário e administrador autorizado.
-- Avaliação aprovada não vaza entre mercados; envio para anúncio de outro mercado é negado.
-- RPC de métricas não permite incrementar anúncio fora do mercado e relatório não mistura países.
-- Administrador global consegue operar ambos os mercados e suas ações ficam auditadas.
+1. **Anúncios:** manter leitura pública somente para anúncios aprovados. Para INSERT/UPDATE/DELETE de proprietário, exigir usuário autenticado, propriedade do anúncio, claim confiável válida e `country_code` correspondente. O proprietário não pode trocar o país do anúncio. Admin global continua com acesso aos dois mercados.
+2. **Avaliações:** país herdado de `business_id`; envio de avaliação deve exigir anúncio aprovado e usuário autorizado. Avaliações aprovadas continuam públicas conforme decisão do produto. Moderação é exclusiva do admin global.
+3. **Storage:** bucket permanece privado. Caminho esperado `<owner_uid>/<business_id>/...`; validar UID, existência do anúncio e propriedade. Leitura de imagem aprovada pode ser pública via autorização Storage; imagem pendente fica restrita ao proprietário/admin. Operações de proprietário devem validar também o mercado do anúncio.
+4. **Métricas:** incremento público só para anúncio aprovado e métricas permitidas. Relatório administrativo deve verificar admin global, identificar país e permitir escopo BR/PY; revogar EXECUTE de anon em relatório administrativo.
+5. **Auditoria:** registrar ações administrativas e escopo/país quando aplicável, sem tokens ou segredos.
+6. **Cache/frontend:** manter filtros por `country_code` e separar chaves de cache/favoritos por mercado. Isso é consistência da interface, não substitui RLS.
 
-## Bloqueio de lançamento
-Paraguai permanece `enabled: false` até todos os testes acima passarem. A existência de testes estáticos que leem o texto SQL não prova que o PostgreSQL/RLS/Storage bloqueiam as operações reais.
+## Atenção às políticas RLS existentes
+
+Políticas permissivas são combinadas por OR. Criar uma policy permissiva nova não restringe uma policy antiga mais ampla. A migração integrada deve inventariar e substituir cuidadosamente as policies antigas de INSERT/UPDATE/DELETE e Storage, mantendo as leituras públicas deliberadas. Não aplicar somente a migração atual de propriedade de imagens como se ela completasse o isolamento por país.
+
+Funções SECURITY DEFINER precisam de revisão individual, incluindo `can_view_business_image`, `increment_business_metric` e `get_admin_business_metrics`. Verificar também grants EXECUTE, search_path e validação de argumentos.
+
+## Testes obrigatórios em ambiente de desenvolvimento
+
+- Proprietário BR cria/edita somente anúncios BR; payload tentando gravar PY é negado.
+- Proprietário PY cria/edita somente anúncios PY.
+- Alterar rota, localStorage ou user_metadata não muda a autorização.
+- Proprietário A não edita/exclui anúncios pendentes nem imagens privadas do proprietário B.
+- Upload/update/delete exige pasta UID correta e business_id pertencente ao usuário.
+- Anúncios aprovados de ambos os países permanecem consultáveis publicamente, conforme decisão de produto; não afirmar isolamento anônimo entre países.
+- Imagens aprovadas continuam acessíveis pela autorização Storage; imagens pendentes ficam restritas.
+- Avaliações são vinculadas ao anúncio correto; envio/moderação respeita permissões.
+- Métricas aceitam somente nomes permitidos e anúncios aprovados; relatório administrativo identifica e filtra país.
+- Anon não executa relatório administrativo.
+- Admin global opera ambos os países e ações ficam auditadas.
+- Renovação de JWT mantém claim confiável; ausência de claim não concede autorização de proprietário.
+- Regressão do Brasil passa antes de habilitar qualquer operação PY.
+
+## Bloqueios e sequência
+
+1. Confirmar um projeto Supabase de desenvolvimento separado ou clone seguro. Ainda não foi confirmado nesta sessão.
+2. Comparar schema/policies reais com as migrations versionadas.
+3. Preparar uma migration integrada, não destrutiva, que substitua explicitamente as policies antigas necessárias.
+4. Testar RLS, Storage, RPCs e emissão/renovação de JWT com contas BR/PY separadas.
+5. Revisar diff e plano de reversão.
+6. Só depois preparar implantação em produção e habilitar PY após aprovação dos testes.
+
+Não alterar preços, planos, pagamentos ou dados existentes nesta etapa. Não atualizar diretamente `auth.users` por SQL e nunca expor service-role no frontend.
