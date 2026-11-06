@@ -4,7 +4,7 @@ on:
   push:
     branches: [feature/arquitetura-internacional]
   pull_request:
-    branches: [feature/arquitetura-internacional]
+    branches: [main]
 
 permissions:
   contents: read
