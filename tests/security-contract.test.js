@@ -9,6 +9,7 @@ const imageMigration = read('../supabase/migrations/20261106150000_secure_busine
 const bucketSetup = read('../supabase/business_images.sql');
 const imageAccess = imageMigration;
 const countryMigration = read('../supabase/migrations/20261106090000_add_business_country_code.sql');
+const reviewMigration = read('../supabase/migrations/20261106160000_scope_business_reviews_by_market.sql');
 
 function policyBlock(policyName) {
   const escaped = policyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -88,6 +89,19 @@ test('painel administrativo global não limita anúncios ao mercado da rota', ()
 test('consultas de anúncios usam country_code como filtro operacional BR/PY', () => {
   assert.match(appSource, /\.eq\('country_code',\s*market\.code\)/);
   assert.doesNotMatch(appSource, /\.eq\('country',\s*market\.legacyCountry\)/);
+});
+
+test('avaliações aprovadas continuam públicas, mas leitura privada exige mercado da sessão', () => {
+  assert.match(reviewMigration, /status\\s*=\\s*'approved'/i);
+  assert.match(reviewMigration, /user_id\\s*=\\s*auth\\.uid\\(\\)[\\s\\S]*?b\\.country_code\\s*=\\s*\\(auth\\.jwt\\(\\)\\s*->\\s*'app_metadata'\\s*->>\\s*'market_code'\\)/i);
+  assert.match(reviewMigration, /role'\\s*\\)\\s*=\\s*'admin'/i);
+});
+
+test('envio de avaliação exige anúncio aprovado no mercado confiável da sessão', () => {
+  const insertPolicy = reviewMigration.match(/create policy "Authenticated users submit pending business reviews"[\\s\\S]*?;/i)?.[0] ?? '';
+  assert.match(insertPolicy, /status\\s*=\\s*'pending'/i);
+  assert.match(insertPolicy, /b\\.status\\s*=\\s*'approved'/i);
+  assert.match(insertPolicy, /b\\.country_code\\s*=\\s*\\(auth\\.jwt\\(\\)\\s*->\\s*'app_metadata'\\s*->>\\s*'market_code'\\)/i);
 });
 
 test.todo('Integração RLS: proprietário A não lê nem altera anúncios do proprietário B.');
