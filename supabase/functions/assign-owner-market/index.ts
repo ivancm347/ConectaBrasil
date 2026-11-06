@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const OWNER_USER_ID = "ba0a89e3-565e-4be6-bb2c-2365461b3114";
+const OWNER_USER_ID = "0dd0c1c4-284e-4519-8aca-4eec2db9743e";
+const OWNER_EMAIL = "magicfilly347@gmail.com";
 const ALLOWED_ORIGIN = "https://ivancm347.github.io";
 const CONFIRMATION = "ASSIGN_OWNER_TO_BR";
 
@@ -98,6 +99,10 @@ Deno.serve(async (req: Request) => {
 
   if (targetError || !targetData.user) {
     return json({ error: "Target account not found" }, 404);
+  }
+
+  if ((targetData.user.email ?? "").toLowerCase() !== OWNER_EMAIL) {
+    return json({ error: "Target account identity mismatch" }, 409);
   }
 
   const currentMetadata = targetData.user.app_metadata ?? {};
