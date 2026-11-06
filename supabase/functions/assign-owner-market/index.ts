@@ -107,14 +107,65 @@ Deno.serve(async (req: Request) => {
   }
 
   if (existingMarket === "BR") {
+  const { data: existingAudit, error: auditCheckError } =
+    await adminClient
+      .from("admin_audit_logs")
+      .select("id")
+      .eq("action", "assign_market")
+      .eq("entity_id", OWNER_USER_ID)
+      .contains("details", {
+        operation: "assign-owner-market",
+      })
+      .limit(1)
+      .maybeSingle();
+
+  if (auditCheckError) {
+    return json({
+      error: "Could not verify audit record",
+    }, 500);
+  }
+
+  if (!existingAudit) {
+    const { error: recoveryAuditError } = await adminClient
+      .from("admin_audit_logs")
+      .insert({
+        actor_id: callerData.user.id,
+        actor_email: callerData.user.email ?? null,
+        action: "assign_market",
+        entity_type: "auth_user",
+        entity_id: OWNER_USER_ID,
+        entity_name: targetData.user.email ?? OWNER_USER_ID,
+        details: {
+          previous_market_code: null,
+          new_market_code: "BR",
+          operation: "assign-owner-market",
+          recovered_after_partial_success: true,
+        },
+      });
+
+    if (recoveryAuditError) {
+      return json({
+        error: "Market is BR, but audit recovery failed",
+        audit_recorded: false,
+      }, 500);
+    }
+
     return json({
       ok: true,
       unchanged: true,
       market_code: "BR",
-      audit_recorded: null,
+      audit_recorded: true,
+      audit_recovered: true,
     });
   }
 
+  return json({
+    ok: true,
+    unchanged: true,
+    market_code: "BR",
+    audit_recorded: true,
+  });
+}
   const { error: updateError } =
     await adminClient.auth.admin.updateUserById(OWNER_USER_ID, {
       app_metadata: {
