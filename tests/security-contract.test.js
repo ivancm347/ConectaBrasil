@@ -42,6 +42,13 @@ test('exclusão exige propriedade do anúncio associado', () => {
   assert.match(sql, /using\s*\([\s\S]*?b\.id::text\s*=\s*\(storage\.foldername\(name\)\)\[2\][\s\S]*?b\.owner_id\s*=\s*auth\.uid\(\)/i);
 });
 
+test('operações de imagem do proprietário respeitam o mercado confiável da sessão', () => {
+  for (const name of ['Owners upload business images', 'Owners update business images', 'Owners delete business images']) {
+    const sql = policyBlock(name);
+    assert.match(sql, /b\.country_code\s*=\s*\(auth\.jwt\(\)\s*->\s*'app_metadata'\s*->>\s*'market_code'\)/i);
+  }
+});
+
 test('leitura de imagens continua mediada por can_view_business_image', () => {
   assert.match(imageAccess, /security\s+definer/i);
   assert.match(imageAccess, /set\s+search_path\s*=\s*''/i);
@@ -64,6 +71,14 @@ test('novo anúncio grava country_code do mercado e preserva o país legado', ()
   assert.match(appSource, /country:\s*market\.legacyCountry[\s\S]*?country_code:\s*market\.code/);
 });
 
+
+test('painel administrativo global não limita anúncios ao mercado da rota', () => {
+  const start = appSource.indexOf('async function loadAdminBusinesses()');
+  const end = appSource.indexOf('\n  async function ', start + 10);
+  assert.ok(start >= 0 && end > start, 'Função administrativa não encontrada');
+  const adminQuery = appSource.slice(start, end);
+  assert.doesNotMatch(adminQuery, /\.eq\('country_code',\s*market\.code\)/);
+});
 
 test('consultas de anúncios usam country_code como filtro operacional BR/PY', () => {
   assert.match(appSource, /\.eq\('country_code',\s*market\.code\)/);
