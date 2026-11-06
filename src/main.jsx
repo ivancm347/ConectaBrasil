@@ -36,6 +36,28 @@ const paginationTestListings = Array.from({ length: 13 }, (_, index) => {
     isPaginationTest: true,
   };
 });
+function LocationFields({ item, onChange }) {
+  const visibility = item.location_visibility || 'neighborhood';
+  return <section className="location-fields">
+    <h4>Localização do anúncio</h4>
+    <label>Como deseja mostrar sua localização?
+      <select value={visibility} onChange={e=>onChange({location_visibility:e.target.value})}>
+        <option value="exact">Endereço comercial completo</option>
+        <option value="neighborhood">Somente bairro e cidade</option>
+        <option value="service_area">Área de atendimento (várias localidades)</option>
+      </select>
+    </label>
+    {visibility === 'exact' && <>
+      <div className="form-row"><label>CEP<input inputMode="numeric" autoComplete="postal-code" maxLength="9" placeholder="00000-000" value={item.postal_code || ''} onChange={e=>onChange({postal_code:e.target.value.replace(/[^0-9-]/g,'')})}/></label><label>Bairro<input maxLength="100" autoComplete="address-level3" value={item.neighborhood || ''} onChange={e=>onChange({neighborhood:e.target.value})}/></label></div>
+      <label>Rua / Avenida<input maxLength="150" autoComplete="address-line1" value={item.street || ''} onChange={e=>onChange({street:e.target.value})}/></label>
+      <div className="form-row"><label>Número<input maxLength="20" value={item.street_number || ''} onChange={e=>onChange({street_number:e.target.value})}/></label><label>Complemento (opcional)<input maxLength="100" autoComplete="address-line2" value={item.address_complement || ''} onChange={e=>onChange({address_complement:e.target.value})}/></label></div>
+      <small>O endereço completo ficará visível no perfil público. Use esta opção somente para endereço comercial.</small>
+    </>}
+    {visibility === 'neighborhood' && <label>Bairro (opcional)<input maxLength="100" autoComplete="address-level3" value={item.neighborhood || ''} onChange={e=>onChange({neighborhood:e.target.value})}/></label>}
+    {visibility === 'service_area' && <label>Cidades ou regiões atendidas (separe por vírgulas)<input maxLength="300" placeholder="Ex.: Itanhaém, Mongaguá, Peruíbe" value={item.service_cities || ''} onChange={e=>onChange({service_cities:e.target.value})}/></label>}
+  </section>;
+}
+
 function normalizeSearch(value) {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
@@ -48,8 +70,15 @@ function whatsappLink(phone, messageText = 'Olá! Encontrei seu negócio no Cone
 }
 
 function businessMapLink(item) {
-  const search = [item.name, item.city, item.state, 'Brasil'].filter(Boolean).join(', ');
-  return `https://www.openstreetmap.org/search?query=${encodeURIComponent(search)}`;
+  const visibility = item.location_visibility || 'neighborhood';
+  const serviceCities = String(item.service_cities || '').split(',').map(value => value.trim()).filter(Boolean);
+  const search = visibility === 'exact'
+    ? [item.street, item.street_number, item.address_complement, item.neighborhood, item.postal_code, item.city, item.state, 'Brasil']
+    : visibility === 'service_area'
+      ? [...serviceCities, item.city, item.state, 'Brasil']
+      : [item.neighborhood, item.city, item.state, 'Brasil'];
+  const query = search.filter(Boolean).join(', ');
+  return query ? `https://www.openstreetmap.org/search?query=${encodeURIComponent(query)}` : '';
 }
 
 const searchSynonyms = {
@@ -114,9 +143,14 @@ async function createBusinessImageUrl(value) {
 
 async function fetchPublicBusinesses() {
   let result = await supabase.from('businesses')
-    .select('id,name,description,business_type,phone,city,state,logo_url,gallery_urls,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,business_categories(categories(name))')
+    .select('id,name,description,business_type,phone,city,state,postal_code,street,street_number,neighborhood,address_complement,location_visibility,service_cities,logo_url,gallery_urls,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,business_categories(categories(name))')
     .eq('status', 'approved').order('featured', { ascending: false }).order('name', { ascending: true });
-  // Compatibilidade temporária caso a migração de verificação ainda não tenha sido executada.
+  // Compatibilidade com projetos que ainda não executaram as migrações opcionais.
+  if (result.error && /postal_code|street_number|address_complement|location_visibility|service_cities|column/i.test(result.error.message || '')) {
+    result = await supabase.from('businesses')
+      .select('id,name,description,business_type,phone,city,state,logo_url,gallery_urls,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,business_categories(categories(name))')
+      .eq('status', 'approved').order('featured', { ascending: false }).order('name', { ascending: true });
+  }
   if (result.error && /verified|column/i.test(result.error.message || '')) {
     result = await supabase.from('businesses')
       .select('id,name,description,business_type,phone,city,state,logo_url,gallery_urls,featured,business_categories(categories(name))')
@@ -142,6 +176,13 @@ async function fetchPublicBusinesses() {
       planExpiresAt,
       verified: Boolean(item.verified),
       phone: item.phone || '',
+      postal_code: item.postal_code || '',
+      street: item.street || '',
+      street_number: item.street_number || '',
+      neighborhood: item.neighborhood || '',
+      address_complement: item.address_complement || '',
+      location_visibility: item.location_visibility || 'neighborhood',
+      service_cities: item.service_cities || '',
       icon: Store,
       logo: await createBusinessImageUrl(item.logo_url),
       photos: (await Promise.all((item.gallery_urls || []).map(createBusinessImageUrl))).filter(Boolean),
@@ -209,7 +250,8 @@ function App() {
   const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [availableCategories, setAvailableCategories] = useState([]);
-  const [businessForm, setBusinessForm] = useState({ name: '', description: '', business_type: 'empresa', phone: '', city: '', state: '', category_id: '' });
+  const emptyBusinessForm = { name: '', description: '', business_type: 'empresa', phone: '', city: '', state: '', postal_code: '', street: '', street_number: '', neighborhood: '', address_complement: '', location_visibility: 'neighborhood', service_cities: '', category_id: '' };
+  const [businessForm, setBusinessForm] = useState(emptyBusinessForm);
   const [logoFile, setLogoFile] = useState(null);
   const [galleryFiles, setGalleryFiles] = useState([]);
   const logoPreviewUrl = useMemo(() => logoFile ? URL.createObjectURL(logoFile) : '', [logoFile]);
@@ -559,8 +601,13 @@ function App() {
     setAdminError('');
     try {
       let result = await supabase.from('businesses')
-        .select('id,name,description,business_type,phone,city,state,status,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,views_count,whatsapp_clicks,created_at,logo_url,gallery_urls,business_categories(categories(name))')
+        .select('id,name,description,business_type,phone,city,state,postal_code,street,street_number,neighborhood,address_complement,location_visibility,service_cities,status,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,views_count,whatsapp_clicks,created_at,logo_url,gallery_urls,business_categories(categories(name))')
         .order('created_at', { ascending: false });
+      if (result.error && /postal_code|street_number|address_complement|location_visibility|service_cities|column/i.test(result.error.message || '')) {
+        result = await supabase.from('businesses')
+          .select('id,name,description,business_type,phone,city,state,status,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,views_count,whatsapp_clicks,created_at,logo_url,gallery_urls,business_categories(categories(name))')
+          .order('created_at', { ascending: false });
+      }
       if (result.error && /plan_type|plan_started_at|plan_expires_at|featured_expires_at|column/i.test(result.error.message || '')) {
           setPlanSchemaReady(false);
           result = await supabase.from('businesses')
@@ -616,7 +663,14 @@ function App() {
       description: String(editingBusiness.description || '').trim(),
       phone: String(editingBusiness.phone || '').trim(),
       city: cleanCity,
-      state: cleanState
+      state: cleanState,
+      postal_code: String(editingBusiness.postal_code || '').trim(),
+      street: String(editingBusiness.street || '').trim(),
+      street_number: String(editingBusiness.street_number || '').trim(),
+      neighborhood: String(editingBusiness.neighborhood || '').trim(),
+      address_complement: String(editingBusiness.address_complement || '').trim(),
+      location_visibility: editingBusiness.location_visibility || 'neighborhood',
+      service_cities: String(editingBusiness.service_cities || '').trim()
     };
     try {
       const { error } = await supabase.from('businesses').update(payload).eq('id', editingBusiness.id);
@@ -856,8 +910,13 @@ function App() {
     setOwnerError('');
     try {
       let result = await supabase.from('businesses')
-        .select('id,name,description,business_type,phone,city,state,status,views_count,whatsapp_clicks,created_at,updated_at,business_categories(categories(name))')
+        .select('id,name,description,business_type,phone,city,state,postal_code,street,street_number,neighborhood,address_complement,location_visibility,service_cities,status,views_count,whatsapp_clicks,created_at,updated_at,business_categories(categories(name))')
         .eq('owner_id', authUser.id).order('created_at', { ascending: false });
+      if (result.error && /postal_code|street_number|address_complement|location_visibility|service_cities|column/i.test(result.error.message || '')) {
+        result = await supabase.from('businesses')
+          .select('id,name,description,business_type,phone,city,state,status,views_count,whatsapp_clicks,created_at,updated_at,business_categories(categories(name))')
+          .eq('owner_id', authUser.id).order('created_at', { ascending: false });
+      }
       if (result.error && /views_count|whatsapp_clicks|column/i.test(result.error.message || '')) {
         result = await supabase.from('businesses')
           .select('id,name,description,business_type,phone,city,state,status,created_at,updated_at,business_categories(categories(name))')
@@ -903,10 +962,22 @@ function App() {
         setOwnerError('Confira o telefone/WhatsApp: informe DDD e número.');
         return;
       }
+      const visibility = ownerEditing.location_visibility || 'neighborhood';
+      const postalCode = String(ownerEditing.postal_code || '').trim();
+      if (visibility === 'exact' && (!/^[0-9]{5}-?[0-9]{3}$/.test(postalCode) || !String(ownerEditing.street || '').trim() || !String(ownerEditing.street_number || '').trim() || !String(ownerEditing.neighborhood || '').trim())) {
+        setOwnerError('Para mostrar o endereço completo, informe CEP, rua/avenida, número e bairro.');
+        return;
+      }
       const payload = {
         name: cleanName, description: (ownerEditing.description || '').trim(),
         business_type: ownerEditing.business_type, phone: (ownerEditing.phone || '').trim(),
         city: cleanCity, state: cleanState,
+        postal_code: postalCode, street: String(ownerEditing.street || '').trim(),
+        street_number: String(ownerEditing.street_number || '').trim(),
+        neighborhood: String(ownerEditing.neighborhood || '').trim(),
+        address_complement: String(ownerEditing.address_complement || '').trim(),
+        location_visibility: visibility,
+        service_cities: String(ownerEditing.service_cities || '').trim(),
         ...(originalStatus === 'approved' ? { status: 'pending', featured: false } : {})
       };
       const { data, error } = await supabase.from('businesses').update(payload)
@@ -1093,13 +1164,23 @@ function App() {
     let createdBusinessId = null;
     const uploadedPaths = [];
     try {
+      const visibility = businessForm.location_visibility || 'neighborhood';
+      const postalCode = String(businessForm.postal_code || '').trim();
+      if (visibility === 'exact' && (!/^[0-9]{5}-?[0-9]{3}$/.test(postalCode) || !businessForm.street.trim() || !businessForm.street_number.trim() || !businessForm.neighborhood.trim())) {
+        setFormError('Para mostrar o endereço completo, informe CEP, rua/avenida, número e bairro.');
+        return;
+      }
       const slugBase = businessForm.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const slug = slugBase + '-' + crypto.randomUUID().slice(0, 8);
       const { data, error } = await supabase.from('businesses').insert({
         owner_id: authUser.id, name, slug,
         description: businessForm.description.trim(), business_type: businessForm.business_type,
         phone: businessForm.phone.trim(), city,
-        state, status: 'pending', featured: false
+        state, postal_code: postalCode, street: businessForm.street.trim(),
+        street_number: businessForm.street_number.trim(), neighborhood: businessForm.neighborhood.trim(),
+        address_complement: businessForm.address_complement.trim(),
+        location_visibility: visibility, service_cities: businessForm.service_cities.trim(),
+        status: 'pending', featured: false
       }).select('id').single();
       if (error) throw error;
       createdBusinessId = data.id;
@@ -1129,7 +1210,7 @@ function App() {
       }
       setFormMessage('Cadastro enviado para análise! Seu negócio aparecerá na vitrine depois da aprovação.');
       await loadOwnerBusinesses();
-      setBusinessForm({ name: '', description: '', business_type: 'empresa', phone: '', city: '', state: '', category_id: '' });
+      setBusinessForm(emptyBusinessForm);
       setLogoFile(null); setGalleryFiles([]);
     } catch (error) {
       let cleanupFailed = false;
@@ -1377,7 +1458,7 @@ function App() {
       <section className="cta" id="sobre"><div className="cta-orb"></div><div><div className="eyebrow">FAÇA PARTE DESSA CONEXÃO</div><h2>Seu negócio merece<br/>ser encontrado.</h2><p>Dê visibilidade ao seu trabalho e conecte seu negócio a pessoas que procuram produtos e serviços na sua região.</p></div><button type="button" className="btn cta-btn" onClick={()=>{setShowForm(true);setSent(false)}}>Quero anunciar <ArrowRight size={17}/></button></section>
     </main>
     <footer><a className="brand footer-brand" href="#"><span className="brand-mark"><span></span><span></span><span></span></span><span>conecta<span className="brand-light">brasil</span><small>CONEXÕES QUE MOVIMENTAM</small></span></a><span>© 2026 Conecta Brasil. Um país inteiro de possibilidades.</span><span className="footer-status"><i></i> Conectando pessoas e negócios</span></footer>
-    {selectedBusiness && <div className="business-detail-backdrop" role="dialog" aria-modal="true" aria-label={`Detalhes de ${selectedBusiness.name}`} onClick={closeBusinessDetails}><section className="business-detail" onClick={e=>e.stopPropagation()}><button type="button" className="business-detail-close" onClick={closeBusinessDetails} aria-label="Fechar detalhes"><X size={22}/></button><div className="business-detail-hero">{selectedBusiness.photos?.[0] ? <img src={selectedBusiness.photos[0]} alt={`Foto de ${selectedBusiness.name}`}/> : selectedBusiness.logo ? <img src={selectedBusiness.logo} alt={`Logo de ${selectedBusiness.name}`}/> : <Store size={46}/>}</div><div className="business-detail-content"><small>{selectedBusiness.category}</small><h2>{selectedBusiness.name} {selectedBusiness.verified && <span className="verified-badge"><ShieldCheck size={15}/> Verificado</span>}</h2>{selectedBusiness.featured && <strong className="detail-featured"><Star size={13} fill="currentColor"/> Negócio em destaque</strong>}<p>{selectedBusiness.desc}</p><div className="business-detail-location"><MapPin size={17}/>{selectedBusiness.city || 'Localização não informada'}</div><a className="business-map-link" href={businessMapLink(selectedBusiness)} target="_blank" rel="noopener noreferrer"><MapPin size={15}/> Ver localização no mapa</a>{selectedBusiness.photos?.length > 0 && <div className="business-detail-gallery">{selectedBusiness.photos.slice(0,5).map((url,index)=><img key={url} src={url} alt={`Foto ${index+1} de ${selectedBusiness.name}`} loading="lazy" decoding="async" role="button" tabIndex={0} title="Clique para ampliar" aria-label={`Ampliar foto ${index+1} de ${selectedBusiness.name}`} onClick={()=>setSelectedPhoto({src:url,name:selectedBusiness.name})} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setSelectedPhoto({src:url,name:selectedBusiness.name})}}}/>)}</div>}<div className="business-detail-actions">{whatsappLink(selectedBusiness.phone) && <a className="listing-contact business-detail-contact" href={whatsappLink(selectedBusiness.phone, `Olá! Encontrei ${selectedBusiness.name} no Conecta Brasil e gostaria de solicitar um orçamento. Poderia me atender?`)} target="_blank" rel="noopener noreferrer" onClick={()=>trackBusinessMetric(selectedBusiness, 'whatsapp_clicks')}>Solicitar orçamento pelo WhatsApp <ArrowRight size={16}/></a>}<button type="button" className="business-share-button" onClick={()=>shareBusiness(selectedBusiness)}><Share2 size={16}/> Compartilhar negócio</button></div>{shareMessage && <small className="share-feedback">{shareMessage}</small>}<div className="business-qr-card"><div><strong>Compartilhe também por QR Code</strong><small>Escaneie com a câmera do celular para abrir este anúncio.</small></div>{businessQr ? <a href={businessQr} download={`qr-${String(selectedBusiness.name || "negocio").toLowerCase().replace(/[^a-z0-9]+/g,"-")}.png`} aria-label="Baixar QR Code do negócio"><img src={businessQr} alt={`QR Code para abrir o anúncio de ${selectedBusiness.name}`} /></a> : <small role="status">{qrError || "Gerando QR Code..."}</small>}</div>{!whatsappLink(selectedBusiness.phone) && <span className="coming">Contato não informado</span>}</div></section></div>}
+    {selectedBusiness && <div className="business-detail-backdrop" role="dialog" aria-modal="true" aria-label={`Detalhes de ${selectedBusiness.name}`} onClick={closeBusinessDetails}><section className="business-detail" onClick={e=>e.stopPropagation()}><button type="button" className="business-detail-close" onClick={closeBusinessDetails} aria-label="Fechar detalhes"><X size={22}/></button><div className="business-detail-hero">{selectedBusiness.photos?.[0] ? <img src={selectedBusiness.photos[0]} alt={`Foto de ${selectedBusiness.name}`}/> : selectedBusiness.logo ? <img src={selectedBusiness.logo} alt={`Logo de ${selectedBusiness.name}`}/> : <Store size={46}/>}</div><div className="business-detail-content"><small>{selectedBusiness.category}</small><h2>{selectedBusiness.name} {selectedBusiness.verified && <span className="verified-badge"><ShieldCheck size={15}/> Verificado</span>}</h2>{selectedBusiness.featured && <strong className="detail-featured"><Star size={13} fill="currentColor"/> Negócio em destaque</strong>}<p>{selectedBusiness.desc}</p><div className="business-detail-location"><MapPin size={17}/>{selectedBusiness.location_visibility === 'exact' ? [selectedBusiness.street, selectedBusiness.street_number, selectedBusiness.neighborhood, selectedBusiness.city].filter(Boolean).join(', ') : selectedBusiness.location_visibility === 'service_area' ? (selectedBusiness.service_cities || selectedBusiness.city || 'Área de atendimento') : [selectedBusiness.neighborhood, selectedBusiness.city].filter(Boolean).join(' - ') || selectedBusiness.city || 'Localização não informada'}</div>{selectedBusiness.location_visibility === 'service_area' && <small>Este negócio atende em diferentes localidades; o endereço exato não é divulgado.</small>}{businessMapLink(selectedBusiness) && <a className="business-map-link" href={businessMapLink(selectedBusiness)} target="_blank" rel="noopener noreferrer"><MapPin size={15}/> {selectedBusiness.location_visibility === 'exact' ? 'Ver endereço no mapa' : selectedBusiness.location_visibility === 'service_area' ? 'Ver área de atendimento' : 'Ver região no mapa'}</a>}{selectedBusiness.photos?.length > 0 && <div className="business-detail-gallery">{selectedBusiness.photos.slice(0,5).map((url,index)=><img key={url} src={url} alt={`Foto ${index+1} de ${selectedBusiness.name}`} loading="lazy" decoding="async" role="button" tabIndex={0} title="Clique para ampliar" aria-label={`Ampliar foto ${index+1} de ${selectedBusiness.name}`} onClick={()=>setSelectedPhoto({src:url,name:selectedBusiness.name})} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setSelectedPhoto({src:url,name:selectedBusiness.name})}}}/>)}</div>}<div className="business-detail-actions">{whatsappLink(selectedBusiness.phone) && <a className="listing-contact business-detail-contact" href={whatsappLink(selectedBusiness.phone, `Olá! Encontrei ${selectedBusiness.name} no Conecta Brasil e gostaria de solicitar um orçamento. Poderia me atender?`)} target="_blank" rel="noopener noreferrer" onClick={()=>trackBusinessMetric(selectedBusiness, 'whatsapp_clicks')}>Solicitar orçamento pelo WhatsApp <ArrowRight size={16}/></a>}<button type="button" className="business-share-button" onClick={()=>shareBusiness(selectedBusiness)}><Share2 size={16}/> Compartilhar negócio</button></div>{shareMessage && <small className="share-feedback">{shareMessage}</small>}<div className="business-qr-card"><div><strong>Compartilhe também por QR Code</strong><small>Escaneie com a câmera do celular para abrir este anúncio.</small></div>{businessQr ? <a href={businessQr} download={`qr-${String(selectedBusiness.name || "negocio").toLowerCase().replace(/[^a-z0-9]+/g,"-")}.png`} aria-label="Baixar QR Code do negócio"><img src={businessQr} alt={`QR Code para abrir o anúncio de ${selectedBusiness.name}`} /></a> : <small role="status">{qrError || "Gerando QR Code..."}</small>}</div>{!whatsappLink(selectedBusiness.phone) && <span className="coming">Contato não informado</span>}</div></section></div>}
     {selectedPhoto && <div className="photo-lightbox" role="dialog" aria-modal="true" aria-label={`Foto ampliada de ${selectedPhoto.name}`} onClick={()=>setSelectedPhoto(null)}><button type="button" className="photo-lightbox-close" aria-label="Fechar imagem" onClick={()=>setSelectedPhoto(null)}><X size={24}/></button><div className="photo-lightbox-content" onClick={e=>e.stopPropagation()}><img src={selectedPhoto.src} alt={selectedPhoto.name}/><span>{selectedPhoto.name}</span></div></div>}
     {showForm && <div className="modal-backdrop" onClick={()=>setShowForm(false)}><div className="modal" role="dialog" aria-modal="true" aria-label="Área de cadastro e administração do Conecta Brasil" onClick={e=>e.stopPropagation()}>
       <button type="button" className="modal-close" onClick={()=>setShowForm(false)} aria-label="Fechar janela"><X/></button>
@@ -1447,6 +1528,7 @@ function App() {
           <label>Descrição<textarea rows="3" maxLength="600" value={editingBusiness.description || ''} onChange={e=>setEditingBusiness({...editingBusiness,description:e.target.value})}/><small className="character-count">{(editingBusiness.description || '').length}/600 caracteres</small></label>
           <div className="form-row"><label>Cidade<input maxLength="80" value={editingBusiness.city || ''} onChange={e=>setEditingBusiness({...editingBusiness,city:e.target.value})}/></label><label>UF<input maxLength="2" pattern="[A-Za-z]{2}" title="Informe a sigla com duas letras" value={editingBusiness.state || ''} onChange={e=>setEditingBusiness({...editingBusiness,state:e.target.value.toUpperCase()})}/></label></div>
           <label>Telefone / WhatsApp<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={editingBusiness.phone || ''} onChange={e=>setEditingBusiness({...editingBusiness,phone:e.target.value})}/></label>
+          <LocationFields item={editingBusiness} onChange={patch=>setEditingBusiness({...editingBusiness,...patch})}/>
           <div className="admin-actions"><button type="submit" className="approve-action" disabled={formBusy}>Salvar alterações</button><button type="button" disabled={formBusy} onClick={()=>setEditingBusiness(null)}>Cancelar</button></div>
         </form>}
         {adminLoading ? <div className="empty-state">Carregando cadastros...</div> : <div className="admin-list">
@@ -1626,6 +1708,7 @@ function App() {
             <label>Descrição<textarea rows="3" maxLength="600" value={ownerEditing.description || ''} onChange={e=>setOwnerEditing({...ownerEditing,description:e.target.value})}/><small className="character-count">{(ownerEditing.description || '').length}/600 caracteres</small></label>
             <div className="form-row"><label>Cidade<input required maxLength="80" autoComplete="address-level2" value={ownerEditing.city || ''} onChange={e=>setOwnerEditing({...ownerEditing,city:e.target.value})}/></label><label>Estado (UF)<input required maxLength="2" pattern="[A-Za-z]{2}" title="Informe a sigla com duas letras" value={ownerEditing.state || ''} onChange={e=>setOwnerEditing({...ownerEditing,state:e.target.value.toUpperCase()})}/></label></div>
             <label>Telefone / WhatsApp<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={ownerEditing.phone || ''} onChange={e=>setOwnerEditing({...ownerEditing,phone:e.target.value})}/></label>
+            <LocationFields item={ownerEditing} onChange={patch=>setOwnerEditing({...ownerEditing,...patch})}/>
             <div className="admin-actions"><button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Salvando...' : 'Salvar alterações'}</button><button type="button" disabled={formBusy} onClick={()=>setOwnerEditing(null)}>Cancelar</button></div>
           </form>}
           <div className="owner-new-listing"><h3>Cadastrar outro negócio</h3><p>Seu novo anúncio ficará pendente até a aprovação da equipe.</p></div>
@@ -1635,6 +1718,7 @@ function App() {
             <label>Descrição<textarea rows="3" maxLength="600" value={businessForm.description} onChange={e=>setBusinessForm({...businessForm,description:e.target.value})} placeholder="Conte brevemente o que você oferece."/><small className="character-count">{businessForm.description.length}/600 caracteres</small></label>
             <label>Categoria<select value={businessForm.category_id} onChange={e=>setBusinessForm({...businessForm,category_id:e.target.value})}><option value="">Selecione uma categoria</option>{availableCategories.map(cat=><option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label>
             <div className="form-row"><label>Cidade<input required maxLength="80" autoComplete="address-level2" value={businessForm.city} onChange={e=>setBusinessForm({...businessForm,city:e.target.value})}/></label><label>Estado (UF)<input required maxLength="2" pattern="[A-Za-z]{2}" title="Informe a sigla com duas letras" value={businessForm.state} onChange={e=>setBusinessForm({...businessForm,state:e.target.value.toUpperCase()})}/></label></div>
+            <LocationFields item={businessForm} onChange={patch=>setBusinessForm({...businessForm,...patch})}/>
             <label>Telefone / WhatsApp<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={businessForm.phone} onChange={e=>setBusinessForm({...businessForm,phone:e.target.value})}/></label>
             <label>Logo da empresa<input id="business-logo-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-describedby="business-logo-help" onChange={handleLogoSelection}/><small className="upload-help" id="business-logo-help">Formatos JPG, PNG, WEBP ou GIF. Uma imagem, até 5 MB.</small></label>{logoPreviewUrl && <div className="upload-preview"><span>Prévia da logo</span><img src={logoPreviewUrl} alt="Prévia da logo selecionada"/></div>}
             <label>Fotos do negócio (até 5)<input id="business-gallery-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple aria-describedby="business-gallery-help" onChange={handleGallerySelection}/><small className="upload-help" id="business-gallery-help">Formatos JPG, PNG, WEBP ou GIF. Selecione até 5 fotos, cada uma com no máximo 5 MB.</small></label>
