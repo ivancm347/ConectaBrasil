@@ -67,6 +67,7 @@ Execute cada arquivo uma vez no **SQL Editor** do projeto Supabase, caso o recur
 | --- | --- |
 | `supabase/business_images.sql` | Colunas de logo/galeria e bucket público de imagens, com políticas de acesso por proprietário. |
 | `supabase/innovations.sql` | Selo de verificação, contadores aproximados e função controlada para registrar métricas. |
+| `supabase/business_metrics_monthly.sql` | Histórico mensal de visualizações e cliques no WhatsApp, mantendo os totais acumulados existentes. |
 | `supabase/admin_audit.sql` | Histórico de ações administrativas. |
 | `supabase/plans.sql` | Tipo de plano e datas de início/vencimento. Preserva cadastros e destaques existentes. |
 | `supabase/owner_edit_approved.sql` | Permite ao proprietário solicitar edição de anúncio aprovado; a edição volta para análise. |
