@@ -126,8 +126,14 @@ function expandSearchQuery(value) {
 }
 
 function getBusinessImagePath(value) {
-  if (!value) return null;
+  if (!value || typeof value !== 'string') return null;
   try {
+    // Compatibilidade: aceita caminhos novos (owner_id/business_id/arquivo)
+    // e URLs antigas públicas/assinadas já gravadas no banco.
+    if (!/^https?:\/\//i.test(value) && !value.includes('/storage/v1/object/')) {
+      const rawPath = decodeURIComponent(value).replace(/^\/+/, '');
+      return rawPath.split('/').length >= 3 ? rawPath : null;
+    }
     const url = new URL(value, window.location.origin);
     const marker = '/storage/v1/object/public/business-images/';
     const signedMarker = '/storage/v1/object/sign/business-images/';
@@ -1281,7 +1287,7 @@ function App({ market }) {
         const { error: uploadError } = await supabase.storage.from('business-images').upload(path, file, { cacheControl: '3600', upsert: false });
         if (uploadError) throw uploadError;
         uploadedPaths.push(path);
-        return supabase.storage.from('business-images').getPublicUrl(path).data.publicUrl;
+        return path;
       };
       const logoUrl = await uploadImage(logoFile, 'logo');
       for (let i = 0; i < galleryFiles.length; i++) uploadedPhotos.push(await uploadImage(galleryFiles[i], `foto-${i + 1}`));
