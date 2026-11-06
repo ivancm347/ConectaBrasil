@@ -210,4 +210,4 @@ Deno.serve(async (req: Request) => {
     audit_recorded: true,
     token_refresh_required: true,
   });
-});
+})
