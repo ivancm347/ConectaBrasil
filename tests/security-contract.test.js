@@ -63,6 +63,12 @@ test('novo anúncio grava country_code do mercado e preserva o país legado', ()
   assert.match(appSource, /country:\s*market\.legacyCountry[\s\S]*?country_code:\s*market\.code/);
 });
 
+
+test('consultas de anúncios usam country_code como filtro operacional BR/PY', () => {
+  assert.match(appSource, /\.eq\('country_code',\s*market\.code\)/);
+  assert.doesNotMatch(appSource, /\.eq\('country',\s*market\.legacyCountry\)/);
+});
+
 test.todo('Integração RLS: proprietário A não lê nem altera anúncios do proprietário B.');
 test.todo('Integração Storage: usuário A não envia, substitui, lê ou remove imagens do anúncio B.');
 test.todo('Integração de país: sessão BR não acessa anúncios/imagens PY e vice-versa.');
