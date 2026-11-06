@@ -44,9 +44,9 @@ test('exclusão exige propriedade do anúncio associado', () => {
 
 test('leitura de imagens continua mediada por can_view_business_image', () => {
   assert.match(imageAccess, /security\s+definer/i);
-  assert.match(imageAccess, /set\\s+search_path\\s*=\\s*''/i);
+  assert.match(imageAccess, /set\s+search_path\s*=\s*''/i);
   assert.match(imageAccess, /b\.status\s*=\s*'approved'/i);
-  assert.match(imageAccess, /b\\.owner_id::text\\s*=\\s*\\(storage\\.foldername\\(object_name\\)\\)\\[1\\]/i);
+  assert.match(imageAccess, /b\.owner_id::text\s*=\s*\(storage\.foldername\(object_name\)\)\[1\]/i);
   assert.match(imageAccess, /b\.owner_id\s*=\s*auth\.uid\(\)/i);
   assert.match(imageAccess, /app_metadata[\s\S]*?role[\s\S]*?admin/i);
   assert.match(imageAccess, /public\.can_view_business_image\(name\)/i);
