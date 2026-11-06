@@ -15,6 +15,7 @@ O Conecta Brasil conecta pessoas, empresas, profissionais, lojas e serviços. A 
 - Perfil público com logo, galeria de fotos, WhatsApp, compartilhamento por link e QR Code.
 - Localização do anúncio com endereço comercial completo, bairro/cidade ou área de atendimento, respeitando a opção de privacidade escolhida pelo anunciante.
 - Solicitação de orçamento pelo WhatsApp.
+- Avaliações públicas de 1 a 5 estrelas, com comentários exibidos somente após moderação.
 - Exibição de negócios em destaque e selo de verificação.
 
 ### Para anunciantes
@@ -34,6 +35,7 @@ O Conecta Brasil conecta pessoas, empresas, profissionais, lojas e serviços. A 
 - Painel de desempenho com visualizações, cliques no WhatsApp, ranking de anúncios e histórico mensal.
 - Resumo financeiro estimado e relatório mensal com impressão/salvamento em PDF e exportação CSV.
 - Alertas para cadastros pendentes e planos que precisam de atenção.
+- Moderação administrativa das avaliações enviadas pelos usuários.
 
 ## Planos comerciais
 
@@ -73,6 +75,7 @@ Execute cada arquivo uma vez no **SQL Editor** do projeto Supabase, caso o recur
 | `supabase/admin_audit.sql` | Histórico de ações administrativas. |
 | `supabase/plans.sql` | Tipo de plano e datas de início/vencimento. Preserva cadastros e destaques existentes. |
 | `supabase/business_location.sql` | Campos de CEP/endereço/bairro e opção de privacidade da localização. Preserva anúncios existentes, que permanecem exibindo somente bairro/cidade. |
+| `supabase/business_reviews.sql` | Tabela de avaliações com nota de 1 a 5, um envio por usuário e negócio, comentários moderados e leitura pública somente após aprovação. |
 | `supabase/owner_edit_approved.sql` | Permite ao proprietário solicitar edição de anúncio aprovado; a edição volta para análise. |
 | `supabase/owner_delete_pending.sql` | Permite ao proprietário excluir somente o próprio cadastro com status `pending`, necessário para desfazer envios incompletos. |
 | `supabase/protect_business_owner_fields.sql` | Impede proprietários de alterar plano, destaque, selo, métricas, identidade e situação administrativa do próprio anúncio. |
