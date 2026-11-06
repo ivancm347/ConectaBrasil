@@ -57,6 +57,12 @@ test('migração de país aceita somente BR/PY e não classifica país desconhec
   assert.match(countryMigration, /alter column country_code set not null/i);
 });
 
+const appSource = read('../src/main.jsx');
+
+test('novo anúncio grava country_code do mercado e preserva o país legado', () => {
+  assert.match(appSource, /country:\s*market\.legacyCountry[\s\S]*?country_code:\s*market\.code/);
+});
+
 test.todo('Integração RLS: proprietário A não lê nem altera anúncios do proprietário B.');
 test.todo('Integração Storage: usuário A não envia, substitui, lê ou remove imagens do anúncio B.');
 test.todo('Integração de país: sessão BR não acessa anúncios/imagens PY e vice-versa.');
