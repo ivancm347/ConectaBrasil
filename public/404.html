@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conecta</title>
+  <script>
+    // GitHub Pages não oferece rewrite de SPA. Preserva a rota solicitada
+    // e devolve o visitante ao app; o roteador do app restaura o caminho.
+    (function () {
+      var base = '/ConectaBrasil/';
+      var path = window.location.pathname;
+      if (!path.startsWith(base)) return;
+      var route = path.slice(base.length);
+      var destination = base + '?__route=' + encodeURIComponent(route + window.location.search + window.location.hash);
+      window.location.replace(destination);
+    })();
+  </script>
+</head>
+<body>
+  <p>Carregando Conecta...</p>
+</body>
+</html>
