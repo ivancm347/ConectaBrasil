@@ -55,6 +55,11 @@ test('leitura de imagens continua mediada por can_view_business_image', () => {
   assert.match(imageAccess, /b\.status\s*=\s*'approved'/i);
   assert.match(imageAccess, /b\.owner_id::text\s*=\s*\(storage\.foldername\(object_name\)\)\[1\]/i);
   assert.match(imageAccess, /b\.owner_id\s*=\s*auth\.uid\(\)/i);
+  assert.match(
+    imageAccess,
+    /or\s*\(\s*b\.owner_id\s*=\s*auth\.uid\(\)\s*and\s*b\.country_code\s*=\s*\(auth\.jwt\(\)\s*->\s*'app_metadata'\s*->>\s*'market_code'\)\s*\)/i,
+    'Leitura privada pelo proprietário deve exigir o mercado confiável da sessão',
+  );
   assert.match(imageAccess, /app_metadata[\s\S]*?role[\s\S]*?admin/i);
   assert.match(imageAccess, /public\.can_view_business_image\(name\)/i);
 });
