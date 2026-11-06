@@ -1266,7 +1266,7 @@ function App({ market }) {
       const slugBase = businessForm.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const slug = slugBase + '-' + crypto.randomUUID().slice(0, 8);
       const { data, error } = await supabase.from('businesses').insert({
-        owner_id: authUser.id, name, slug, country: market.legacyCountry,
+        owner_id: authUser.id, name, slug, country: market.legacyCountry, country_code: market.code,
         description: businessForm.description.trim(), business_type: businessForm.business_type,
         phone: businessForm.phone.trim(), city,
         state, postal_code: postalCode, street: businessForm.street.trim(),
