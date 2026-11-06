@@ -2,6 +2,8 @@ export const MARKETS = {
   BR: {
     code: 'BR',
     path: 'br',
+    legacyCountry: 'Brasil',
+    countryName: 'Brasil',
     name: 'ConectaBrasil',
     language: 'pt-BR',
     currency: 'BRL',
@@ -11,6 +13,8 @@ export const MARKETS = {
   PY: {
     code: 'PY',
     path: 'py',
+    legacyCountry: 'Paraguai',
+    countryName: 'Paraguay',
     name: 'Conecta Paraguay',
     language: 'es',
     currency: 'PYG',
