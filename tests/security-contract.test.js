@@ -5,9 +5,9 @@ import { readFileSync } from 'node:fs';
 import { MARKETS } from '../src/lib/market.js';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
-const imageMigration = read('../supabase/migrations/20261106120000_secure_business_image_ownership.sql');
+const imageMigration = read('../supabase/migrations/20261106150000_secure_business_image_storage_policies.sql');
 const bucketSetup = read('../supabase/business_images.sql');
-const imageAccess = read('../supabase/fix_business_image_access.sql');
+const imageAccess = imageMigration;
 const countryMigration = read('../supabase/migrations/20261106090000_add_business_country_code.sql');
 
 function policyBlock(policyName) {
