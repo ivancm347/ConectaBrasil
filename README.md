@@ -13,6 +13,7 @@ O Conecta Brasil conecta pessoas, empresas, profissionais, lojas e serviços. A 
 - Busca por voz em português nos navegadores compatíveis.
 - Localização opcional do visitante, somente após autorização, com abertura do OpenStreetMap.
 - Perfil público com logo, galeria de fotos, WhatsApp, compartilhamento por link e QR Code.
+- Localização do anúncio com endereço comercial completo, bairro/cidade ou área de atendimento, respeitando a opção de privacidade escolhida pelo anunciante.
 - Solicitação de orçamento pelo WhatsApp.
 - Exibição de negócios em destaque e selo de verificação.
 
@@ -71,6 +72,7 @@ Execute cada arquivo uma vez no **SQL Editor** do projeto Supabase, caso o recur
 | `supabase/business_metrics_monthly.sql` | Histórico mensal de visualizações e cliques no WhatsApp, mantendo os totais acumulados existentes. |
 | `supabase/admin_audit.sql` | Histórico de ações administrativas. |
 | `supabase/plans.sql` | Tipo de plano e datas de início/vencimento. Preserva cadastros e destaques existentes. |
+| `supabase/business_location.sql` | Campos de CEP/endereço/bairro e opção de privacidade da localização. Preserva anúncios existentes, que permanecem exibindo somente bairro/cidade. |
 | `supabase/owner_edit_approved.sql` | Permite ao proprietário solicitar edição de anúncio aprovado; a edição volta para análise. |
 | `supabase/owner_delete_pending.sql` | Permite ao proprietário excluir somente o próprio cadastro com status `pending`, necessário para desfazer envios incompletos. |
 | `supabase/protect_business_owner_fields.sql` | Impede proprietários de alterar plano, destaque, selo, métricas, identidade e situação administrativa do próprio anúncio. |
