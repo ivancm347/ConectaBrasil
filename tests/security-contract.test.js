@@ -72,4 +72,4 @@ test('consultas de anúncios usam country_code como filtro operacional BR/PY', (
 test.todo('Integração RLS: proprietário A não lê nem altera anúncios do proprietário B.');
 test.todo('Integração Storage: usuário A não envia, substitui, lê ou remove imagens do anúncio B.');
 test.todo('Integração de país: sessão BR não acessa anúncios/imagens PY e vice-versa.');
-test.todo('Integração pública: anúncios e imagens aprovados aparecem somente no mercado correto.');
+test.todo('Integração pública: anúncios aprovados BR e PY permanecem públicos; a interface filtra a vitrine pelo country_code selecionado.');
