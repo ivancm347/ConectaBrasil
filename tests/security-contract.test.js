@@ -28,7 +28,7 @@ test('bucket business-images é configurado como privado', () => {
 test('upload exige UID da pasta e anúncio pertencente ao usuário', () => {
   const sql = policyBlock('Owners upload business images');
   assert.match(sql, /storage\.foldername\(name\)\)\[1\]\s*=\s*auth\.uid\(\)::text/i);
-  assert.match(sql, /exists\s*\([\s\S]*?from\s+public\.businesses\s+b[\s\S]*?b\.id::text\s*=\s*\(storage\.foldername\(name\)\)\[2\][\s\S]*?b\.owner_id\s*=\s*auth\.uid\(\)/i);
+  assert.match(sql, /exists\s*\([\s\S]*?from\s+public\.businesses(?:\s+as)?\s+b[\s\S]*?b\.id::text\s*=\s*\(storage\.foldername\(name\)\)\[2\][\s\S]*?b\.owner_id\s*=\s*auth\.uid\(\)/i);
 });
 
 test('alteração exige propriedade tanto no objeto atual quanto no destino', () => {
