@@ -42,3 +42,10 @@ export function getMarketPath(marketCode, baseUrl = import.meta.env.BASE_URL) {
   const market = MARKETS[String(marketCode || 'BR').toUpperCase()] || MARKETS.BR;
   return `${normalizeBasePath(baseUrl)}${market.path}`;
 }
+
+/** Builds a browser-storage key isolated by the active market. */
+export function getMarketStorageKey(key, marketCode = getMarketFromPath().code) {
+  const code = String(marketCode || 'BR').toUpperCase();
+  if (!MARKETS[code]) throw new Error('Mercado inválido para armazenamento local.');
+  return `conecta:${code}:${String(key || '').replace(/^:+|:+$/g, '')}`;
+}
