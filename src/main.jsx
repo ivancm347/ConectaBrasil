@@ -4,7 +4,7 @@ import { Search, MapPin, Store, Wrench, ShoppingBag, Heart, ArrowRight, Menu, X,
 import './style.css';
 import '../public/image-fit.css';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
-import { getMarketFromPath, getMarketPath } from './lib/market';
+import { getMarketFromPath, getMarketPath, getMarketStorageKey } from './lib/market';
 import QRCode from 'qrcode';
 
 const categories = [
@@ -202,14 +202,14 @@ async function fetchPublicBusinesses() {
     };
   }));
   try {
-    localStorage.setItem('conecta-public-businesses', JSON.stringify(businesses.map(({ icon, ...item }) => item)));
+    localStorage.setItem(getMarketStorageKey('public-businesses'), JSON.stringify(businesses.map(({ icon, ...item }) => item)));
   } catch { /* A vitrine continua funcionando mesmo se o armazenamento local estiver cheio. */ }
   return businesses;
 }
 
 function readCachedPublicBusinesses() {
   try {
-    const saved = JSON.parse(localStorage.getItem('conecta-public-businesses') || '[]');
+    const saved = JSON.parse(localStorage.getItem(getMarketStorageKey('public-businesses')) || '[]');
     if (!Array.isArray(saved)) return [];
     const now = Date.now();
     return saved.filter(item => item && item.id && item.name).map(item => {
@@ -242,7 +242,7 @@ function App() {
   const [menu, setMenu] = useState(false);
   const [installPrompt, setInstallPrompt] = useState(null);
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
-  const [lastSuccessfulSync, setLastSuccessfulSync] = useState(() => { try { return localStorage.getItem('conecta-last-sync') || ''; } catch { return ''; } });
+  const [lastSuccessfulSync, setLastSuccessfulSync] = useState(() => { try { return localStorage.getItem(getMarketStorageKey('last-sync')) || ''; } catch { return ''; } });
   const [appInstalled, setAppInstalled] = useState(false);
   const [installHelpOpen, setInstallHelpOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -282,7 +282,7 @@ function App() {
   const [shareMessage, setShareMessage] = useState('');
   const [businessQr, setBusinessQr] = useState('');
   const [qrError, setQrError] = useState('');
-  const [favoriteIds, setFavoriteIds] = useState(() => { try { const saved = JSON.parse(localStorage.getItem('conecta-favorites') || '[]'); return Array.isArray(saved) ? saved.map(String) : []; } catch { return []; } });
+  const [favoriteIds, setFavoriteIds] = useState(() => { try { const saved = JSON.parse(localStorage.getItem(getMarketStorageKey('favorites')) || '[]'); return Array.isArray(saved) ? saved.map(String) : []; } catch { return []; } });
   const [showFavorites, setShowFavorites] = useState(false);
   const [formBusy, setFormBusy] = useState(false);
   const [formMessage, setFormMessage] = useState('');
@@ -326,7 +326,7 @@ function App() {
   const [marketingCopied, setMarketingCopied] = useState(false);
   const isAdmin = authUser?.app_metadata?.role === 'admin';
 
-  useEffect(() => { try { localStorage.setItem('conecta-favorites', JSON.stringify(favoriteIds)); } catch { /* Favoritos continuam disponíveis durante esta sessão. */ } }, [favoriteIds]);
+  useEffect(() => { try { localStorage.setItem(getMarketStorageKey('favorites'), JSON.stringify(favoriteIds)); } catch { /* Favoritos continuam disponíveis durante esta sessão. */ } }, [favoriteIds]);
 
   useEffect(() => {
     if (!isAdmin || !supabase || !navigator.onLine) return;
@@ -1078,7 +1078,7 @@ function App() {
       if (originalStatus === 'approved') {
         setBusinesses(rows => {
           const next = rows.filter(row => String(row.id) !== String(ownerEditing.id));
-          try { localStorage.setItem('conecta-public-businesses', JSON.stringify(next.map(({ icon, ...item }) => item))); } catch { /* A vitrine continua disponível durante esta sessão. */ }
+          try { localStorage.setItem(getMarketStorageKey('public-businesses'), JSON.stringify(next.map(({ icon, ...item }) => item))); } catch { /* A vitrine continua disponível durante esta sessão. */ }
           return next;
         });
         if (String(selectedBusiness?.id) === String(ownerEditing.id)) setSelectedBusiness(null);
@@ -1319,7 +1319,7 @@ function App() {
     if (!isSupabaseConfigured || !supabase) return;
     let alive = true;
     fetchPublicBusinesses()
-      .then(rows => { if (alive) { setBusinesses(rows); const syncedAt = new Date().toISOString(); setLastSuccessfulSync(syncedAt); try { localStorage.setItem('conecta-last-sync', syncedAt); } catch { /* A lista segue disponível na sessão. */ } } })
+      .then(rows => { if (alive) { setBusinesses(rows); const syncedAt = new Date().toISOString(); setLastSuccessfulSync(syncedAt); try { localStorage.setItem(getMarketStorageKey('last-sync'), syncedAt); } catch { /* A lista segue disponível na sessão. */ } } })
       .catch(() => { if (alive) setLoadError('Não foi possível carregar os cadastros agora.'); })
       .finally(() => { if (alive) setLoadingBusinesses(false); });
     return () => { alive = false; };
@@ -1341,7 +1341,7 @@ function App() {
       if (!categoryResult.error) setAvailableCategories(categoryResult.data || []);
       const syncedAt = new Date().toISOString();
       setLastSuccessfulSync(syncedAt);
-      try { localStorage.setItem('conecta-last-sync', syncedAt); } catch { /* A sincronização continua válida nesta sessão. */ }
+      try { localStorage.setItem(getMarketStorageKey('last-sync'), syncedAt); } catch { /* A sincronização continua válida nesta sessão. */ }
       setPublicRefreshMessage('Lista atualizada.');
     } catch {
       setLoadError('Não foi possível carregar os cadastros agora. Verifique sua conexão e tente novamente.');
