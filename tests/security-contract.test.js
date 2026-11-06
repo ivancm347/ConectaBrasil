@@ -12,7 +12,7 @@ const countryMigration = read('../supabase/migrations/20261106090000_add_busines
 const reviewMigration = read('../supabase/migrations/20261106160000_scope_business_reviews_by_market.sql');
 
 function policyBlock(policyName) {
-  const escaped = policyName.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
+  const escaped = policyName;
   const match = imageMigration.match(new RegExp('create policy "' + escaped + '"[\s\S]*?;','i'));
   assert.ok(match, `Política ausente: ${policyName}`);
   return match[0];
