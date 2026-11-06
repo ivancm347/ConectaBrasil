@@ -242,6 +242,9 @@ function App() {
   const [adminCategories, setAdminCategories] = useState([]);
   const [newCategory, setNewCategory] = useState('');
   const [adminAuditLogs, setAdminAuditLogs] = useState([]);
+  const [monthlyBusinessMetrics, setMonthlyBusinessMetrics] = useState([]);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [metricsError, setMetricsError] = useState('');
   const [selectedReportMonth, setSelectedReportMonth] = useState(() => new Date().toISOString().slice(0,7));
   const [auditLoading, setAuditLoading] = useState(false);
   const [ownerBusinesses, setOwnerBusinesses] = useState([]);
@@ -260,6 +263,22 @@ function App() {
   const isAdmin = authUser?.app_metadata?.role === 'admin';
 
   useEffect(() => { try { localStorage.setItem('conecta-favorites', JSON.stringify(favoriteIds)); } catch { /* Favoritos continuam disponíveis durante esta sessão. */ } }, [favoriteIds]);
+
+  useEffect(() => {
+    if (!isAdmin || !supabase || !navigator.onLine) return;
+    let active = true;
+    setMetricsLoading(true);
+    setMetricsError('');
+    supabase.rpc('get_admin_business_metrics', { p_month: `${selectedReportMonth}-01` })
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) throw error;
+        setMonthlyBusinessMetrics(data || []);
+      })
+      .catch(() => { if (active) { setMonthlyBusinessMetrics([]); setMetricsError('O relatório mensal de desempenho ainda não está disponível. Execute a migração de métricas no Supabase.'); } })
+      .finally(() => { if (active) setMetricsLoading(false); });
+    return () => { active = false; };
+  }, [isAdmin, selectedReportMonth]);
 
   // Restaura a sessão do Supabase ao abrir ou atualizar o app.
   // A inscrição também mantém a interface sincronizada com login, logout e renovação de sessão.
@@ -1248,6 +1267,10 @@ function App() {
     const expiring = plans.filter(row => row.isExpiring).sort((a,b) => new Date(a.item.plan_expires_at || a.item.featured_expires_at) - new Date(b.item.plan_expires_at || b.item.featured_expires_at));
     return {
       total: adminBusinesses.length, approved: approved.length, pending: pending.length,
+      views: approved.reduce((sum,item)=>sum+Number(item.views_count || 0),0),
+      whatsappClicks: approved.reduce((sum,item)=>sum+Number(item.whatsapp_clicks || 0),0),
+      topViewed: [...approved].sort((a,b)=>Number(b.views_count || 0)-Number(a.views_count || 0)).slice(0,5),
+      topContacted: [...approved].sort((a,b)=>Number(b.whatsapp_clicks || 0)-Number(a.whatsapp_clicks || 0)).slice(0,5),
       free: approved.filter(item => !plans.find(row => row.item.id === item.id)?.isActive).length,
       destaque: active.filter(row => row.type === 'destaque').length,
       parceiro: active.filter(row => row.type === 'parceiro').length,
@@ -1432,6 +1455,7 @@ function App() {
             <p>{item.description || 'Sem descrição informada.'}</p>
             {(item.logo_url || item.gallery_urls?.length) && <div className="admin-image-preview">{item.logo_url && <img loading="lazy" src={item.logo_url} alt={`Logo ${item.name}`}/>} {(item.gallery_urls || []).map((url,index)=><img key={url} loading="lazy" src={url} alt={`Foto ${index+1} de ${item.name}`}/>)}</div>}
             <div className="admin-meta"><span>{item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</span>{item.phone && <span>{item.phone}</span>}<span>{new Date(item.created_at).toLocaleDateString('pt-BR')}</span></div>
+            <div className="admin-meta" aria-label="Desempenho do anúncio"><span>👁 {Number(item.views_count || 0).toLocaleString('pt-BR')} visualizações</span><span>WhatsApp: {Number(item.whatsapp_clicks || 0).toLocaleString('pt-BR')} cliques</span></div>
              <div className="admin-plan-box" style={{margin:'12px 0',padding:12,border:'1px solid #dce6ec',borderRadius:12,background:'#f7fafc'}}>
                <div style={{display:'flex',justifyContent:'space-between',gap:8,flexWrap:'wrap',alignItems:'center'}}>
                  <strong>Plano: {({gratuito:'Gratuito',destaque:'Destaque',parceiro:'Parceiro'})[item.plan_type] || (item.featured?'Destaque legado':'Gratuito')}</strong>
@@ -1462,6 +1486,30 @@ function App() {
         <section className="admin-category-manager"><h3>Gerenciar categorias</h3><p>Cadastre novas categorias ou desative as que não devem aparecer no formulário de anunciantes.</p>
           <form onSubmit={addAdminCategory}><input aria-label="Nome da nova categoria" maxLength="60" value={newCategory} onChange={e=>setNewCategory(e.target.value)} maxLength="60" placeholder="Nome da nova categoria" required/><button type="submit" className="approve-action" disabled={formBusy}>Adicionar</button></form>
           <div className="admin-category-list">{adminCategories.length ? adminCategories.map(cat=><div key={cat.id}><span>{cat.name}<small>{cat.active?'Ativa':'Inativa'}</small></span><button type="button" disabled={formBusy} onClick={()=>toggleCategory(cat)}>{cat.active?'Desativar':'Ativar'}</button></div>) : <div className="admin-inline-empty">Nenhuma categoria cadastrada ainda.</div>}</div>
+        </section>
+        <section className="admin-category-manager" style={{marginTop:18}}>
+          <h3>Desempenho da vitrine</h3>
+          <p>Indicadores aproximados dos anúncios aprovados. Visualizações contam aberturas do perfil; cliques contam acionamentos do botão de WhatsApp.</p>
+          <div className="admin-stats" style={{margin:'12px 0'}}>
+            <div className="admin-stat-button"><b>{adminOverview.views.toLocaleString('pt-BR')}</b><span>Visualizações acumuladas</span></div>
+            <div className="admin-stat-button"><b>{adminOverview.whatsappClicks.toLocaleString('pt-BR')}</b><span>Cliques acumulados no WhatsApp</span></div>
+          </div>
+          <label style={{display:'block',maxWidth:240,margin:'12px 0'}}>Mês de referência<input type="month" value={selectedReportMonth} onChange={event=>setSelectedReportMonth(event.target.value)}/></label>
+          {metricsLoading ? <div className="admin-inline-empty">Carregando desempenho do mês...</div> : metricsError ? <div className="form-notice" role="status">{metricsError}</div> : <div className="admin-stats" style={{margin:'12px 0'}}>
+            <div className="admin-stat-button"><b>{monthlyBusinessMetrics.reduce((sum,row)=>sum+Number(row.views_count || 0),0).toLocaleString('pt-BR')}</b><span>Visualizações no mês</span></div>
+            <div className="admin-stat-button"><b>{monthlyBusinessMetrics.reduce((sum,row)=>sum+Number(row.whatsapp_clicks || 0),0).toLocaleString('pt-BR')}</b><span>Cliques no WhatsApp no mês</span></div>
+          </div>}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(230px,1fr))',gap:12,marginTop:12}}>
+            <div style={{background:'#fff',border:'1px solid #e0e8ed',borderRadius:12,padding:12}}>
+              <strong style={{display:'block',marginBottom:8}}>Mais visualizados</strong>
+              {adminOverview.topViewed.length ? adminOverview.topViewed.map(item=><div key={item.id} style={{display:'flex',justifyContent:'space-between',gap:8,padding:'7px 0',borderTop:'1px solid #edf1f4',fontSize:12}}><span>{item.name}</span><b>{Number(item.views_count || 0).toLocaleString('pt-BR')}</b></div>) : <small style={{color:'#64748b'}}>Ainda não há visualizações registradas.</small>}
+            </div>
+            <div style={{background:'#fff',border:'1px solid #e0e8ed',borderRadius:12,padding:12}}>
+              <strong style={{display:'block',marginBottom:8}}>Mais contatos pelo WhatsApp</strong>
+              {adminOverview.topContacted.length ? adminOverview.topContacted.map(item=><div key={item.id} style={{display:'flex',justifyContent:'space-between',gap:8,padding:'7px 0',borderTop:'1px solid #edf1f4',fontSize:12}}><span>{item.name}</span><b>{Number(item.whatsapp_clicks || 0).toLocaleString('pt-BR')}</b></div>) : <small style={{color:'#64748b'}}>Ainda não há cliques registrados.</small>}
+            </div>
+          </div>
+          <small style={{display:'block',marginTop:10,color:'#64748b'}}>Os dados são aproximados e começam a compor o histórico mensal após a migração. Os totais acumulados já existentes são preservados; interações antigas não podem ser distribuídas retroativamente por mês.</small>
         </section>
         <section className="admin-category-manager" style={{marginTop:18}}>
           <h3>Relatório financeiro dos planos</h3>
