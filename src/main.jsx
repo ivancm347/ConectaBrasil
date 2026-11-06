@@ -565,7 +565,7 @@ function App({ market }) {
 
   async function loadBusinessReviews(businessId) {
     if (!supabase || !businessId) { setBusinessReviews([]); return; }
-    const { data, error } = await supabase.from('business_reviews').select('id,rating,comment,created_at').eq('business_id', businessId).eq('status', 'approved').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('business_reviews').select('id,rating,comment,created_at').eq('business_id', businessId).eq('status', 'approved').eq('country', market.legacyCountry).order('created_at', { ascending: false });
     if (error) { setBusinessReviews([]); setReviewError('As avaliações ainda não puderam ser carregadas.'); return; }
     setBusinessReviews(data || []);
   }
@@ -680,22 +680,22 @@ function App({ market }) {
     try {
       let result = await supabase.from('businesses')
         .select('id,name,description,business_type,phone,city,state,postal_code,street,street_number,neighborhood,address_complement,location_visibility,service_cities,status,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,views_count,whatsapp_clicks,created_at,logo_url,gallery_urls,business_categories(categories(name))')
-        .order('created_at', { ascending: false });
+        .eq('country', market.legacyCountry).order('created_at', { ascending: false });
       if (result.error && /postal_code|street_number|address_complement|location_visibility|service_cities|column/i.test(result.error.message || '')) {
         result = await supabase.from('businesses')
           .select('id,name,description,business_type,phone,city,state,status,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,views_count,whatsapp_clicks,created_at,logo_url,gallery_urls,business_categories(categories(name))')
-          .order('created_at', { ascending: false });
+          .eq('country', market.legacyCountry).order('created_at', { ascending: false });
       }
       if (result.error && /plan_type|plan_started_at|plan_expires_at|featured_expires_at|column/i.test(result.error.message || '')) {
           setPlanSchemaReady(false);
           result = await supabase.from('businesses')
             .select('id,name,description,business_type,phone,city,state,status,featured,verified,views_count,whatsapp_clicks,created_at,logo_url,gallery_urls,business_categories(categories(name))')
-            .order('created_at', { ascending: false });
+            .eq('country', market.legacyCountry).order('created_at', { ascending: false });
         }
         if (result.error && /verified|views_count|whatsapp_clicks|column/i.test(result.error.message || '')) {
         result = await supabase.from('businesses')
           .select('id,name,description,business_type,phone,city,state,status,featured,created_at,logo_url,gallery_urls,business_categories(categories(name))')
-          .order('created_at', { ascending: false });
+          .eq('country', market.legacyCountry).order('created_at', { ascending: false });
       }
       if (result.error) throw result.error;
       setPlanSchemaReady(Boolean(result.data?.length === 0 || Object.prototype.hasOwnProperty.call(result.data?.[0] || {}, 'plan_type')));
@@ -998,16 +998,16 @@ function App({ market }) {
     try {
       let result = await supabase.from('businesses')
         .select('id,name,description,business_type,phone,city,state,postal_code,street,street_number,neighborhood,address_complement,location_visibility,service_cities,status,views_count,whatsapp_clicks,created_at,updated_at,business_categories(categories(name))')
-        .eq('owner_id', authUser.id).order('created_at', { ascending: false });
+        .eq('owner_id', authUser.id).eq('country', market.legacyCountry).order('created_at', { ascending: false });
       if (result.error && /postal_code|street_number|address_complement|location_visibility|service_cities|column/i.test(result.error.message || '')) {
         result = await supabase.from('businesses')
           .select('id,name,description,business_type,phone,city,state,status,views_count,whatsapp_clicks,created_at,updated_at,business_categories(categories(name))')
-          .eq('owner_id', authUser.id).order('created_at', { ascending: false });
+          .eq('owner_id', authUser.id).eq('country', market.legacyCountry).order('created_at', { ascending: false });
       }
       if (result.error && /views_count|whatsapp_clicks|column/i.test(result.error.message || '')) {
         result = await supabase.from('businesses')
           .select('id,name,description,business_type,phone,city,state,status,created_at,updated_at,business_categories(categories(name))')
-          .eq('owner_id', authUser.id).order('created_at', { ascending: false });
+          .eq('owner_id', authUser.id).eq('country', market.legacyCountry).order('created_at', { ascending: false });
       }
       if (result.error) throw result.error;
       setOwnerBusinesses(result.data || []);
