@@ -82,6 +82,9 @@ Deno.serve(async (req: Request) => {
   }
 
   const currentMetadata = targetData.user.app_metadata ?? {};
+  if (currentMetadata.role === "admin") {
+    return json({ error: "A global administrator cannot receive an exclusive market assignment" }, 409);
+  }
   const existingMarket = currentMetadata.market_code;
   if (existingMarket && existingMarket !== "BR") {
     return json({ error: "Target already has a different market assignment" }, 409);
