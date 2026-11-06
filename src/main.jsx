@@ -1319,10 +1319,28 @@ function App() {
     const baseListings = isSupabaseConfigured ? businesses : examples;
     return testPaginationMode ? [...baseListings, ...paginationTestListings] : baseListings;
   }, [testPaginationMode, businesses]);
-  const citySuggestions = useMemo(() => [...new Set(listingSource
-    .map(item => item.city).filter(Boolean)
-    .map(value => value.trim()).filter(Boolean))]
+  const citySuggestions = useMemo(() => [...new Set(listingSource.flatMap(item => [
+    item.city,
+    ...String(item.service_cities || '').split(',')
+  ]).filter(Boolean).map(value => value.trim()).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, 'pt-BR')), [listingSource]);
+  const searchSuggestions = useMemo(() => {
+    const terms = [
+      ...Object.keys(searchSynonyms),
+      ...categories.map(item => item.name),
+      ...listingSource.flatMap(item => [item.name, item.category, item.tag])
+    ];
+    const typed = normalizeSearch(query);
+    const unique = [...new Set(terms.map(value => String(value || '').trim()).filter(Boolean))];
+    return unique
+      .filter(value => !typed || normalizeSearch(value).includes(typed))
+      .sort((a, b) => {
+        const aStarts = normalizeSearch(a).startsWith(typed) ? 0 : 1;
+        const bStarts = normalizeSearch(b).startsWith(typed) ? 0 : 1;
+        return aStarts - bStarts || a.localeCompare(b, 'pt-BR');
+      })
+      .slice(0, 24);
+  }, [listingSource, query]);
   const recordedPlanActivations = useMemo(() => adminAuditLogs
     .filter(log => log.entity_type === 'plano' && log.action === 'plano ativado por 30 dias')
     .map(log => {
@@ -1411,7 +1429,10 @@ function App() {
     return matchesFilter && normalizeSearch([item.name, item.city, item.state, item.phone].filter(Boolean).join(' ')).includes(normalizeSearch(adminSearch));
   }), [adminBusinesses, adminFilter, adminSearch]);
   const filtered = useMemo(() => listingSource.filter(item => {
-    const searchable = normalizeSearch([item.name, item.desc, item.category, item.city, item.phone].join(' '));
+    const searchable = normalizeSearch([
+      item.name, item.desc, item.category, item.tag, item.city, item.service_cities,
+      item.neighborhood, item.phone
+    ].join(' '));
     const queryTokens = normalizeSearch(query).split(/\s+/).filter(term => term && !searchStopWords.has(term));
     const matchesSearch = !queryTokens.length || queryTokens.every(term =>
       searchable.includes(term) ||
@@ -1419,7 +1440,7 @@ function App() {
     );
     return (active === 'Todas' || item.category === active) &&
       matchesSearch &&
-      (!city || normalizeSearch(item.city).includes(normalizeSearch(city))) &&
+      (!city || normalizeSearch([item.city, item.service_cities].join(' ')).includes(normalizeSearch(city))) &&
       (!showFavorites || favoriteIds.includes(String(item.id || item.name)));
   }), [listingSource, query, active, city, showFavorites, favoriteIds]);
   const listingPageCount = Math.max(1, Math.ceil(filtered.length / listingPageSize));
@@ -1459,7 +1480,7 @@ function App() {
     </header>
     <main>
       <section className="hero"><div className="hero-glow"></div><div className="hero-content"><div className="eyebrow"><Sparkles size={15}/> UM BRASIL DE OPORTUNIDADES</div><h1>O que você procura.<br/><em>Mais perto de você.</em></h1><p>Encontre empresas, profissionais, lojas e serviços. Valorize quem faz a economia acontecer em cada cidade do Brasil.</p>
-        <div className="search-panel"><label className="search-field"><Search size={20}/><input type="search" maxLength="120" aria-label="Produto, serviço ou negócio que procura" value={query} onChange={e=>setQuery(e.target.value)} placeholder="O que você está procurando?"/></label><span className="search-divider"></span><label className="search-field city-field"><MapPin size={20}/><input type="search" list="city-suggestions" maxLength="80" aria-label="Filtrar por cidade ou região" value={city} onChange={e=>setCity(e.target.value)} placeholder="Cidade ou região"/><datalist id="city-suggestions">{citySuggestions.map(value=><option key={value} value={value}/>)}</datalist></label><button type="button" className="btn search-btn" aria-label="Buscar negócios com os filtros informados" onClick={()=>document.getElementById('explorar').scrollIntoView({behavior:'smooth'})}>Buscar <ArrowRight size={17}/></button><button type="button" className="voice-search-btn" onClick={startVoiceSearch} aria-label="Pesquisar por voz" title="Pesquisar por voz"><Mic size={17}/></button><button type="button" className="voice-search-btn location-search-btn" onClick={openNearbyMap} aria-label="Encontrar negócios perto de mim" title="Encontrar negócios perto de mim"><LocateFixed size={17}/></button></div>{(voiceMessage || isListening || locationMessage) && <div className="voice-search-status" role="status">{isListening ? "Ouvindo..." : [voiceMessage,locationMessage].filter(Boolean).join(" ")}{nearbyMapUrl && <a className="nearby-map-result" href={nearbyMapUrl} target="_blank" rel="noopener noreferrer">Ver mapa da minha localização</a>}</div>}
+        <div className="search-panel"><label className="search-field"><Search size={20}/><input type="search" list="search-suggestions" maxLength="120" aria-label="Produto, serviço ou negócio que procura" value={query} onChange={e=>setQuery(e.target.value)} placeholder="O que você está procurando?"/><datalist id="search-suggestions">{searchSuggestions.map(value=><option key={value} value={value}/>)}</datalist></label><span className="search-divider"></span><label className="search-field city-field"><MapPin size={20}/><input type="search" list="city-suggestions" maxLength="80" aria-label="Filtrar por cidade ou região" value={city} onChange={e=>setCity(e.target.value)} placeholder="Cidade ou região"/><datalist id="city-suggestions">{citySuggestions.map(value=><option key={value} value={value}/>)}</datalist></label><button type="button" className="btn search-btn" aria-label="Buscar negócios com os filtros informados" onClick={()=>document.getElementById('explorar').scrollIntoView({behavior:'smooth'})}>Buscar <ArrowRight size={17}/></button><button type="button" className="voice-search-btn" onClick={startVoiceSearch} aria-label="Pesquisar por voz" title="Pesquisar por voz"><Mic size={17}/></button><button type="button" className="voice-search-btn location-search-btn" onClick={openNearbyMap} aria-label="Encontrar negócios perto de mim" title="Encontrar negócios perto de mim"><LocateFixed size={17}/></button></div>{(voiceMessage || isListening || locationMessage) && <div className="voice-search-status" role="status">{isListening ? "Ouvindo..." : [voiceMessage,locationMessage].filter(Boolean).join(" ")}{nearbyMapUrl && <a className="nearby-map-result" href={nearbyMapUrl} target="_blank" rel="noopener noreferrer">Ver mapa da minha localização</a>}</div>}
         <div style={{marginTop:14,maxWidth:670}}>
           <button type="button" onClick={()=>setGuideOpen(open=>!open)} aria-expanded={guideOpen} style={{display:'inline-flex',alignItems:'center',gap:8,border:'1px solid rgba(255,255,255,.28)',borderRadius:999,padding:'9px 14px',background:'rgba(255,255,255,.09)',color:'#fff',font:'700 12px inherit',cursor:'pointer'}}>
             <Sparkles size={15}/> {guideOpen ? 'Fechar guia de busca' : 'Não sabe o que procurar? Receba uma ajuda'}
