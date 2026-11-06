@@ -1,21 +1,51 @@
 -- CONECTA: primeira etapa de preparação internacional.
 -- Migração aditiva: preserva registros e a coluna legada "country".
--- Executar primeiro em ambiente de teste; NÃO aplicar em produção sem revisão.
+-- Preparada para BR/PY; não altera anúncios existentes sem país reconhecido.
+-- NÃO aplicar em produção antes da revisão completa de RLS, Storage e contexto de país.
 
 begin;
 
 alter table public.businesses
   add column if not exists country_code text;
 
--- Compatibilidade: converte os nomes de país já armazenados.
--- Registros sem país reconhecível permanecem no Brasil, que é o mercado atual.
+-- Valida os valores legados antes de converter.
+-- País nulo, vazio ou desconhecido interrompe a migração em vez de assumir Brasil.
+do $$
+begin
+  if exists (
+    select 1
+    from public.businesses
+    where country_code is null
+      and lower(trim(coalesce(country, ''))) not in (
+        'brasil', 'brazil', 'br',
+        'paraguai', 'paraguay', 'py'
+      )
+  ) then
+    raise exception
+      'Migração cancelada: existem anúncios com country nulo, vazio ou não reconhecido. Revise public.businesses.country antes de continuar.';
+  end if;
+end $$;
+
+-- Converte somente valores explicitamente reconhecidos.
 update public.businesses
 set country_code = case
-  when lower(trim(coalesce(country, ''))) in ('paraguai', 'paraguay', 'py') then 'PY'
-  when lower(trim(coalesce(country, ''))) in ('brasil', 'brazil', 'br', '') then 'BR'
-  else 'BR'
+  when lower(trim(country)) in ('paraguai', 'paraguay', 'py') then 'PY'
+  when lower(trim(country)) in ('brasil', 'brazil', 'br') then 'BR'
 end
 where country_code is null;
+
+-- Segunda validação: impede NOT NULL se algum registro ficou sem classificação.
+do $$
+begin
+  if exists (
+    select 1
+    from public.businesses
+    where country_code is null
+  ) then
+    raise exception
+      'Migração cancelada: pelo menos um anúncio ficou sem country_code.';
+  end if;
+end $$;
 
 alter table public.businesses
   alter column country_code set default 'BR';
