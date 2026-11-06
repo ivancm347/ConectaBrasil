@@ -18,7 +18,10 @@ as $function$
       and b.owner_id::text = (storage.foldername(object_name))[1]
       and (
         b.status = 'approved'
-        or b.owner_id = auth.uid()
+        or (
+          b.owner_id = auth.uid()
+          and b.country_code = (auth.jwt() -> 'app_metadata' ->> 'market_code')
+        )
         or coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') = 'admin'
       )
   );
