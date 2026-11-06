@@ -308,6 +308,9 @@ function App({ market }) {
   const [adminFilter, setAdminFilter] = useState('pending');
   const [adminSearch, setAdminSearch] = useState('');
   const [adminError, setAdminError] = useState('');
+  const [marketAssignmentBusy, setMarketAssignmentBusy] = useState(false);
+  const [marketAssignmentMessage, setMarketAssignmentMessage] = useState('');
+  const [marketAssignmentError, setMarketAssignmentError] = useState('');
   const [editingBusiness, setEditingBusiness] = useState(null);
   const [adminCategories, setAdminCategories] = useState([]);
   const [newCategory, setNewCategory] = useState('');
@@ -331,6 +334,35 @@ function App({ market }) {
   const [marketingOutput, setMarketingOutput] = useState('');
   const [marketingCopied, setMarketingCopied] = useState(false);
   const isAdmin = authUser?.app_metadata?.role === 'admin';
+
+  async function assignBrazilOwnerMarket() {
+    if (!isAdmin || !supabase || marketAssignmentBusy) return;
+    const confirmed = window.confirm(
+      'Confirma atribuir o mercado BR à conta proprietária magicfilly347@gmail.com?'
+    );
+    if (!confirmed) return;
+    setMarketAssignmentBusy(true);
+    setMarketAssignmentMessage('');
+    setMarketAssignmentError('');
+    try {
+      const { data, error } = await supabase.functions.invoke('assign-owner-market', {
+        body: { confirm: 'ASSIGN_OWNER_TO_BR' },
+      });
+      if (error) throw error;
+      if (!data?.ok || data?.market_code !== 'BR' || data?.audit_recorded !== true) {
+        throw new Error(data?.error || 'A função não confirmou a atribuição e o registro de auditoria.');
+      }
+      setMarketAssignmentMessage(
+        data.unchanged
+          ? 'A conta já estava vinculada ao mercado BR. Auditoria conferida.'
+          : 'Mercado BR atribuído e registrado na auditoria. A conta proprietária deve entrar novamente para renovar a sessão.'
+      );
+    } catch (error) {
+      setMarketAssignmentError(error?.message || 'Não foi possível executar a atribuição.');
+    } finally {
+      setMarketAssignmentBusy(false);
+    }
+  }
 
   useEffect(() => { try { localStorage.setItem(getMarketStorageKey('favorites'), JSON.stringify(favoriteIds)); } catch { /* Favoritos continuam disponíveis durante esta sessão. */ } }, [favoriteIds]);
 
@@ -1585,6 +1617,16 @@ function App({ market }) {
             <span aria-hidden="true">↻</span> {adminLoading ? 'Atualizando...' : 'Atualizar'}
           </button>
         </div>
+        <section className="admin-category-manager" style={{margin:"16px 0",padding:16,border:"1px solid #dbe6ed",borderRadius:16,background:"#fff"}}>
+          <h3>Configuração internacional — conta proprietária</h3>
+          <p>Operação restrita ao administrador global. A função no servidor valida a identidade da conta e registra a alteração na auditoria.</p>
+          <button type="button" className="btn" onClick={assignBrazilOwnerMarket} disabled={marketAssignmentBusy}>
+            {marketAssignmentBusy ? 'Processando...' : 'Atribuir mercado BR à conta proprietária'}
+          </button>
+          {marketAssignmentMessage && <p role="status" style={{color:'#18794e',marginTop:10}}>{marketAssignmentMessage}</p>}
+          {marketAssignmentError && <p role="alert" style={{color:'#b42318',marginTop:10}}>{marketAssignmentError}</p>}
+          <small>Esta ação só funcionará quando ENABLE_OWNER_MARKET_ASSIGNMENT estiver autorizado no servidor.</small>
+        </section>
         <section className="admin-category-manager" style={{margin:"16px 0",padding:16,border:"1px solid #dbe6ed",borderRadius:16,background:"#fff"}}>
           <h3>Avaliações dos negócios</h3><p>Revise os comentários antes de publicá-los. Somente avaliações aprovadas aparecem nos perfis.</p>
           {adminReviewsError && <p role="alert">{adminReviewsError}</p>}
