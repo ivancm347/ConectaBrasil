@@ -35,7 +35,7 @@ function normalizeBasePath(baseUrl = '/') {
 export function getMarketFromPath(pathname = window.location.pathname, baseUrl = import.meta.env.BASE_URL) {
   const base = normalizeBasePath(baseUrl);
   const path = String(pathname || '/');
-  const relative = path.startsWith(base) ? path.slice(base.length) : path.replace(/^\\/+/, '');
+  const relative = path.startsWith(base) ? path.slice(base.length) : path.replace(/^\/+/, '');
   const segment = relative.split('/').filter(Boolean)[0]?.toLowerCase();
 
   if (segment === MARKETS.PY.path) return MARKETS.PY;
