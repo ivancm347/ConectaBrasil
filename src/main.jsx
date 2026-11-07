@@ -4,6 +4,7 @@ import { Search, MapPin, Store, Wrench, ShoppingBag, Heart, ArrowRight, Menu, X,
 import './style.css';
 import '../public/image-fit.css';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
+import { getMarketFromPath, getMarketPath, getMarketStorageKey } from './lib/market';
 import QRCode from 'qrcode';
 
 const categories = [
@@ -125,8 +126,14 @@ function expandSearchQuery(value) {
 }
 
 function getBusinessImagePath(value) {
-  if (!value) return null;
+  if (!value || typeof value !== 'string') return null;
   try {
+    // Compatibilidade: aceita caminhos novos (owner_id/business_id/arquivo)
+    // e URLs antigas públicas/assinadas já gravadas no banco.
+    if (!/^https?:\/\//i.test(value) && !value.includes('/storage/v1/object/')) {
+      const rawPath = decodeURIComponent(value).replace(/^\/+/, '');
+      return rawPath.split('/').length >= 3 ? rawPath : null;
+    }
     const url = new URL(value, window.location.origin);
     const marker = '/storage/v1/object/public/business-images/';
     const signedMarker = '/storage/v1/object/sign/business-images/';
@@ -153,20 +160,20 @@ async function createBusinessImageUrl(value) {
   return data?.signedUrl || '';
 }
 
-async function fetchPublicBusinesses() {
+async function fetchPublicBusinesses(market) {
   let result = await supabase.from('businesses')
     .select('id,name,description,business_type,phone,city,state,postal_code,street,street_number,neighborhood,address_complement,location_visibility,service_cities,logo_url,gallery_urls,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,business_categories(categories(name))')
-    .eq('status', 'approved').order('featured', { ascending: false }).order('name', { ascending: true });
+    .eq('status', 'approved').eq('country_code', market.code).order('featured', { ascending: false }).order('name', { ascending: true });
   // Compatibilidade com projetos que ainda não executaram as migrações opcionais.
   if (result.error && /postal_code|street_number|address_complement|location_visibility|service_cities|column/i.test(result.error.message || '')) {
     result = await supabase.from('businesses')
       .select('id,name,description,business_type,phone,city,state,logo_url,gallery_urls,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,business_categories(categories(name))')
-      .eq('status', 'approved').order('featured', { ascending: false }).order('name', { ascending: true });
+      .eq('status', 'approved').eq('country_code', market.code).order('featured', { ascending: false }).order('name', { ascending: true });
   }
   if (result.error && /verified|column/i.test(result.error.message || '')) {
     result = await supabase.from('businesses')
       .select('id,name,description,business_type,phone,city,state,logo_url,gallery_urls,featured,business_categories(categories(name))')
-      .eq('status', 'approved').order('featured', { ascending: false }).order('name', { ascending: true });
+      .eq('status', 'approved').eq('country_code', market.code).order('featured', { ascending: false }).order('name', { ascending: true });
   }
   const { data, error } = result;
   if (error) throw error;
@@ -201,14 +208,14 @@ async function fetchPublicBusinesses() {
     };
   }));
   try {
-    localStorage.setItem('conecta-public-businesses', JSON.stringify(businesses.map(({ icon, ...item }) => item)));
+    localStorage.setItem(getMarketStorageKey('public-businesses'), JSON.stringify(businesses.map(({ icon, ...item }) => item)));
   } catch { /* A vitrine continua funcionando mesmo se o armazenamento local estiver cheio. */ }
   return businesses;
 }
 
 function readCachedPublicBusinesses() {
   try {
-    const saved = JSON.parse(localStorage.getItem('conecta-public-businesses') || '[]');
+    const saved = JSON.parse(localStorage.getItem(getMarketStorageKey('public-businesses')) || '[]');
     if (!Array.isArray(saved)) return [];
     const now = Date.now();
     return saved.filter(item => item && item.id && item.name).map(item => {
@@ -227,7 +234,7 @@ function readCachedPublicBusinesses() {
   }
 }
 
-function App() {
+function App({ market }) {
   const [query, setQuery] = useState('');
   const [voiceMessage, setVoiceMessage] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -241,7 +248,7 @@ function App() {
   const [menu, setMenu] = useState(false);
   const [installPrompt, setInstallPrompt] = useState(null);
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
-  const [lastSuccessfulSync, setLastSuccessfulSync] = useState(() => { try { return localStorage.getItem('conecta-last-sync') || ''; } catch { return ''; } });
+  const [lastSuccessfulSync, setLastSuccessfulSync] = useState(() => { try { return localStorage.getItem(getMarketStorageKey('last-sync')) || ''; } catch { return ''; } });
   const [appInstalled, setAppInstalled] = useState(false);
   const [installHelpOpen, setInstallHelpOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -281,7 +288,7 @@ function App() {
   const [shareMessage, setShareMessage] = useState('');
   const [businessQr, setBusinessQr] = useState('');
   const [qrError, setQrError] = useState('');
-  const [favoriteIds, setFavoriteIds] = useState(() => { try { const saved = JSON.parse(localStorage.getItem('conecta-favorites') || '[]'); return Array.isArray(saved) ? saved.map(String) : []; } catch { return []; } });
+  const [favoriteIds, setFavoriteIds] = useState(() => { try { const saved = JSON.parse(localStorage.getItem(getMarketStorageKey('favorites')) || '[]'); return Array.isArray(saved) ? saved.map(String) : []; } catch { return []; } });
   const [showFavorites, setShowFavorites] = useState(false);
   const [formBusy, setFormBusy] = useState(false);
   const [formMessage, setFormMessage] = useState('');
@@ -301,6 +308,9 @@ function App() {
   const [adminFilter, setAdminFilter] = useState('pending');
   const [adminSearch, setAdminSearch] = useState('');
   const [adminError, setAdminError] = useState('');
+  const [marketAssignmentBusy, setMarketAssignmentBusy] = useState(false);
+  const [marketAssignmentMessage, setMarketAssignmentMessage] = useState('');
+  const [marketAssignmentError, setMarketAssignmentError] = useState('');
   const [editingBusiness, setEditingBusiness] = useState(null);
   const [adminCategories, setAdminCategories] = useState([]);
   const [newCategory, setNewCategory] = useState('');
@@ -325,7 +335,36 @@ function App() {
   const [marketingCopied, setMarketingCopied] = useState(false);
   const isAdmin = authUser?.app_metadata?.role === 'admin';
 
-  useEffect(() => { try { localStorage.setItem('conecta-favorites', JSON.stringify(favoriteIds)); } catch { /* Favoritos continuam disponíveis durante esta sessão. */ } }, [favoriteIds]);
+  async function assignBrazilOwnerMarket() {
+    if (!isAdmin || !supabase || marketAssignmentBusy) return;
+    const confirmed = window.confirm(
+      'Confirma atribuir o mercado BR à conta proprietária magicfilly347@gmail.com?'
+    );
+    if (!confirmed) return;
+    setMarketAssignmentBusy(true);
+    setMarketAssignmentMessage('');
+    setMarketAssignmentError('');
+    try {
+      const { data, error } = await supabase.functions.invoke('assign-owner-market', {
+        body: { confirm: 'ASSIGN_OWNER_TO_BR' },
+      });
+      if (error) throw error;
+      if (!data?.ok || data?.market_code !== 'BR' || data?.audit_recorded !== true) {
+        throw new Error(data?.error || 'A função não confirmou a atribuição e o registro de auditoria.');
+      }
+      setMarketAssignmentMessage(
+        data.unchanged
+          ? 'A conta já estava vinculada ao mercado BR. Auditoria conferida.'
+          : 'Mercado BR atribuído e registrado na auditoria. A conta proprietária deve entrar novamente para renovar a sessão.'
+      );
+    } catch (error) {
+      setMarketAssignmentError(error?.message || 'Não foi possível executar a atribuição.');
+    } finally {
+      setMarketAssignmentBusy(false);
+    }
+  }
+
+  useEffect(() => { try { localStorage.setItem(getMarketStorageKey('favorites'), JSON.stringify(favoriteIds)); } catch { /* Favoritos continuam disponíveis durante esta sessão. */ } }, [favoriteIds]);
 
   useEffect(() => {
     if (!isAdmin || !supabase || !navigator.onLine) return;
@@ -772,7 +811,7 @@ function App() {
       }
       setEditingBusiness(null);
       try {
-        setBusinesses(await fetchPublicBusinesses());
+        setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
         setLoadError('A edição foi salva, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
@@ -848,7 +887,7 @@ function App() {
       setAdminBusinesses(items => items.map(row => row.id === item.id ? { ...row, verified: nextVerified } : row));
       await recordAdminAction(nextVerified ? 'selo verificado concedido' : 'selo verificado removido', 'anúncio', item.id, item.name);
       try {
-        setBusinesses(await fetchPublicBusinesses());
+        setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
         setLoadError('O selo foi salvo, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
@@ -889,7 +928,7 @@ function App() {
       setAdminBusinesses(rows => rows.map(row => row.id === item.id ? { ...row, ...payload } : row));
       await recordAdminAction(planType === 'gratuito' ? 'plano removido' : (isRenewal ? 'plano renovado por 30 dias' : 'plano ativado por 30 dias'), 'plano', item.id, item.name, { plan_type: planType, expires_at: expiresAt, renewal: isRenewal });
       try {
-        setBusinesses(await fetchPublicBusinesses());
+        setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
         setLoadError('O plano foi salvo, mas a vitrine ainda não foi atualizada. Atualize os anúncios.');
@@ -915,7 +954,7 @@ function App() {
       setAdminBusinesses(items => items.map(row => row.id === item.id ? { ...row, featured: !item.featured } : row));
       await recordAdminAction(item.featured ? 'destaque removido' : 'destacado', 'anúncio', item.id, item.name);
       try {
-        setBusinesses(await fetchPublicBusinesses());
+        setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
         setLoadError('O destaque foi salvo, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
@@ -945,7 +984,7 @@ function App() {
       if (editingBusiness?.id === item.id) setEditingBusiness(null);
       if (selectedBusiness?.id === item.id) setSelectedBusiness(null);
       try {
-        setBusinesses(await fetchPublicBusinesses());
+        setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
         setLoadError('O anúncio foi excluído, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
@@ -977,7 +1016,7 @@ function App() {
       }
       if (String(selectedBusiness?.id) === String(id) && status !== 'approved') closeBusinessDetails();
       try {
-        setBusinesses(await fetchPublicBusinesses());
+        setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
         setLoadError('A moderação foi salva, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
@@ -997,16 +1036,16 @@ function App() {
     try {
       let result = await supabase.from('businesses')
         .select('id,name,description,business_type,phone,city,state,postal_code,street,street_number,neighborhood,address_complement,location_visibility,service_cities,status,views_count,whatsapp_clicks,created_at,updated_at,business_categories(categories(name))')
-        .eq('owner_id', authUser.id).order('created_at', { ascending: false });
+        .eq('owner_id', authUser.id).eq('country_code', market.code).order('created_at', { ascending: false });
       if (result.error && /postal_code|street_number|address_complement|location_visibility|service_cities|column/i.test(result.error.message || '')) {
         result = await supabase.from('businesses')
           .select('id,name,description,business_type,phone,city,state,status,views_count,whatsapp_clicks,created_at,updated_at,business_categories(categories(name))')
-          .eq('owner_id', authUser.id).order('created_at', { ascending: false });
+          .eq('owner_id', authUser.id).eq('country_code', market.code).order('created_at', { ascending: false });
       }
       if (result.error && /views_count|whatsapp_clicks|column/i.test(result.error.message || '')) {
         result = await supabase.from('businesses')
           .select('id,name,description,business_type,phone,city,state,status,created_at,updated_at,business_categories(categories(name))')
-          .eq('owner_id', authUser.id).order('created_at', { ascending: false });
+          .eq('owner_id', authUser.id).eq('country_code', market.code).order('created_at', { ascending: false });
       }
       if (result.error) throw result.error;
       setOwnerBusinesses(result.data || []);
@@ -1077,7 +1116,7 @@ function App() {
       if (originalStatus === 'approved') {
         setBusinesses(rows => {
           const next = rows.filter(row => String(row.id) !== String(ownerEditing.id));
-          try { localStorage.setItem('conecta-public-businesses', JSON.stringify(next.map(({ icon, ...item }) => item))); } catch { /* A vitrine continua disponível durante esta sessão. */ }
+          try { localStorage.setItem(getMarketStorageKey('public-businesses'), JSON.stringify(next.map(({ icon, ...item }) => item))); } catch { /* A vitrine continua disponível durante esta sessão. */ }
           return next;
         });
         if (String(selectedBusiness?.id) === String(ownerEditing.id)) setSelectedBusiness(null);
@@ -1259,7 +1298,7 @@ function App() {
       const slugBase = businessForm.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const slug = slugBase + '-' + crypto.randomUUID().slice(0, 8);
       const { data, error } = await supabase.from('businesses').insert({
-        owner_id: authUser.id, name, slug,
+        owner_id: authUser.id, name, slug, country: market.legacyCountry, country_code: market.code,
         description: businessForm.description.trim(), business_type: businessForm.business_type,
         phone: businessForm.phone.trim(), city,
         state, postal_code: postalCode, street: businessForm.street.trim(),
@@ -1280,7 +1319,7 @@ function App() {
         const { error: uploadError } = await supabase.storage.from('business-images').upload(path, file, { cacheControl: '3600', upsert: false });
         if (uploadError) throw uploadError;
         uploadedPaths.push(path);
-        return supabase.storage.from('business-images').getPublicUrl(path).data.publicUrl;
+        return path;
       };
       const logoUrl = await uploadImage(logoFile, 'logo');
       for (let i = 0; i < galleryFiles.length; i++) uploadedPhotos.push(await uploadImage(galleryFiles[i], `foto-${i + 1}`));
@@ -1317,8 +1356,8 @@ function App() {
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
     let alive = true;
-    fetchPublicBusinesses()
-      .then(rows => { if (alive) { setBusinesses(rows); const syncedAt = new Date().toISOString(); setLastSuccessfulSync(syncedAt); try { localStorage.setItem('conecta-last-sync', syncedAt); } catch { /* A lista segue disponível na sessão. */ } } })
+    fetchPublicBusinesses(market)
+      .then(rows => { if (alive) { setBusinesses(rows); const syncedAt = new Date().toISOString(); setLastSuccessfulSync(syncedAt); try { localStorage.setItem(getMarketStorageKey('last-sync'), syncedAt); } catch { /* A lista segue disponível na sessão. */ } } })
       .catch(() => { if (alive) setLoadError('Não foi possível carregar os cadastros agora.'); })
       .finally(() => { if (alive) setLoadingBusinesses(false); });
     return () => { alive = false; };
@@ -1333,14 +1372,14 @@ function App() {
     setPublicRefreshMessage('');
     try {
       const [publicRows, categoryResult] = await Promise.all([
-        fetchPublicBusinesses(),
+        fetchPublicBusinesses(market),
         supabase.from('categories').select('id,name').eq('active', true).order('name')
       ]);
       setBusinesses(publicRows);
       if (!categoryResult.error) setAvailableCategories(categoryResult.data || []);
       const syncedAt = new Date().toISOString();
       setLastSuccessfulSync(syncedAt);
-      try { localStorage.setItem('conecta-last-sync', syncedAt); } catch { /* A sincronização continua válida nesta sessão. */ }
+      try { localStorage.setItem(getMarketStorageKey('last-sync'), syncedAt); } catch { /* A sincronização continua válida nesta sessão. */ }
       setPublicRefreshMessage('Lista atualizada.');
     } catch {
       setLoadError('Não foi possível carregar os cadastros agora. Verifique sua conexão e tente novamente.');
@@ -1578,6 +1617,16 @@ function App() {
             <span aria-hidden="true">↻</span> {adminLoading ? 'Atualizando...' : 'Atualizar'}
           </button>
         </div>
+        <section className="admin-category-manager" style={{margin:"16px 0",padding:16,border:"1px solid #dbe6ed",borderRadius:16,background:"#fff"}}>
+          <h3>Configuração internacional — conta proprietária</h3>
+          <p>Operação restrita ao administrador global. A função no servidor valida a identidade da conta e registra a alteração na auditoria.</p>
+          <button type="button" className="btn" onClick={assignBrazilOwnerMarket} disabled={marketAssignmentBusy}>
+            {marketAssignmentBusy ? 'Processando...' : 'Atribuir mercado BR à conta proprietária'}
+          </button>
+          {marketAssignmentMessage && <p role="status" style={{color:'#18794e',marginTop:10}}>{marketAssignmentMessage}</p>}
+          {marketAssignmentError && <p role="alert" style={{color:'#b42318',marginTop:10}}>{marketAssignmentError}</p>}
+          <small>Esta ação só funcionará quando ENABLE_OWNER_MARKET_ASSIGNMENT estiver autorizado no servidor.</small>
+        </section>
         <section className="admin-category-manager" style={{margin:"16px 0",padding:16,border:"1px solid #dbe6ed",borderRadius:16,background:"#fff"}}>
           <h3>Avaliações dos negócios</h3><p>Revise os comentários antes de publicá-los. Somente avaliações aprovadas aparecem nos perfis.</p>
           {adminReviewsError && <p role="alert">{adminReviewsError}</p>}
@@ -1844,7 +1893,38 @@ function App() {
     </div></div>}
   </div>;
 }
-createRoot(document.getElementById('root')).render(<App/>);
+// Restaura rotas profundas após o fallback 404 do GitHub Pages.
+const fallbackRoute = new URLSearchParams(window.location.search).get('__route');
+if (fallbackRoute) {
+  const restoredUrl = new URL(fallbackRoute, `${window.location.origin}${import.meta.env.BASE_URL}`);
+  window.history.replaceState(null, '', `${restoredUrl.pathname}${restoredUrl.search}${restoredUrl.hash}`);
+}
+
+// Mantém o endereço antigo funcionando e encaminha a entrada principal para /br.
+const basePath = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+if (window.location.pathname === basePath || window.location.pathname === basePath.slice(0, -1)) {
+  window.history.replaceState(null, '', `${getMarketPath('BR')}${window.location.search}${window.location.hash}`);
+}
+
+function MarketApp() {
+  const market = getMarketFromPath();
+  if (!market.enabled) {
+    return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',padding:'24px',background:'#0b1730',color:'#fff',fontFamily:'DM Sans, sans-serif'}}>
+      <section style={{width:'min(100%,520px)',padding:'36px',border:'1px solid #29415f',borderRadius:'20px',background:'#10233e',textAlign:'center'}}>
+        <div style={{fontSize:'42px',marginBottom:'12px'}}>🇵🇾</div>
+        <p style={{color:'#53d6b0',fontWeight:800,letterSpacing:'2px',fontSize:'11px'}}>CONECTA PARAGUAY</p>
+        <h1 style={{fontSize:'30px',margin:'12px 0'}}>Estamos preparando este ambiente</h1>
+        <p style={{color:'#b5c2d4',lineHeight:1.7,fontSize:'14px'}}>A versão paraguaia será liberada depois da conclusão dos testes de segurança, idioma, moeda e separação dos anúncios.</p>
+        <a href={getMarketPath('BR')} style={{display:'inline-block',marginTop:'14px',padding:'12px 18px',borderRadius:'9px',background:'#53d6b0',color:'#082238',fontWeight:800,textDecoration:'none'}}>Ir para ConectaBrasil</a>
+      </section>
+    </main>;
+  }
+  return <App market={market} />;
+}
+
+createRoot(document.getElementById('root')).render(<MarketApp/>);
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
