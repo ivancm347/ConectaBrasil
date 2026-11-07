@@ -184,7 +184,7 @@ CREATE OR REPLACE FUNCTION public.protect_business_admin_fields()
 RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = ''
-AS $
+AS $function$
 BEGIN
   IF coalesce(auth.role(), '') <> 'service_role'
      AND (auth.jwt() -> 'app_metadata' ->> 'role') IS DISTINCT FROM 'admin'
@@ -202,7 +202,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$;
+$function$;
 
 DROP TRIGGER IF EXISTS protect_business_admin_fields
 ON public.businesses;
