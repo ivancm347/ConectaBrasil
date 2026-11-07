@@ -4,7 +4,7 @@ import { Search, MapPin, Store, Wrench, ShoppingBag, Heart, ArrowRight, Menu, X,
 import './style.css';
 import '../public/image-fit.css';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
-import { getMarketFromPath, getMarketPath, getMarketStorageKey, getInternationalPhoneNumber, MARKETS } from './lib/market';
+import { getMarketFromPath, getMarketPath, getMarketStorageKey, getInternationalPhoneNumber } from './lib/market';
 import QRCode from 'qrcode';
 
 const categories = [
@@ -780,7 +780,7 @@ function App({ market }) {
       setAdminError('Preencha o nome, a cidade e informe a região válida.');
       return;
     }
-    if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 15)) {
+    if (phoneDigits && (phoneDigits.length < (market.code === 'PY' ? 8 : 10) || phoneDigits.length > 15)) {
       setAdminError('Confira o telefone/WhatsApp: informe DDD e número.');
       return;
     }
@@ -1094,7 +1094,7 @@ function App({ market }) {
         setOwnerError('Preencha o nome, a cidade e informe a região válida.');
         return;
       }
-      if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 15)) {
+      if (phoneDigits && (phoneDigits.length < (market.code === 'PY' ? 8 : 10) || phoneDigits.length > 15)) {
         setOwnerError('Confira o telefone/WhatsApp: informe DDD e número.');
         return;
       }
@@ -1281,7 +1281,7 @@ function App({ market }) {
       setFormError('Informe o nome do negócio, a cidade e a região válida.');
       return;
     }
-    if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 15)) {
+    if (phoneDigits && (phoneDigits.length < (market.code === 'PY' ? 8 : 10) || phoneDigits.length > 15)) {
       setFormError('Confira o telefone/WhatsApp. Informe o DDD e o número completo.');
       return;
     }
@@ -1878,7 +1878,7 @@ function App({ market }) {
             <label>Nome do negócio<input required maxLength="100" autoComplete="organization" value={ownerEditing.name || ''} onChange={e=>setOwnerEditing({...ownerEditing,name:e.target.value})}/></label>
             <label>Tipo<select value={ownerEditing.business_type || 'empresa'} onChange={e=>setOwnerEditing({...ownerEditing,business_type:e.target.value})}><option value="empresa">Empresa</option><option value="profissional">Profissional</option><option value="loja">Loja / comércio</option><option value="servico">Prestador de serviço</option></select></label>
             <label>Descrição<textarea rows="3" maxLength="600" value={ownerEditing.description || ''} onChange={e=>setOwnerEditing({...ownerEditing,description:e.target.value})}/><small className="character-count">{(ownerEditing.description || '').length}/600 caracteres</small></label>
-            <div className="form-row"><label>Cidade<input required maxLength="80" autoComplete="address-level2" value={ownerEditing.city || ''} onChange={e=>setOwnerEditing({...ownerEditing,city:e.target.value})}/></label><label>{market.regionLabel}<input required maxLength="2" pattern="[A-Za-z]{2}" title="Informe a sigla com duas letras" value={ownerEditing.state || ''} onChange={e=>setOwnerEditing({...ownerEditing,state:e.target.value.toUpperCase()})}/></label></div>
+            <div className="form-row"><label>Cidade<input required maxLength="80" autoComplete="address-level2" value={ownerEditing.city || ''} onChange={e=>setOwnerEditing({...ownerEditing,city:e.target.value})}/></label><label>{market.regionLabel}<input required maxLength={market.code === "PY" ? 80 : 2} pattern={market.code === "PY" ? "[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .-]{1,79}" : "[A-Za-z]{2}"} title={market.code === "PY" ? "Informe o departamento" : "Informe a sigla com duas letras"} value={ownerEditing.state || ''} onChange={e=>setOwnerEditing({...ownerEditing,state:e.target.value.toUpperCase()})}/></label></div>
             <label>Telefone / WhatsApp<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={ownerEditing.phone || ''} onChange={e=>setOwnerEditing({...ownerEditing,phone:e.target.value})}/></label>
             <LocationFields market={market} item={ownerEditing} onChange={patch=>setOwnerEditing({...ownerEditing,...patch})}/>
             <div className="admin-actions"><button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Salvando...' : 'Salvar alterações'}</button><button type="button" disabled={formBusy} onClick={()=>setOwnerEditing(null)}>Cancelar</button></div>
@@ -1889,7 +1889,7 @@ function App({ market }) {
             <label>Tipo<select value={businessForm.business_type} onChange={e=>setBusinessForm({...businessForm,business_type:e.target.value})}><option value="empresa">Empresa</option><option value="profissional">Profissional</option><option value="loja">Loja / comércio</option><option value="servico">Prestador de serviço</option></select></label>
             <label>Descrição<textarea rows="3" maxLength="600" value={businessForm.description} onChange={e=>setBusinessForm({...businessForm,description:e.target.value})} placeholder="Conte brevemente o que você oferece."/><small className="character-count">{businessForm.description.length}/600 caracteres</small></label>
             <label>Categoria<select value={businessForm.category_id} onChange={e=>setBusinessForm({...businessForm,category_id:e.target.value})}><option value="">Selecione uma categoria</option>{availableCategories.map(cat=><option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label>
-            <div className="form-row"><label>Cidade<input required maxLength="80" autoComplete="address-level2" value={businessForm.city} onChange={e=>setBusinessForm({...businessForm,city:e.target.value})}/></label><label>{market.regionLabel}<input required maxLength="2" pattern="[A-Za-z]{2}" title="Informe a sigla com duas letras" value={businessForm.state} onChange={e=>setBusinessForm({...businessForm,state:e.target.value.toUpperCase()})}/></label></div>
+            <div className="form-row"><label>Cidade<input required maxLength="80" autoComplete="address-level2" value={businessForm.city} onChange={e=>setBusinessForm({...businessForm,city:e.target.value})}/></label><label>{market.regionLabel}<input required maxLength={market.code === "PY" ? 80 : 2} pattern={market.code === "PY" ? "[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .-]{1,79}" : "[A-Za-z]{2}"} title={market.code === "PY" ? "Informe o departamento" : "Informe a sigla com duas letras"} value={businessForm.state} onChange={e=>setBusinessForm({...businessForm,state:e.target.value.toUpperCase()})}/></label></div>
             <LocationFields market={market} item={businessForm} onChange={patch=>setBusinessForm({...businessForm,...patch})}/>
             <label>Telefone / WhatsApp<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={businessForm.phone} onChange={e=>setBusinessForm({...businessForm,phone:e.target.value})}/></label>
             <label>Logo da empresa<input id="business-logo-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-describedby="business-logo-help" onChange={handleLogoSelection}/><small className="upload-help" id="business-logo-help">Formatos JPG, PNG, WEBP ou GIF. Uma imagem, até 5 MB.</small></label>{logoPreviewUrl && <div className="upload-preview"><span>Prévia da logo</span><img src={logoPreviewUrl} alt="Prévia da logo selecionada"/></div>}
