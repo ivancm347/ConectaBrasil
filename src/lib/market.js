@@ -63,7 +63,7 @@ export function getMarketStorageKey(key, marketCode = getMarketFromPath().code) 
 }
 
 /** Returns a phone number in international format for the selected market. */
-export export function getInternationalPhoneNumber(phone, marketCode = 'BR') {
+export function getInternationalPhoneNumber(phone, marketCode = 'BR') {
   const digits = String(phone || '').replace(/\D/g, '');
   if (!digits) return '';
   const market = MARKETS[String(marketCode || 'BR').toUpperCase()] || MARKETS.BR;
@@ -73,7 +73,7 @@ export export function getInternationalPhoneNumber(phone, marketCode = 'BR') {
 }
 
 /** Formats a monetary value using the selected market's locale and currency. */
-export export function formatMarketCurrency(value, marketCode = 'BR') {
+export function formatMarketCurrency(value, marketCode = 'BR') {
   const market = MARKETS[String(marketCode || 'BR').toUpperCase()] || MARKETS.BR;
   const amount = Number(value);
   return new Intl.NumberFormat(market.locale, {
