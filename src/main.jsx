@@ -63,10 +63,9 @@ function normalizeSearch(value) {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
 
-function whatsappLink(phone, messageText = 'Olá! Encontrei seu negócio no Conecta Brasil e gostaria de mais informações.') {
-  const digits = String(phone || '').replace(/\D/g, '');
-  if (!digits) return '';
-  const number = digits.startsWith('55') ? digits : `55${digits}`;
+function whatsappLink(phone, messageText = 'Olá! Encontrei seu negócio no Conecta Brasil e gostaria de mais informações.', marketCode = 'BR') {
+  const number = getInternationalPhoneNumber(phone, marketCode);
+  if (!number) return '';
   return `https://wa.me/${number}?text=${encodeURIComponent(messageText)}`;
 }
 
