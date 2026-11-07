@@ -59,6 +59,18 @@ function LocationFields({ item, onChange, market }) {
   </section>;
 }
 
+function isValidRegion(value, market) {
+  const region = String(value || '').trim();
+  return market.code === 'PY'
+    ? /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .-]{1,79}$/.test(region)
+    : /^[A-Za-z]{2}$/.test(region);
+}
+
+function isValidPostalCode(value, market) {
+  const postalCode = String(value || '').trim();
+  return market.code === 'PY' ? /^\d{6}$/.test(postalCode) : /^\d{5}-?\d{3}$/.test(postalCode);
+}
+
 function normalizeSearch(value) {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
@@ -764,8 +776,8 @@ function App({ market }) {
     const cleanCity = String(editingBusiness.city || '').trim();
     const cleanState = String(editingBusiness.state || '').trim().toUpperCase();
     const phoneDigits = String(editingBusiness.phone || '').replace(/\D/g, '');
-    if (!cleanName || !cleanCity || !/^[A-Z]{2}$/.test(cleanState)) {
-      setAdminError('Preencha o nome, a cidade e uma UF válida com duas letras.');
+    if (!cleanName || !cleanCity || !isValidRegion(cleanState, market)) {
+      setAdminError('Preencha o nome, a cidade e informe a região válida.');
       return;
     }
     if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 15)) {
@@ -773,7 +785,7 @@ function App({ market }) {
       return;
     }
     if ((editingBusiness.location_visibility || 'neighborhood') === 'exact' &&
-      (!/^[0-9]{5}-?[0-9]{3}$/.test(String(editingBusiness.postal_code || '').trim()) ||
+      (!isValidPostalCode(editingBusiness.postal_code, market) ||
        !String(editingBusiness.street || '').trim() ||
        !String(editingBusiness.street_number || '').trim() ||
        !String(editingBusiness.neighborhood || '').trim())) {
@@ -1078,8 +1090,8 @@ function App({ market }) {
       const cleanCity = String(ownerEditing.city || '').trim();
       const cleanState = String(ownerEditing.state || '').trim().toUpperCase();
       const phoneDigits = String(ownerEditing.phone || '').replace(/\D/g, '');
-      if (!cleanName || !cleanCity || !/^[A-Z]{2}$/.test(cleanState)) {
-        setOwnerError('Preencha o nome, a cidade e uma UF válida com duas letras.');
+      if (!cleanName || !cleanCity || !isValidRegion(cleanState, market)) {
+        setOwnerError('Preencha o nome, a cidade e informe a região válida.');
         return;
       }
       if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 15)) {
@@ -1088,7 +1100,7 @@ function App({ market }) {
       }
       const visibility = ownerEditing.location_visibility || 'neighborhood';
       const postalCode = String(ownerEditing.postal_code || '').trim();
-      if (visibility === 'exact' && (!/^[0-9]{5}-?[0-9]{3}$/.test(postalCode) || !String(ownerEditing.street || '').trim() || !String(ownerEditing.street_number || '').trim() || !String(ownerEditing.neighborhood || '').trim())) {
+      if (visibility === 'exact' && (!isValidPostalCode(postalCode, market) || !String(ownerEditing.street || '').trim() || !String(ownerEditing.street_number || '').trim() || !String(ownerEditing.neighborhood || '').trim())) {
         setOwnerError('Para mostrar o endereço completo, informe código postal, rua/avenida, número e bairro.');
         return;
       }
@@ -1265,8 +1277,8 @@ function App({ market }) {
     const state = businessForm.state.trim().toUpperCase();
     const phoneDigits = businessForm.phone.replace(/\D/g, '');
     const selectedImages = [logoFile, ...galleryFiles].filter(Boolean);
-    if (!name || !city || !/^[A-Z]{2}$/.test(state)) {
-      setFormError('Informe o nome do negócio, a cidade e uma UF válida com duas letras.');
+    if (!name || !city || !isValidRegion(state, market)) {
+      setFormError('Informe o nome do negócio, a cidade e a região válida.');
       return;
     }
     if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 15)) {
@@ -1290,7 +1302,7 @@ function App({ market }) {
     try {
       const visibility = businessForm.location_visibility || 'neighborhood';
       const postalCode = String(businessForm.postal_code || '').trim();
-      if (visibility === 'exact' && (!/^[0-9]{5}-?[0-9]{3}$/.test(postalCode) || !businessForm.street.trim() || !businessForm.street_number.trim() || !businessForm.neighborhood.trim())) {
+      if (visibility === 'exact' && (!isValidPostalCode(postalCode, market) || !businessForm.street.trim() || !businessForm.street_number.trim() || !businessForm.neighborhood.trim())) {
         setFormError('Para mostrar o endereço completo, informe código postal, rua/avenida, número e bairro.');
         return;
       }
@@ -1686,7 +1698,7 @@ function App({ market }) {
           <h3>Editar anúncio</h3>
           <label>Nome<input required maxLength="100" value={editingBusiness.name} onChange={e=>setEditingBusiness({...editingBusiness,name:e.target.value})}/></label>
           <label>Descrição<textarea rows="3" maxLength="600" value={editingBusiness.description || ''} onChange={e=>setEditingBusiness({...editingBusiness,description:e.target.value})}/><small className="character-count">{(editingBusiness.description || '').length}/600 caracteres</small></label>
-          <div className="form-row"><label>Cidade<input maxLength="80" value={editingBusiness.city || ''} onChange={e=>setEditingBusiness({...editingBusiness,city:e.target.value})}/></label><label>UF<input maxLength="2" pattern="[A-Za-z]{2}" title="Informe a sigla com duas letras" value={editingBusiness.state || ''} onChange={e=>setEditingBusiness({...editingBusiness,state:e.target.value.toUpperCase()})}/></label></div>
+          <div className="form-row"><label>Cidade<input maxLength="80" value={editingBusiness.city || ''} onChange={e=>setEditingBusiness({...editingBusiness,city:e.target.value})}/></label><label>{market.regionLabel}<input maxLength={market.code === "PY" ? 80 : 2} pattern={market.code === "PY" ? "[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .-]{1,79}" : "[A-Za-z]{2}"} title={market.code === "PY" ? "Informe o departamento" : "Informe a sigla com duas letras"} value={editingBusiness.state || ''} onChange={e=>setEditingBusiness({...editingBusiness,state:e.target.value.toUpperCase()})}/></label></div>
           <label>Telefone / WhatsApp<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={editingBusiness.phone || ''} onChange={e=>setEditingBusiness({...editingBusiness,phone:e.target.value})}/></label>
           <LocationFields market={market} item={editingBusiness} onChange={patch=>setEditingBusiness({...editingBusiness,...patch})}/>
           <div className="admin-actions"><button type="submit" className="approve-action" disabled={formBusy}>Salvar alterações</button><button type="button" disabled={formBusy} onClick={()=>setEditingBusiness(null)}>Cancelar</button></div>
