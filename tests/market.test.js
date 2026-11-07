@@ -29,3 +29,18 @@ test('chaves locais ficam separadas por mercado', () => {
   assert.equal(getMarketStorageKey('favorites', 'PY'), 'conecta:PY:favorites');
   assert.throws(() => getMarketStorageKey('favorites', 'AR'), /Mercado inválido/);
 });
+
+
+test('telefone usa o código internacional do mercado sem duplicá-lo', async () => {
+  const { getInternationalPhoneNumber } = await import('../src/lib/market.js');
+  assert.equal(getInternationalPhoneNumber('(11) 97698-3978', 'BR'), '5511976983978');
+  assert.equal(getInternationalPhoneNumber('981 123 456', 'PY'), '595981123456');
+  assert.equal(getInternationalPhoneNumber('+595 981 123 456', 'PY'), '595981123456');
+  assert.equal(getInternationalPhoneNumber('', 'PY'), '');
+});
+
+test('moeda segue a configuração de cada mercado', async () => {
+  const { formatMarketCurrency } = await import('../src/lib/market.js');
+  assert.match(formatMarketCurrency(100, 'BR'), /R\$/);
+  assert.match(formatMarketCurrency(100, 'PY'), /Gs/);
+});
