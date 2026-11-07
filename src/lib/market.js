@@ -43,7 +43,7 @@ function normalizeBasePath(baseUrl = '/') {
 export function getMarketFromPath(pathname = window.location.pathname, baseUrl = import.meta.env.BASE_URL) {
   const base = normalizeBasePath(baseUrl);
   const path = String(pathname || '/');
-  const relative = path.startsWith(base) ? path.slice(base.length) : path.replace(/^\/+/, '');
+  const relative = path.startsWith(base) ? path.slice(base.length) : path.replace(/^\\/+/, '');
   const segment = relative.split('/').filter(Boolean)[0]?.toLowerCase();
 
   if (segment === MARKETS.PY.path) return MARKETS.PY;
@@ -60,4 +60,25 @@ export function getMarketStorageKey(key, marketCode = getMarketFromPath().code) 
   const code = String(marketCode || 'BR').toUpperCase();
   if (!MARKETS[code]) throw new Error('Mercado inválido para armazenamento local.');
   return `conecta:${code}:${String(key || '').replace(/^:+|:+$/g, '')}`;
+}
+
+/** Returns a phone number in international format for the selected market. */
+export function getInternationalPhoneNumber(phone, marketCode = 'BR') {
+  const digits = String(phone || '').replace(/\\D/g, '');
+  if (!digits) return '';
+  const market = MARKETS[String(marketCode || 'BR').toUpperCase()] || MARKETS.BR;
+  if (digits.startsWith(market.dialingCode)) return digits;
+  if (digits.startsWith('55') || digits.startsWith('595')) return digits;
+  return `${market.dialingCode}${digits}`;
+}
+
+/** Formats a monetary value using the selected market's locale and currency. */
+export function formatMarketCurrency(value, marketCode = 'BR') {
+  const market = MARKETS[String(marketCode || 'BR').toUpperCase()] || MARKETS.BR;
+  const amount = Number(value);
+  return new Intl.NumberFormat(market.locale, {
+    style: 'currency',
+    currency: market.currency,
+    maximumFractionDigits: market.currency === 'PYG' ? 0 : 2,
+  }).format(Number.isFinite(amount) ? amount : 0);
 }
