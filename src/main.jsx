@@ -1708,9 +1708,9 @@ function App({ market }) {
         {adminLoading ? <div className="empty-state">Carregando cadastros...</div> : <div className="admin-list">
           {filteredAdminBusinesses.length ? filteredAdminBusinesses.map(item=><article className="admin-business" key={item.id}>
             <div className="admin-business-head"><div><h3>{item.name}</h3><span>{item.business_type} · {[item.city,item.state].filter(Boolean).join('/')}</span></div><small className={'status-badge status-'+item.status}>{({pending:'Pendente',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</small></div>
-            <p>{item.description || 'Sem descrição informada.'}</p>
+            <p>{item.description || (es ? 'Sin descripción.' : 'Sem descrição informada.')}</p>
             {(item.logo_url || item.gallery_urls?.length) && <div className="admin-image-preview">{item.logo_url && <img loading="lazy" src={item.logo_url} alt={`Logo ${item.name}`}/>} {(item.gallery_urls || []).map((url,index)=><img key={url} loading="lazy" src={url} alt={`Foto ${index+1} de ${item.name}`}/>)}</div>}
-            <div className="admin-meta"><span>{item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</span>{item.phone && <span>{item.phone}</span>}<span>{new Date(item.created_at).toLocaleDateString('pt-BR')}</span></div>
+            <div className="admin-meta"><span>{item.business_categories?.[0]?.categories?.name || (es ? 'Sin categoría' : 'Sem categoria')}</span>{item.phone && <span>{item.phone}</span>}<span>{new Date(item.created_at).toLocaleDateString('pt-BR')}</span></div>
             <div className="admin-meta" aria-label="Desempenho do anúncio"><span>👁 {Number(item.views_count || 0).toLocaleString('pt-BR')} visualizações</span><span>WhatsApp: {Number(item.whatsapp_clicks || 0).toLocaleString('pt-BR')} cliques</span></div>
              <div className="admin-plan-box" style={{margin:'12px 0',padding:12,border:'1px solid #dce6ec',borderRadius:12,background:'#f7fafc'}}>
                <div style={{display:'flex',justifyContent:'space-between',gap:8,flexWrap:'wrap',alignItems:'center'}}>
@@ -1796,11 +1796,11 @@ function App({ market }) {
       </> : <>
       <div className="eyebrow dark">{es ? "REGISTRO DE ANUNCIANTE" : "CADASTRO DE ANUNCIANTE"}</div>
       <h2>{authUser ? (es ? 'Presenta tu negocio.' : 'Apresente seu negócio.') : (es ? 'Inicia sesión para publicar.' : 'Entre para anunciar.')}</h2>
-      {!isSupabaseConfigured ? <p>O cadastro está temporariamente indisponível. A conexão com o banco ainda não foi configurada na publicação.</p> : <>
+      {!isSupabaseConfigured ? <p>{es ? "El registro no está disponible temporalmente. La conexión con la base de datos aún no está configurada en esta publicación." : "O cadastro está temporariamente indisponível. A conexão com o banco ainda não foi configurada na publicação."}</p> : <>
         {formMessage && <div className="form-notice" role="status" aria-live="polite">{formMessage}</div>}
         {formError && <div className="form-error" role="alert">{formError}</div>}
         {passwordRecovery ? <form onSubmit={updateRecoveredPassword} className="business-form">
-          <div className="eyebrow dark">RECUPERAÇÃO DE ACESSO</div><h2>{es ? "Crea una nueva contraseña." : "Crie uma nova senha."}</h2>
+          <div className="eyebrow dark">{es ? "RECUPERACIÓN DE ACCESO" : "RECUPERAÇÃO DE ACESSO"}</div><h2>{es ? "Crea una nueva contraseña." : "Crie uma nova senha."}</h2>
           <p>{es ? "Elige una contraseña de al menos 6 caracteres." : "Escolha uma senha com pelo menos 6 caracteres."}</p>
           {formMessage && <div className="form-notice" role="status" aria-live="polite">{formMessage}</div>}
           {formError && <div className="form-error" role="alert">{formError}</div>}
@@ -1809,14 +1809,14 @@ function App({ market }) {
         </form> : !authUser ? forgotPasswordMode ? <>
           <p>{es ? "Ingresa tu correo y te enviaremos un enlace para crear una nueva contraseña." : "Informe seu e-mail e enviaremos um link para você criar uma nova senha."}</p>
           <form onSubmit={requestPasswordRecovery} className="business-form">
-            <label>E-mail<input ref={authEmailInput} type="email" required autoComplete="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="voce@email.com"/></label>
-            <button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Enviando...' : 'Enviar link de recuperação'}</button>
+            <label>E-mail<input ref={authEmailInput} type="email" required autoComplete="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="correo@ejemplo.com"/></label>
+            <button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? (es ? "Enviando..." : "Enviando...") : (es ? "Enviar enlace de recuperación" : "Enviar link de recuperação")}</button>
           </form>
           <button type="button" className="text-switch" onClick={()=>{setForgotPasswordMode(false);setFormError('');setFormMessage('')}}>{es ? "Volver al inicio de sesión" : "Voltar para entrar"}</button>
         </> : <>
           <p>{authMode === 'signup' ? (es ? 'Crea una cuenta gratuita para registrar tu empresa o servicio.' : 'Crie uma conta gratuita para cadastrar sua empresa ou serviço.') : (es ? 'Inicia sesión para continuar.' : 'Entre na sua conta para continuar.')}</p>
           <form onSubmit={handleAuthSubmit} className="business-form">
-            <label>E-mail<input ref={authEmailInput} type="email" required autoComplete="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="voce@email.com"/></label>
+            <label>E-mail<input ref={authEmailInput} type="email" required autoComplete="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="correo@ejemplo.com"/></label>
             <label>{es ? "Contraseña" : "Senha"}<input type="password" required minLength="6" value={authPassword} onChange={e=>setAuthPassword(e.target.value)} placeholder={es ? "Mínimo 6 caracteres" : "Mínimo de 6 caracteres"}/></label>
             <button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? (es ? 'Espera...' : 'Aguarde...') : authMode === 'signup' ? (es ? 'Crear cuenta' : 'Criar conta') : (es ? 'Iniciar sesión' : 'Entrar')}</button>
           </form>
@@ -1824,35 +1824,35 @@ function App({ market }) {
           {authMode === 'login' && <button type="button" className="text-switch" disabled={formBusy} onClick={openPasswordRecovery}>{es ? "Olvidé mi contraseña" : "Esqueci minha senha"}</button>}
         </> : <>
           <section className="owner-dashboard">
-            <div className="owner-dashboard-head"><div><div className="eyebrow dark">{es ? "ÁREA DEL ANUNCIANTE" : "ÁREA DO ANUNCIANTE"}</div><h3>{es ? "Mis anuncios" : "Meus anúncios"}</h3><p>{es ? "Consulta el estado de tus registros." : "Acompanhe a situação dos seus cadastros."}</p></div><button type="button" className="owner-refresh" onClick={loadOwnerBusinesses} disabled={ownerLoading} aria-label={es ? "Actualizar mis anuncios" : "Atualizar meus anúncios"}>{ownerLoading ? "Atualizando..." : "Atualizar"}</button></div>
-            <div className="owner-stats" aria-label="Filtrar meus anúncios">
-              <button type="button" onClick={()=>setOwnerFilter('all')} aria-pressed={ownerFilter === 'all'}><b>{ownerStats.total}</b><span>Todos</span></button>
+            <div className="owner-dashboard-head"><div><div className="eyebrow dark">{es ? "ÁREA DEL ANUNCIANTE" : "ÁREA DO ANUNCIANTE"}</div><h3>{es ? "Mis anuncios" : "Meus anúncios"}</h3><p>{es ? "Consulta el estado de tus registros." : "Acompanhe a situação dos seus cadastros."}</p></div><button type="button" className="owner-refresh" onClick={loadOwnerBusinesses} disabled={ownerLoading} aria-label={es ? "Actualizar mis anuncios" : "Atualizar meus anúncios"}>{ownerLoading ? (es ? "Actualizando..." : "Atualizando...") : (es ? "Actualizar" : "Atualizar")}</button></div>
+            <div className="owner-stats" aria-label={es ? "Filtrar mis anuncios" : "Filtrar meus anúncios"}>
+              <button type="button" onClick={()=>setOwnerFilter('all')} aria-pressed={ownerFilter === 'all'}><b>{ownerStats.total}</b><span>{es ? "Todos" : "Todos"}</span></button>
               <button type="button" onClick={()=>setOwnerFilter('pending')} aria-pressed={ownerFilter === 'pending'}><b>{ownerStats.pending}</b><span>{es ? "En revisión" : "Em análise"}</span></button>
               <button type="button" onClick={()=>setOwnerFilter('approved')} aria-pressed={ownerFilter === 'approved'}><b>{ownerStats.approved}</b><span>{es ? "Aprobados" : "Aprovados"}</span></button>
               <button type="button" onClick={()=>setOwnerFilter('attention')} aria-pressed={ownerFilter === 'attention'}><b>{ownerStats.attention}</b><span>{es ? "Requieren atención" : "Precisam de atenção"}</span></button>
             </div>
             {ownerError && <div className="form-error" role="alert">{ownerError}</div>}
             {ownerShareMessage && <div className="form-message" role="status">{ownerShareMessage}</div>}
-            {ownerBusinesses.length > 0 && <div className="owner-search"><label htmlFor="owner-business-search">{es ? "Buscar en mis anuncios" : "Buscar nos meus anúncios"}</label><div><input id="owner-business-search" type="search" maxLength="100" value={ownerSearch} onChange={event=>setOwnerSearch(event.target.value)} placeholder={es ? "Nombre, ciudad o descripción..." : "Nome, cidade ou descrição..."} aria-label="Buscar nos meus anúncios"/>{ownerSearch && <button type="button" onClick={()=>setOwnerSearch('')} aria-label="Limpar busca dos meus anúncios">Limpar</button>}</div><small role="status" aria-live="polite">{filteredOwnerBusinesses.length} de {ownerBusinesses.length} anúncio(s)</small><label className="owner-sort-label">{es ? "Ordenar por" : "Ordenar por"}<select value={ownerSort} onChange={event=>setOwnerSort(event.target.value)} aria-label="Ordenar meus anúncios"><option value="newest">{es ? "Más recientes" : "Mais recentes"}</option><option value="oldest">{es ? "Más antiguos" : "Mais antigos"}</option><option value="name">{es ? "Nombre (A–Z)" : "Nome (A–Z)"}</option></select></label></div>}
-            {ownerLoading ? <div className="empty-state">Carregando seus anúncios...</div> : ownerBusinesses.length ? filteredOwnerBusinesses.length ? <div className="owner-list">{filteredOwnerBusinesses.map(item => <article className="owner-business" key={item.id}>
-              <div className="owner-business-head"><div><b>{item.name}</b><small>{[item.city,item.state].filter(Boolean).join(' / ')} · {item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</small></div><span className={'status-badge status-'+item.status}>{({pending:'Em análise',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</span></div>
-              <p>{item.description || 'Sem descrição informada.'}</p>
-              {item.status === 'approved' && <div className="owner-metrics"><span><b>{Number(item.views_count || 0)}</b> visualizações</span><span><b>{Number(item.whatsapp_clicks || 0)}</b> contatos pelo WhatsApp</span></div>}
-              <small className="owner-updated">Enviado em {new Date(item.created_at).toLocaleDateString('pt-BR')}{item.updated_at && item.updated_at !== item.created_at ? ` · Atualizado em ${new Date(item.updated_at).toLocaleDateString('pt-BR')}` : ''}</small>
-              {['pending','approved'].includes(item.status) ? <><button type="button" className="owner-edit-button" onClick={() => setOwnerEditing({...item})}>{es ? "Editar anuncio" : "Editar anúncio"}</button>{item.status === 'approved' && <><small className="owner-status-help">Ao salvar, o anúncio ficará em análise até a equipe aprovar as alterações.</small><button type="button" className="owner-share-link" onClick={() => copyOwnerBusinessLink(item)}>{es ? "Copiar enlace público" : "Copiar link público"}</button></>}</> : <small className="owner-status-help">{item.status === 'rejected' ? 'Entre em contato com a equipe para entender os ajustes necessários.' : 'Este anúncio não está visível na vitrine no momento.'}</small>}
-            </article>)}</div> : <div className="empty-state">Nenhum anúncio nesta situação. Selecione outro filtro para consultar seus cadastros.</div> : <div className="empty-state">Você ainda não cadastrou nenhum negócio. Preencha o formulário abaixo para começar.</div>}
+            {ownerBusinesses.length > 0 && <div className="owner-search"><label htmlFor="owner-business-search">{es ? "Buscar en mis anuncios" : "Buscar nos meus anúncios"}</label><div><input id="owner-business-search" type="search" maxLength="100" value={ownerSearch} onChange={event=>setOwnerSearch(event.target.value)} placeholder={es ? "Nombre, ciudad o descripción..." : "Nome, cidade ou descrição..."} aria-label={es ? "Buscar en mis anuncios" : "Buscar nos meus anúncios"}/>{ownerSearch && <button type="button" onClick={()=>setOwnerSearch('')} aria-label={es ? "Limpiar búsqueda de mis anuncios" : "Limpar busca dos meus anúncios"}>{es ? "Limpiar" : "Limpar"}</button>}</div><small role="status" aria-live="polite">{filteredOwnerBusinesses.length} de {ownerBusinesses.length} {es ? "anuncio(s)" : "anúncio(s)"}</small><label className="owner-sort-label">{es ? "Ordenar por" : "Ordenar por"}<select value={ownerSort} onChange={event=>setOwnerSort(event.target.value)} aria-label="Ordenar meus anúncios"><option value="newest">{es ? "Más recientes" : "Mais recentes"}</option><option value="oldest">{es ? "Más antiguos" : "Mais antigos"}</option><option value="name">{es ? "Nombre (A–Z)" : "Nome (A–Z)"}</option></select></label></div>}
+            {ownerLoading ? <div className="empty-state">{es ? "Cargando tus anuncios..." : "Carregando seus anúncios..."}</div> : ownerBusinesses.length ? filteredOwnerBusinesses.length ? <div className="owner-list">{filteredOwnerBusinesses.map(item => <article className="owner-business" key={item.id}>
+              <div className="owner-business-head"><div><b>{item.name}</b><small>{[item.city,item.state].filter(Boolean).join(' / ')} · {item.business_categories?.[0]?.categories?.name || (es ? 'Sin categoría' : 'Sem categoria')}</small></div><span className={'status-badge status-'+item.status}>{(es ? {pending:'En revisión',approved:'Aprobado',rejected:'Rechazado',suspended:'Suspendido'} : {pending:'Em análise',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</span></div>
+              <p>{item.description || (es ? 'Sin descripción.' : 'Sem descrição informada.')}</p>
+              {item.status === 'approved' && <div className="owner-metrics"><span><b>{Number(item.views_count || 0)}</b> {es ? "visualizaciones" : "visualizações"}</span><span><b>{Number(item.whatsapp_clicks || 0)}</b> {es ? "contactos por WhatsApp" : "contatos pelo WhatsApp"}</span></div>}
+              <small className="owner-updated">Enviado em {new Date(item.created_at).toLocaleDateString((es ? 'es-PY' : 'pt-BR'))}{item.updated_at && item.updated_at !== item.created_at ? ` · Atualizado em ${new Date(item.updated_at).toLocaleDateString((es ? 'es-PY' : 'pt-BR'))}` : ''}</small>
+              {['pending','approved'].includes(item.status) ? <><button type="button" className="owner-edit-button" onClick={() => setOwnerEditing({...item})}>{es ? "Editar anuncio" : "Editar anúncio"}</button>{item.status === 'approved' && <><small className="owner-status-help">{es ? "Al guardar, el anuncio quedará en revisión hasta que el equipo apruebe los cambios." : "Ao salvar, o anúncio ficará em análise até a equipe aprovar as alterações."}</small><button type="button" className="owner-share-link" onClick={() => copyOwnerBusinessLink(item)}>{es ? "Copiar enlace público" : "Copiar link público"}</button></>}</> : <small className="owner-status-help">{item.status === 'rejected' ? '{es ? "Contacta al equipo para conocer los ajustes necesarios." : "Entre em contato com a equipe para entender os ajustes necessários."}' : '{es ? "Este anuncio no está visible en la vitrina en este momento." : "Este anúncio não está visível na vitrine no momento."}'}</small>}
+            </article>)}</div> : <div className="empty-state">{es ? "No hay anuncios en este estado. Selecciona otro filtro para consultar tus registros." : "Nenhum anúncio nesta situação. Selecione outro filtro para consultar seus cadastros."}</div> : <div className="empty-state">{es ? "Todavía no has registrado ningún negocio. Completa el formulario para comenzar." : "Você ainda não cadastrou nenhum negócio. Preencha o formulário abaixo para começar."}</div>}
           </section>
           <section className="marketing-assistant">
             <div className="eyebrow dark">{es ? "HERRAMIENTA DE PROMOCIÓN" : "FERRAMENTA DE DIVULGAÇÃO"}</div>
             <h3>{es ? "Asistente de promoción" : "Assistente de divulgação"}</h3>
-            <p>Crie uma sugestão de texto para apresentar seu negócio nas redes sociais e no WhatsApp. Funciona sem chave ou serviço externo.</p>
-            {ownerBusinesses.length > 0 && <label>Qual negócio deseja divulgar?
+            <p>{es ? "Crea un texto para presentar tu negocio en redes sociales y WhatsApp. No requiere claves ni servicios externos." : "Crie uma sugestão de texto para apresentar seu negócio nas redes sociais e no WhatsApp. Funciona sem chave ou serviço externo."}</p>
+            {ownerBusinesses.length > 0 && <label>{es ? "¿Qué negocio quieres promocionar?" : "Qual negócio deseja divulgar?"}
               <select value={marketingBusinessId} onChange={e=>setMarketingBusinessId(e.target.value)}>
-                <option value="">Selecionar primeiro anúncio</option>
+                <option value="">{es ? "Seleccionar primer anuncio" : "Selecionar primeiro anúncio"}</option>
                 {ownerBusinesses.map(item => <option key={item.id} value={String(item.id)}>{item.name}</option>)}
               </select>
             </label>}
-            <label>Onde você vai publicar?
+            <label>{es ? "¿Dónde vas a publicar?" : "Onde você vai publicar?"}
               <select value={marketingPlatform} onChange={e=>setMarketingPlatform(e.target.value)}>
                 <option value="instagram">Instagram</option>
                 <option value="facebook">Facebook</option>
@@ -1860,19 +1860,19 @@ function App({ market }) {
                 <option value="whatsapp">WhatsApp</option>
               </select>
             </label>
-            <label>Estilo do texto
+            <label>{es ? "Estilo del texto" : "Estilo do texto"}
               <select value={marketingTone} onChange={e=>setMarketingTone(e.target.value)}>
                 <option value="profissional">{es ? "Profesional" : "Profissional"}</option>
-                <option value="proximo">Próximo e acolhedor</option>
-                <option value="direto">Direto e objetivo</option>
+                <option value="proximo">{es ? "Cercano y cordial" : "Próximo e acolhedor"}</option>
+                <option value="direto">{es ? "Directo y claro" : "Direto e objetivo"}</option>
               </select>
             </label>
             <button type="button" className="btn modal-submit" onClick={generateMarketingCopy}> <Sparkles size={16}/> Gerar texto de divulgação</button>
             {marketingOutput && <div className="marketing-output">
               <label htmlFor="marketing-copy-result">{es ? "Texto sugerido" : "Texto sugerido"}</label>
               <textarea id="marketing-copy-result" rows="7" readOnly value={marketingOutput}/>
-              <button type="button" className="business-share-button" onClick={copyMarketingCopy}>{marketingCopied ? 'Texto copiado!' : 'Copiar texto'}</button>
-              <small>Revise as informações antes de publicar. Esta versão usa modelos locais; não envia dados para serviços externos.</small>
+              <button type="button" className="business-share-button" onClick={copyMarketingCopy}>{marketingCopied ? (es ? '¡Texto copiado!' : 'Texto copiado!') : (es ? 'Copiar texto' : 'Copiar texto')}</button>
+              <small>{es ? "Revisa la información antes de publicar. Esta versión usa plantillas locales y no envía datos a servicios externos." : "Revise as informações antes de publicar. Esta versão usa modelos locais; não envia dados para serviços externos."}</small>
             </div>}
           </section>
           {ownerEditing && <form className="owner-edit-form business-form" onSubmit={saveOwnerBusiness}>
@@ -1883,7 +1883,7 @@ function App({ market }) {
             <div className="form-row"><label>{es ? "Ciudad" : "Cidade"}<input required maxLength="80" autoComplete="address-level2" value={ownerEditing.city || ''} onChange={e=>setOwnerEditing({...ownerEditing,city:e.target.value})}/></label><label>{market.regionLabel}<input required maxLength={market.code === "PY" ? 80 : 2} pattern={market.code === "PY" ? "[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .-]{1,79}" : "[A-Za-z]{2}"} title={market.code === "PY" ? "Informe o departamento" : "Informe a sigla com duas letras"} value={ownerEditing.state || ''} onChange={e=>setOwnerEditing({...ownerEditing,state:e.target.value.toUpperCase()})}/></label></div>
             <label>{es ? "Teléfono / WhatsApp" : "Telefone / WhatsApp"}<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={ownerEditing.phone || ''} onChange={e=>setOwnerEditing({...ownerEditing,phone:e.target.value})}/></label>
             <LocationFields market={market} item={ownerEditing} onChange={patch=>setOwnerEditing({...ownerEditing,...patch})}/>
-            <div className="admin-actions"><button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Salvando...' : 'Salvar alterações'}</button><button type="button" disabled={formBusy} onClick={()=>setOwnerEditing(null)}>{es ? "Cancelar" : "Cancelar"}</button></div>
+            <div className="admin-actions"><button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? (es ? 'Guardando...' : 'Salvando...') : (es ? 'Guardar cambios' : 'Salvar alterações')}</button><button type="button" disabled={formBusy} onClick={()=>setOwnerEditing(null)}>{es ? "Cancelar" : "Cancelar"}</button></div>
           </form>}
           <div className="owner-new-listing"><h3>{es ? "Registrar otro negocio" : "Cadastrar outro negócio"}</h3><p>{es ? "Tu nuevo anuncio quedará pendiente hasta la aprobación del equipo." : "Seu novo anúncio ficará pendente até a aprovação da equipe."}</p></div>
           <form onSubmit={handleBusinessSubmit} className="business-form">
@@ -1894,10 +1894,10 @@ function App({ market }) {
             <div className="form-row"><label>{es ? "Ciudad" : "Cidade"}<input required maxLength="80" autoComplete="address-level2" value={businessForm.city} onChange={e=>setBusinessForm({...businessForm,city:e.target.value})}/></label><label>{market.regionLabel}<input required maxLength={market.code === "PY" ? 80 : 2} pattern={market.code === "PY" ? "[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .-]{1,79}" : "[A-Za-z]{2}"} title={market.code === "PY" ? "Informe o departamento" : "Informe a sigla com duas letras"} value={businessForm.state} onChange={e=>setBusinessForm({...businessForm,state:e.target.value.toUpperCase()})}/></label></div>
             <LocationFields market={market} item={businessForm} onChange={patch=>setBusinessForm({...businessForm,...patch})}/>
             <label>{es ? "Teléfono / WhatsApp" : "Telefone / WhatsApp"}<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={businessForm.phone} onChange={e=>setBusinessForm({...businessForm,phone:e.target.value})}/></label>
-            <label>{es ? "Logo de la empresa" : "Logo da empresa"}<input id="business-logo-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-describedby="business-logo-help" onChange={handleLogoSelection}/><small className="upload-help" id="business-logo-help">Formatos JPG, PNG, WEBP ou GIF. Uma imagem, até 5 MB.</small></label>{logoPreviewUrl && <div className="upload-preview"><span>{es ? "Vista previa del logo" : "Prévia da logo"}</span><img src={logoPreviewUrl} alt="Prévia da logo selecionada"/></div>}
-            <label>{es ? "Fotos del negocio (hasta 5)" : "Fotos do negócio (até 5)"}<input id="business-gallery-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple aria-describedby="business-gallery-help" onChange={handleGallerySelection}/><small className="upload-help" id="business-gallery-help">Formatos JPG, PNG, WEBP ou GIF. Selecione até 5 fotos, cada uma com no máximo 5 MB.</small></label>
-            {galleryFiles.length > 0 && <div className="selected-files" role="status" aria-live="polite"><strong>{galleryFiles.length} {galleryFiles.length === 1 ? "foto selecionada" : "fotos selecionadas"}:</strong>{galleryFiles.map((file,index)=><span key={`${file.name}-${index}`}>{file.name}</span>)}</div>}{galleryPreviewUrls.length > 0 && <div className="upload-gallery-preview" aria-label="Prévia das fotos selecionadas">{galleryPreviewUrls.map((item,index)=><figure key={item.url}><img src={item.url} alt={`Prévia da foto ${index+1}: ${item.name}`}/><figcaption>{index+1}</figcaption></figure>)}</div>}
-            <button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Enviando...' : 'Enviar para aprovação'}</button>
+            <label>{es ? "Logo de la empresa" : "Logo da empresa"}<input id="business-logo-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-describedby="business-logo-help" onChange={handleLogoSelection}/><small className="upload-help" id="business-logo-help">{es ? "Formatos JPG, PNG, WEBP o GIF. Una imagen, hasta 5 MB." : "Formatos JPG, PNG, WEBP ou GIF. Uma imagem, até 5 MB."}</small></label>{logoPreviewUrl && <div className="upload-preview"><span>{es ? "Vista previa del logo" : "Prévia da logo"}</span><img src={logoPreviewUrl} alt="{es ? "Vista previa del logo seleccionado" : "Prévia da logo selecionada"}"/></div>}
+            <label>{es ? "Fotos del negocio (hasta 5)" : "Fotos do negócio (até 5)"}<input id="business-gallery-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple aria-describedby="business-gallery-help" onChange={handleGallerySelection}/><small className="upload-help" id="business-gallery-help">{es ? "Formatos JPG, PNG, WEBP o GIF. Selecciona hasta 5 fotos, máximo 5 MB cada una." : "Formatos JPG, PNG, WEBP ou GIF. Selecione até 5 fotos, cada uma com no máximo 5 MB."}</small></label>
+            {galleryFiles.length > 0 && <div className="selected-files" role="status" aria-live="polite"><strong>{galleryFiles.length} {galleryFiles.length === 1 ? (es ? "foto seleccionada" : "foto selecionada") : (es ? "fotos seleccionadas" : "fotos selecionadas")}:</strong>{galleryFiles.map((file,index)=><span key={`${file.name}-${index}`}>{file.name}</span>)}</div>}{galleryPreviewUrls.length > 0 && <div className="upload-gallery-preview" aria-label={es ? "Vista previa de las fotos seleccionadas" : "Prévia das fotos selecionadas"}>{galleryPreviewUrls.map((item,index)=><figure key={item.url}><img src={item.url} alt={`{es ? "Vista previa de la foto" : "Prévia da foto"} ${index+1}: ${item.name}`}/><figcaption>{index+1}</figcaption></figure>)}</div>}
+            <button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? (es ? "Enviando..." : "Enviando...") : (es ? "Enviar para aprobación" : "Enviar para aprovação")}</button>
           </form>
           <button type="button" className="text-switch" onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);setFormMessage('')}}>{es ? "Cerrar sesión" : "Sair da conta"}</button>
         </>}
