@@ -75,12 +75,12 @@ BEGIN
 
   IF p_metric = 'views_count' THEN
     UPDATE public.businesses
-       SET views_count = pg_catalog.coalesce(views_count, 0) + 1
+       SET views_count = coalesce(views_count, 0) + 1
      WHERE id = p_business_id
        AND status = 'approved';
   ELSE
     UPDATE public.businesses
-       SET whatsapp_clicks = pg_catalog.coalesce(whatsapp_clicks, 0) + 1
+       SET whatsapp_clicks = coalesce(whatsapp_clicks, 0) + 1
      WHERE id = p_business_id
        AND status = 'approved';
   END IF;
