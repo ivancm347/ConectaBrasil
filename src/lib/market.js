@@ -195,7 +195,7 @@ export function getMarketStorageKey(key, marketCode = getMarketFromPath().code) 
 export function getInternationalPhoneNumber(phone, marketCode = 'BR') {
   const market = MARKETS[String(marketCode || 'BR').toUpperCase()];
   if (!market) throw new Error('Mercado inválido para telefone.');
-  const digits = String(phone || '').replace(/\\D/g, '');
+  const digits = String(phone || '').replace(/\D/g, '');
   if (!digits) return '';
   if (digits.startsWith(market.dialingCode)) return digits;
   // Preserve an explicitly international number instead of prefixing it twice.
