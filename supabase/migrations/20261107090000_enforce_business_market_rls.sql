@@ -173,4 +173,43 @@ TO authenticated
 USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
 WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
+
+-- CAMPOS ADMINISTRATIVOS ---------------------------------------------------
+-- RLS controla quais linhas podem ser alteradas, mas não quais colunas.
+-- Impede que um proprietário altere selo, plano ou datas de cobrança.
+-- A edição de anúncio aprovado pelo proprietário continua permitida:
+-- o frontend o devolve para pending e remove featured antes de salvar.
+
+CREATE OR REPLACE FUNCTION public.protect_business_admin_fields()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = ''
+AS $
+BEGIN
+  IF auth.role() <> 'service_role'
+     AND (auth.jwt() -> 'app_metadata' ->> 'role') IS DISTINCT FROM 'admin'
+  THEN
+    IF NEW.verified IS DISTINCT FROM OLD.verified
+       OR NEW.plan_type IS DISTINCT FROM OLD.plan_type
+       OR NEW.plan_started_at IS DISTINCT FROM OLD.plan_started_at
+       OR NEW.plan_expires_at IS DISTINCT FROM OLD.plan_expires_at
+       OR NEW.featured_expires_at IS DISTINCT FROM OLD.featured_expires_at
+    THEN
+      RAISE EXCEPTION 'Somente a administração pode alterar selo e dados de plano.'
+        USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$;
+
+DROP TRIGGER IF EXISTS protect_business_admin_fields
+ON public.businesses;
+
+CREATE TRIGGER protect_business_admin_fields
+BEFORE UPDATE ON public.businesses
+FOR EACH ROW
+EXECUTE FUNCTION public.protect_business_admin_fields();
+
 COMMIT;
