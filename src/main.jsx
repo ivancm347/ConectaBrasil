@@ -1665,7 +1665,7 @@ function App({ market }) {
           </div>}
           <div className="admin-stats" style={{margin:'14px 0 8px'}}>
             <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('all')}><b>{adminOverview.total}</b><span>Total de negócios</span></button>
-            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('approved')}><b>{adminOverview.approved}</b><span>Aprovados</span></button>
+            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('approved')}><b>{adminOverview.approved}</b><span>{es ? "Aprobados" : "Aprovados"}</span></button>
             <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('pending')}><b>{adminOverview.pending}</b><span>Aguardando análise</span></button>
             <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('free')}><b>{adminOverview.free}</b><span>Gratuitos ativos</span></button>
             <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('destaque')}><b>{adminOverview.destaque}</b><span>Destaque ativo</span></button>
@@ -1688,7 +1688,7 @@ function App({ market }) {
         <div className="admin-stats">
           <button type="button" className={`admin-stat-button ${adminFilter==='all'?'selected':''}`} onClick={()=>setAdminFilter('all')} aria-label="Mostrar todos os cadastros"><b>{adminBusinesses.length}</b><span>Cadastros</span></button>
           <button type="button" className={`admin-stat-button ${adminFilter==='pending'?'selected':''}`} onClick={()=>setAdminFilter('pending')} aria-label="Mostrar cadastros pendentes"><b>{adminBusinesses.filter(item=>item.status==='pending').length}</b><span>Pendentes</span></button>
-          <button type="button" className={`admin-stat-button ${adminFilter==='approved'?'selected':''}`} onClick={()=>setAdminFilter('approved')} aria-label="Mostrar cadastros aprovados"><b>{adminBusinesses.filter(item=>item.status==='approved').length}</b><span>Aprovados</span></button>
+          <button type="button" className={`admin-stat-button ${adminFilter==='approved'?'selected':''}`} onClick={()=>setAdminFilter('approved')} aria-label="Mostrar cadastros aprovados"><b>{adminBusinesses.filter(item=>item.status==='approved').length}</b><span>{es ? "Aprobados" : "Aprovados"}</span></button>
           <button type="button" className={`admin-stat-button ${adminFilter==='featured'?'selected':''}`} onClick={()=>setAdminFilter('featured')} aria-label="Mostrar anúncios em destaque"><b>{adminBusinesses.filter(item=>item.featured).length}</b><span>Em destaque</span></button>
         </div>
         <div className="admin-filters">{[['pending','Pendentes'],['approved','Aprovados'],['rejected','Rejeitados'],['suspended','Suspensos'],['all','Todos']].map(([value,label])=><button key={value} type="button" className={adminFilter===value?'active':''} aria-pressed={adminFilter===value} onClick={()=>setAdminFilter(value)}>{label}</button>)}</div>
@@ -1699,11 +1699,11 @@ function App({ market }) {
         {editingBusiness && <form className="admin-edit-form" onSubmit={saveBusinessEdit}>
           <h3>Editar anúncio</h3>
           <label>Nome<input required maxLength="100" value={editingBusiness.name} onChange={e=>setEditingBusiness({...editingBusiness,name:e.target.value})}/></label>
-          <label>Descrição<textarea rows="3" maxLength="600" value={editingBusiness.description || ''} onChange={e=>setEditingBusiness({...editingBusiness,description:e.target.value})}/><small className="character-count">{(editingBusiness.description || '').length}/600 caracteres</small></label>
-          <div className="form-row"><label>Cidade<input maxLength="80" value={editingBusiness.city || ''} onChange={e=>setEditingBusiness({...editingBusiness,city:e.target.value})}/></label><label>{market.regionLabel}<input maxLength={market.code === "PY" ? 80 : 2} pattern={market.code === "PY" ? "[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .-]{1,79}" : "[A-Za-z]{2}"} title={market.code === "PY" ? "Informe o departamento" : "Informe a sigla com duas letras"} value={editingBusiness.state || ''} onChange={e=>setEditingBusiness({...editingBusiness,state:e.target.value.toUpperCase()})}/></label></div>
-          <label>Telefone / WhatsApp<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={editingBusiness.phone || ''} onChange={e=>setEditingBusiness({...editingBusiness,phone:e.target.value})}/></label>
+          <label>{es ? "Descripción" : "Descrição"}<textarea rows="3" maxLength="600" value={editingBusiness.description || ''} onChange={e=>setEditingBusiness({...editingBusiness,description:e.target.value})}/><small className="character-count">{(editingBusiness.description || '').length}/600 caracteres</small></label>
+          <div className="form-row"><label>{es ? "Ciudad" : "Cidade"}<input maxLength="80" value={editingBusiness.city || ''} onChange={e=>setEditingBusiness({...editingBusiness,city:e.target.value})}/></label><label>{market.regionLabel}<input maxLength={market.code === "PY" ? 80 : 2} pattern={market.code === "PY" ? "[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .-]{1,79}" : "[A-Za-z]{2}"} title={market.code === "PY" ? "Informe o departamento" : "Informe a sigla com duas letras"} value={editingBusiness.state || ''} onChange={e=>setEditingBusiness({...editingBusiness,state:e.target.value.toUpperCase()})}/></label></div>
+          <label>{es ? "Teléfono / WhatsApp" : "Telefone / WhatsApp"}<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={editingBusiness.phone || ''} onChange={e=>setEditingBusiness({...editingBusiness,phone:e.target.value})}/></label>
           <LocationFields market={market} item={editingBusiness} onChange={patch=>setEditingBusiness({...editingBusiness,...patch})}/>
-          <div className="admin-actions"><button type="submit" className="approve-action" disabled={formBusy}>Salvar alterações</button><button type="button" disabled={formBusy} onClick={()=>setEditingBusiness(null)}>Cancelar</button></div>
+          <div className="admin-actions"><button type="submit" className="approve-action" disabled={formBusy}>{es ? "Guardar cambios" : "Salvar alterações"}</button><button type="button" disabled={formBusy} onClick={()=>setEditingBusiness(null)}>{es ? "Cancelar" : "Cancelar"}</button></div>
         </form>}
         {adminLoading ? <div className="empty-state">Carregando cadastros...</div> : <div className="admin-list">
           {filteredAdminBusinesses.length ? filteredAdminBusinesses.map(item=><article className="admin-business" key={item.id}>
@@ -1725,7 +1725,7 @@ function App({ market }) {
                <small style={{display:'block',marginTop:6,color:'#64748b'}}>Ative somente depois de confirmar a contratação. O destaque vence automaticamente na vitrine.</small>
              </div>
             <div className="admin-actions">
-              <button type="button" disabled={formBusy} onClick={()=>setEditingBusiness({...item})}>Editar anúncio</button>
+              <button type="button" disabled={formBusy} onClick={()=>setEditingBusiness({...item})}>{es ? "Editar anuncio" : "Editar anúncio"}</button>
               <button type="button" disabled={formBusy} className="delete-action" onClick={()=>deleteBusiness(item)}>Excluir definitivamente</button>
               <button type="button" disabled={formBusy} className={item.featured?'featured-action':''} onClick={()=>toggleFeatured(item)}>{item.featured?'Remover destaque':'Destacar anúncio'}</button><button type="button" disabled={formBusy} className={item.verified?'verified-action':''} onClick={()=>toggleVerified(item)}>{item.verified?'Remover selo verificado':'Marcar como verificado'}</button>
               {item.status!=='approved' && <button type="button" disabled={formBusy} className="approve-action" onClick={()=>moderateBusiness(item.id,'approved')}>Aprovar</button>}
@@ -1794,57 +1794,57 @@ function App({ market }) {
         </section>
         <button type="button" className="text-switch" onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);setShowForm(false)}}>Sair da conta administrativa</button>
       </> : <>
-      <div className="eyebrow dark">CADASTRO DE ANUNCIANTE</div>
-      <h2>{authUser ? 'Apresente seu negócio.' : 'Entre para anunciar.'}</h2>
+      <div className="eyebrow dark">{es ? "REGISTRO DE ANUNCIANTE" : "CADASTRO DE ANUNCIANTE"}</div>
+      <h2>{authUser ? (es ? 'Presenta tu negocio.' : 'Apresente seu negócio.') : (es ? 'Inicia sesión para publicar.' : 'Entre para anunciar.')}</h2>
       {!isSupabaseConfigured ? <p>O cadastro está temporariamente indisponível. A conexão com o banco ainda não foi configurada na publicação.</p> : <>
         {formMessage && <div className="form-notice" role="status" aria-live="polite">{formMessage}</div>}
         {formError && <div className="form-error" role="alert">{formError}</div>}
         {passwordRecovery ? <form onSubmit={updateRecoveredPassword} className="business-form">
-          <div className="eyebrow dark">RECUPERAÇÃO DE ACESSO</div><h2>Crie uma nova senha.</h2>
-          <p>Escolha uma senha com pelo menos 6 caracteres.</p>
+          <div className="eyebrow dark">RECUPERAÇÃO DE ACESSO</div><h2>{es ? "Crea una nueva contraseña." : "Crie uma nova senha."}</h2>
+          <p>{es ? "Elige una contraseña de al menos 6 caracteres." : "Escolha uma senha com pelo menos 6 caracteres."}</p>
           {formMessage && <div className="form-notice" role="status" aria-live="polite">{formMessage}</div>}
           {formError && <div className="form-error" role="alert">{formError}</div>}
-          <label>Nova senha<input type="password" required minLength="6" autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Mínimo de 6 caracteres"/></label>
-          <button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Salvando...' : 'Salvar nova senha'}</button>
+          <label>{es ? "Nueva contraseña" : "Nova senha"}<input type="password" required minLength="6" autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder={es ? "Mínimo 6 caracteres" : "Mínimo de 6 caracteres"}/></label>
+          <button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? (es ? 'Guardando...' : 'Salvando...') : (es ? 'Guardar contraseña' : 'Salvar nova senha')}</button>
         </form> : !authUser ? forgotPasswordMode ? <>
-          <p>Informe seu e-mail e enviaremos um link para você criar uma nova senha.</p>
+          <p>{es ? "Ingresa tu correo y te enviaremos un enlace para crear una nueva contraseña." : "Informe seu e-mail e enviaremos um link para você criar uma nova senha."}</p>
           <form onSubmit={requestPasswordRecovery} className="business-form">
             <label>E-mail<input ref={authEmailInput} type="email" required autoComplete="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="voce@email.com"/></label>
             <button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Enviando...' : 'Enviar link de recuperação'}</button>
           </form>
-          <button type="button" className="text-switch" onClick={()=>{setForgotPasswordMode(false);setFormError('');setFormMessage('')}}>Voltar para entrar</button>
+          <button type="button" className="text-switch" onClick={()=>{setForgotPasswordMode(false);setFormError('');setFormMessage('')}}>{es ? "Volver al inicio de sesión" : "Voltar para entrar"}</button>
         </> : <>
-          <p>{authMode === 'signup' ? 'Crie uma conta gratuita para cadastrar sua empresa ou serviço.' : 'Entre na sua conta para continuar.'}</p>
+          <p>{authMode === 'signup' ? (es ? 'Crea una cuenta gratuita para registrar tu empresa o servicio.' : 'Crie uma conta gratuita para cadastrar sua empresa ou serviço.') : (es ? 'Inicia sesión para continuar.' : 'Entre na sua conta para continuar.')}</p>
           <form onSubmit={handleAuthSubmit} className="business-form">
             <label>E-mail<input ref={authEmailInput} type="email" required autoComplete="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="voce@email.com"/></label>
-            <label>Senha<input type="password" required minLength="6" value={authPassword} onChange={e=>setAuthPassword(e.target.value)} placeholder="Mínimo de 6 caracteres"/></label>
-            <button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Aguarde...' : authMode === 'signup' ? 'Criar conta' : 'Entrar'}</button>
+            <label>{es ? "Contraseña" : "Senha"}<input type="password" required minLength="6" value={authPassword} onChange={e=>setAuthPassword(e.target.value)} placeholder={es ? "Mínimo 6 caracteres" : "Mínimo de 6 caracteres"}/></label>
+            <button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? (es ? 'Espera...' : 'Aguarde...') : authMode === 'signup' ? (es ? 'Crear cuenta' : 'Criar conta') : (es ? 'Iniciar sesión' : 'Entrar')}</button>
           </form>
-          <button type="button" className="text-switch" onClick={()=>{setAuthMode(authMode === 'signup' ? 'login' : 'signup');setFormError('');setFormMessage('')}}>{authMode === 'signup' ? 'Já tenho conta — entrar' : 'Não tenho conta — criar agora'}</button>
-          {authMode === 'login' && <button type="button" className="text-switch" disabled={formBusy} onClick={openPasswordRecovery}>Esqueci minha senha</button>}
+          <button type="button" className="text-switch" onClick={()=>{setAuthMode(authMode === 'signup' ? 'login' : 'signup');setFormError('');setFormMessage('')}}>{authMode === 'signup' ? (es ? 'Ya tengo cuenta — iniciar sesión' : 'Já tenho conta — entrar') : (es ? 'No tengo cuenta — crear ahora' : 'Não tenho conta — criar agora')}</button>
+          {authMode === 'login' && <button type="button" className="text-switch" disabled={formBusy} onClick={openPasswordRecovery}>{es ? "Olvidé mi contraseña" : "Esqueci minha senha"}</button>}
         </> : <>
           <section className="owner-dashboard">
-            <div className="owner-dashboard-head"><div><div className="eyebrow dark">ÁREA DO ANUNCIANTE</div><h3>Meus anúncios</h3><p>Acompanhe a situação dos seus cadastros.</p></div><button type="button" className="owner-refresh" onClick={loadOwnerBusinesses} disabled={ownerLoading} aria-label="Atualizar meus anúncios">{ownerLoading ? "Atualizando..." : "Atualizar"}</button></div>
+            <div className="owner-dashboard-head"><div><div className="eyebrow dark">{es ? "ÁREA DEL ANUNCIANTE" : "ÁREA DO ANUNCIANTE"}</div><h3>{es ? "Mis anuncios" : "Meus anúncios"}</h3><p>{es ? "Consulta el estado de tus registros." : "Acompanhe a situação dos seus cadastros."}</p></div><button type="button" className="owner-refresh" onClick={loadOwnerBusinesses} disabled={ownerLoading} aria-label={es ? "Actualizar mis anuncios" : "Atualizar meus anúncios"}>{ownerLoading ? "Atualizando..." : "Atualizar"}</button></div>
             <div className="owner-stats" aria-label="Filtrar meus anúncios">
               <button type="button" onClick={()=>setOwnerFilter('all')} aria-pressed={ownerFilter === 'all'}><b>{ownerStats.total}</b><span>Todos</span></button>
-              <button type="button" onClick={()=>setOwnerFilter('pending')} aria-pressed={ownerFilter === 'pending'}><b>{ownerStats.pending}</b><span>Em análise</span></button>
-              <button type="button" onClick={()=>setOwnerFilter('approved')} aria-pressed={ownerFilter === 'approved'}><b>{ownerStats.approved}</b><span>Aprovados</span></button>
-              <button type="button" onClick={()=>setOwnerFilter('attention')} aria-pressed={ownerFilter === 'attention'}><b>{ownerStats.attention}</b><span>Precisam de atenção</span></button>
+              <button type="button" onClick={()=>setOwnerFilter('pending')} aria-pressed={ownerFilter === 'pending'}><b>{ownerStats.pending}</b><span>{es ? "En revisión" : "Em análise"}</span></button>
+              <button type="button" onClick={()=>setOwnerFilter('approved')} aria-pressed={ownerFilter === 'approved'}><b>{ownerStats.approved}</b><span>{es ? "Aprobados" : "Aprovados"}</span></button>
+              <button type="button" onClick={()=>setOwnerFilter('attention')} aria-pressed={ownerFilter === 'attention'}><b>{ownerStats.attention}</b><span>{es ? "Requieren atención" : "Precisam de atenção"}</span></button>
             </div>
             {ownerError && <div className="form-error" role="alert">{ownerError}</div>}
             {ownerShareMessage && <div className="form-message" role="status">{ownerShareMessage}</div>}
-            {ownerBusinesses.length > 0 && <div className="owner-search"><label htmlFor="owner-business-search">Buscar nos meus anúncios</label><div><input id="owner-business-search" type="search" maxLength="100" value={ownerSearch} onChange={event=>setOwnerSearch(event.target.value)} placeholder="Nome, cidade ou descrição..." aria-label="Buscar nos meus anúncios"/>{ownerSearch && <button type="button" onClick={()=>setOwnerSearch('')} aria-label="Limpar busca dos meus anúncios">Limpar</button>}</div><small role="status" aria-live="polite">{filteredOwnerBusinesses.length} de {ownerBusinesses.length} anúncio(s)</small><label className="owner-sort-label">Ordenar por<select value={ownerSort} onChange={event=>setOwnerSort(event.target.value)} aria-label="Ordenar meus anúncios"><option value="newest">Mais recentes</option><option value="oldest">Mais antigos</option><option value="name">Nome (A–Z)</option></select></label></div>}
+            {ownerBusinesses.length > 0 && <div className="owner-search"><label htmlFor="owner-business-search">{es ? "Buscar en mis anuncios" : "Buscar nos meus anúncios"}</label><div><input id="owner-business-search" type="search" maxLength="100" value={ownerSearch} onChange={event=>setOwnerSearch(event.target.value)} placeholder={es ? "Nombre, ciudad o descripción..." : "Nome, cidade ou descrição..."} aria-label="Buscar nos meus anúncios"/>{ownerSearch && <button type="button" onClick={()=>setOwnerSearch('')} aria-label="Limpar busca dos meus anúncios">Limpar</button>}</div><small role="status" aria-live="polite">{filteredOwnerBusinesses.length} de {ownerBusinesses.length} anúncio(s)</small><label className="owner-sort-label">{es ? "Ordenar por" : "Ordenar por"}<select value={ownerSort} onChange={event=>setOwnerSort(event.target.value)} aria-label="Ordenar meus anúncios"><option value="newest">{es ? "Más recientes" : "Mais recentes"}</option><option value="oldest">{es ? "Más antiguos" : "Mais antigos"}</option><option value="name">{es ? "Nombre (A–Z)" : "Nome (A–Z)"}</option></select></label></div>}
             {ownerLoading ? <div className="empty-state">Carregando seus anúncios...</div> : ownerBusinesses.length ? filteredOwnerBusinesses.length ? <div className="owner-list">{filteredOwnerBusinesses.map(item => <article className="owner-business" key={item.id}>
               <div className="owner-business-head"><div><b>{item.name}</b><small>{[item.city,item.state].filter(Boolean).join(' / ')} · {item.business_categories?.[0]?.categories?.name || 'Sem categoria'}</small></div><span className={'status-badge status-'+item.status}>{({pending:'Em análise',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</span></div>
               <p>{item.description || 'Sem descrição informada.'}</p>
               {item.status === 'approved' && <div className="owner-metrics"><span><b>{Number(item.views_count || 0)}</b> visualizações</span><span><b>{Number(item.whatsapp_clicks || 0)}</b> contatos pelo WhatsApp</span></div>}
               <small className="owner-updated">Enviado em {new Date(item.created_at).toLocaleDateString('pt-BR')}{item.updated_at && item.updated_at !== item.created_at ? ` · Atualizado em ${new Date(item.updated_at).toLocaleDateString('pt-BR')}` : ''}</small>
-              {['pending','approved'].includes(item.status) ? <><button type="button" className="owner-edit-button" onClick={() => setOwnerEditing({...item})}>Editar anúncio</button>{item.status === 'approved' && <><small className="owner-status-help">Ao salvar, o anúncio ficará em análise até a equipe aprovar as alterações.</small><button type="button" className="owner-share-link" onClick={() => copyOwnerBusinessLink(item)}>Copiar link público</button></>}</> : <small className="owner-status-help">{item.status === 'rejected' ? 'Entre em contato com a equipe para entender os ajustes necessários.' : 'Este anúncio não está visível na vitrine no momento.'}</small>}
+              {['pending','approved'].includes(item.status) ? <><button type="button" className="owner-edit-button" onClick={() => setOwnerEditing({...item})}>{es ? "Editar anuncio" : "Editar anúncio"}</button>{item.status === 'approved' && <><small className="owner-status-help">Ao salvar, o anúncio ficará em análise até a equipe aprovar as alterações.</small><button type="button" className="owner-share-link" onClick={() => copyOwnerBusinessLink(item)}>{es ? "Copiar enlace público" : "Copiar link público"}</button></>}</> : <small className="owner-status-help">{item.status === 'rejected' ? 'Entre em contato com a equipe para entender os ajustes necessários.' : 'Este anúncio não está visível na vitrine no momento.'}</small>}
             </article>)}</div> : <div className="empty-state">Nenhum anúncio nesta situação. Selecione outro filtro para consultar seus cadastros.</div> : <div className="empty-state">Você ainda não cadastrou nenhum negócio. Preencha o formulário abaixo para começar.</div>}
           </section>
           <section className="marketing-assistant">
-            <div className="eyebrow dark">FERRAMENTA DE DIVULGAÇÃO</div>
-            <h3>Assistente de divulgação</h3>
+            <div className="eyebrow dark">{es ? "HERRAMIENTA DE PROMOCIÓN" : "FERRAMENTA DE DIVULGAÇÃO"}</div>
+            <h3>{es ? "Asistente de promoción" : "Assistente de divulgação"}</h3>
             <p>Crie uma sugestão de texto para apresentar seu negócio nas redes sociais e no WhatsApp. Funciona sem chave ou serviço externo.</p>
             {ownerBusinesses.length > 0 && <label>Qual negócio deseja divulgar?
               <select value={marketingBusinessId} onChange={e=>setMarketingBusinessId(e.target.value)}>
@@ -1862,44 +1862,44 @@ function App({ market }) {
             </label>
             <label>Estilo do texto
               <select value={marketingTone} onChange={e=>setMarketingTone(e.target.value)}>
-                <option value="profissional">Profissional</option>
+                <option value="profissional">{es ? "Profesional" : "Profissional"}</option>
                 <option value="proximo">Próximo e acolhedor</option>
                 <option value="direto">Direto e objetivo</option>
               </select>
             </label>
             <button type="button" className="btn modal-submit" onClick={generateMarketingCopy}> <Sparkles size={16}/> Gerar texto de divulgação</button>
             {marketingOutput && <div className="marketing-output">
-              <label htmlFor="marketing-copy-result">Texto sugerido</label>
+              <label htmlFor="marketing-copy-result">{es ? "Texto sugerido" : "Texto sugerido"}</label>
               <textarea id="marketing-copy-result" rows="7" readOnly value={marketingOutput}/>
               <button type="button" className="business-share-button" onClick={copyMarketingCopy}>{marketingCopied ? 'Texto copiado!' : 'Copiar texto'}</button>
               <small>Revise as informações antes de publicar. Esta versão usa modelos locais; não envia dados para serviços externos.</small>
             </div>}
           </section>
           {ownerEditing && <form className="owner-edit-form business-form" onSubmit={saveOwnerBusiness}>
-            <h3>Editar meu anúncio</h3>
-            <label>Nome do negócio<input required maxLength="100" autoComplete="organization" value={ownerEditing.name || ''} onChange={e=>setOwnerEditing({...ownerEditing,name:e.target.value})}/></label>
-            <label>Tipo<select value={ownerEditing.business_type || 'empresa'} onChange={e=>setOwnerEditing({...ownerEditing,business_type:e.target.value})}><option value="empresa">Empresa</option><option value="profissional">Profissional</option><option value="loja">Loja / comércio</option><option value="servico">Prestador de serviço</option></select></label>
-            <label>Descrição<textarea rows="3" maxLength="600" value={ownerEditing.description || ''} onChange={e=>setOwnerEditing({...ownerEditing,description:e.target.value})}/><small className="character-count">{(ownerEditing.description || '').length}/600 caracteres</small></label>
-            <div className="form-row"><label>Cidade<input required maxLength="80" autoComplete="address-level2" value={ownerEditing.city || ''} onChange={e=>setOwnerEditing({...ownerEditing,city:e.target.value})}/></label><label>{market.regionLabel}<input required maxLength={market.code === "PY" ? 80 : 2} pattern={market.code === "PY" ? "[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .-]{1,79}" : "[A-Za-z]{2}"} title={market.code === "PY" ? "Informe o departamento" : "Informe a sigla com duas letras"} value={ownerEditing.state || ''} onChange={e=>setOwnerEditing({...ownerEditing,state:e.target.value.toUpperCase()})}/></label></div>
-            <label>Telefone / WhatsApp<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={ownerEditing.phone || ''} onChange={e=>setOwnerEditing({...ownerEditing,phone:e.target.value})}/></label>
+            <h3>{es ? "Editar mi anuncio" : "Editar meu anúncio"}</h3>
+            <label>{es ? "Nombre del negocio" : "Nome do negócio"}<input required maxLength="100" autoComplete="organization" value={ownerEditing.name || ''} onChange={e=>setOwnerEditing({...ownerEditing,name:e.target.value})}/></label>
+            <label>{es ? "Tipo" : "Tipo"}<select value={ownerEditing.business_type || 'empresa'} onChange={e=>setOwnerEditing({...ownerEditing,business_type:e.target.value})}><option value="empresa">{es ? "Empresa" : "Empresa"}</option><option value="profissional">{es ? "Profesional" : "Profissional"}</option><option value="loja">{es ? "Tienda / comercio" : "Loja / comércio"}</option><option value="servico">{es ? "Proveedor de servicios" : "Prestador de serviço"}</option></select></label>
+            <label>{es ? "Descripción" : "Descrição"}<textarea rows="3" maxLength="600" value={ownerEditing.description || ''} onChange={e=>setOwnerEditing({...ownerEditing,description:e.target.value})}/><small className="character-count">{(ownerEditing.description || '').length}/600 caracteres</small></label>
+            <div className="form-row"><label>{es ? "Ciudad" : "Cidade"}<input required maxLength="80" autoComplete="address-level2" value={ownerEditing.city || ''} onChange={e=>setOwnerEditing({...ownerEditing,city:e.target.value})}/></label><label>{market.regionLabel}<input required maxLength={market.code === "PY" ? 80 : 2} pattern={market.code === "PY" ? "[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .-]{1,79}" : "[A-Za-z]{2}"} title={market.code === "PY" ? "Informe o departamento" : "Informe a sigla com duas letras"} value={ownerEditing.state || ''} onChange={e=>setOwnerEditing({...ownerEditing,state:e.target.value.toUpperCase()})}/></label></div>
+            <label>{es ? "Teléfono / WhatsApp" : "Telefone / WhatsApp"}<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={ownerEditing.phone || ''} onChange={e=>setOwnerEditing({...ownerEditing,phone:e.target.value})}/></label>
             <LocationFields market={market} item={ownerEditing} onChange={patch=>setOwnerEditing({...ownerEditing,...patch})}/>
-            <div className="admin-actions"><button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Salvando...' : 'Salvar alterações'}</button><button type="button" disabled={formBusy} onClick={()=>setOwnerEditing(null)}>Cancelar</button></div>
+            <div className="admin-actions"><button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Salvando...' : 'Salvar alterações'}</button><button type="button" disabled={formBusy} onClick={()=>setOwnerEditing(null)}>{es ? "Cancelar" : "Cancelar"}</button></div>
           </form>}
-          <div className="owner-new-listing"><h3>Cadastrar outro negócio</h3><p>Seu novo anúncio ficará pendente até a aprovação da equipe.</p></div>
+          <div className="owner-new-listing"><h3>{es ? "Registrar otro negocio" : "Cadastrar outro negócio"}</h3><p>{es ? "Tu nuevo anuncio quedará pendiente hasta la aprobación del equipo." : "Seu novo anúncio ficará pendente até a aprovação da equipe."}</p></div>
           <form onSubmit={handleBusinessSubmit} className="business-form">
-            <label>Nome do negócio<input required maxLength="100" value={businessForm.name} onChange={e=>setBusinessForm({...businessForm,name:e.target.value})}/></label>
-            <label>Tipo<select value={businessForm.business_type} onChange={e=>setBusinessForm({...businessForm,business_type:e.target.value})}><option value="empresa">Empresa</option><option value="profissional">Profissional</option><option value="loja">Loja / comércio</option><option value="servico">Prestador de serviço</option></select></label>
-            <label>Descrição<textarea rows="3" maxLength="600" value={businessForm.description} onChange={e=>setBusinessForm({...businessForm,description:e.target.value})} placeholder="Conte brevemente o que você oferece."/><small className="character-count">{businessForm.description.length}/600 caracteres</small></label>
-            <label>Categoria<select value={businessForm.category_id} onChange={e=>setBusinessForm({...businessForm,category_id:e.target.value})}><option value="">Selecione uma categoria</option>{availableCategories.map(cat=><option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label>
-            <div className="form-row"><label>Cidade<input required maxLength="80" autoComplete="address-level2" value={businessForm.city} onChange={e=>setBusinessForm({...businessForm,city:e.target.value})}/></label><label>{market.regionLabel}<input required maxLength={market.code === "PY" ? 80 : 2} pattern={market.code === "PY" ? "[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .-]{1,79}" : "[A-Za-z]{2}"} title={market.code === "PY" ? "Informe o departamento" : "Informe a sigla com duas letras"} value={businessForm.state} onChange={e=>setBusinessForm({...businessForm,state:e.target.value.toUpperCase()})}/></label></div>
+            <label>{es ? "Nombre del negocio" : "Nome do negócio"}<input required maxLength="100" value={businessForm.name} onChange={e=>setBusinessForm({...businessForm,name:e.target.value})}/></label>
+            <label>{es ? "Tipo" : "Tipo"}<select value={businessForm.business_type} onChange={e=>setBusinessForm({...businessForm,business_type:e.target.value})}><option value="empresa">{es ? "Empresa" : "Empresa"}</option><option value="profissional">{es ? "Profesional" : "Profissional"}</option><option value="loja">{es ? "Tienda / comercio" : "Loja / comércio"}</option><option value="servico">{es ? "Proveedor de servicios" : "Prestador de serviço"}</option></select></label>
+            <label>{es ? "Descripción" : "Descrição"}<textarea rows="3" maxLength="600" value={businessForm.description} onChange={e=>setBusinessForm({...businessForm,description:e.target.value})} placeholder={es ? "Describe brevemente lo que ofreces." : "Conte brevemente o que você oferece."}/><small className="character-count">{businessForm.description.length}/600 caracteres</small></label>
+            <label>{es ? "Categoría" : "Categoria"}<select value={businessForm.category_id} onChange={e=>setBusinessForm({...businessForm,category_id:e.target.value})}><option value="">{es ? "Selecciona una categoría" : "Selecione uma categoria"}</option>{availableCategories.map(cat=><option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label>
+            <div className="form-row"><label>{es ? "Ciudad" : "Cidade"}<input required maxLength="80" autoComplete="address-level2" value={businessForm.city} onChange={e=>setBusinessForm({...businessForm,city:e.target.value})}/></label><label>{market.regionLabel}<input required maxLength={market.code === "PY" ? 80 : 2} pattern={market.code === "PY" ? "[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .-]{1,79}" : "[A-Za-z]{2}"} title={market.code === "PY" ? "Informe o departamento" : "Informe a sigla com duas letras"} value={businessForm.state} onChange={e=>setBusinessForm({...businessForm,state:e.target.value.toUpperCase()})}/></label></div>
             <LocationFields market={market} item={businessForm} onChange={patch=>setBusinessForm({...businessForm,...patch})}/>
-            <label>Telefone / WhatsApp<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={businessForm.phone} onChange={e=>setBusinessForm({...businessForm,phone:e.target.value})}/></label>
-            <label>Logo da empresa<input id="business-logo-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-describedby="business-logo-help" onChange={handleLogoSelection}/><small className="upload-help" id="business-logo-help">Formatos JPG, PNG, WEBP ou GIF. Uma imagem, até 5 MB.</small></label>{logoPreviewUrl && <div className="upload-preview"><span>Prévia da logo</span><img src={logoPreviewUrl} alt="Prévia da logo selecionada"/></div>}
-            <label>Fotos do negócio (até 5)<input id="business-gallery-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple aria-describedby="business-gallery-help" onChange={handleGallerySelection}/><small className="upload-help" id="business-gallery-help">Formatos JPG, PNG, WEBP ou GIF. Selecione até 5 fotos, cada uma com no máximo 5 MB.</small></label>
+            <label>{es ? "Teléfono / WhatsApp" : "Telefone / WhatsApp"}<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={businessForm.phone} onChange={e=>setBusinessForm({...businessForm,phone:e.target.value})}/></label>
+            <label>{es ? "Logo de la empresa" : "Logo da empresa"}<input id="business-logo-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-describedby="business-logo-help" onChange={handleLogoSelection}/><small className="upload-help" id="business-logo-help">Formatos JPG, PNG, WEBP ou GIF. Uma imagem, até 5 MB.</small></label>{logoPreviewUrl && <div className="upload-preview"><span>{es ? "Vista previa del logo" : "Prévia da logo"}</span><img src={logoPreviewUrl} alt="Prévia da logo selecionada"/></div>}
+            <label>{es ? "Fotos del negocio (hasta 5)" : "Fotos do negócio (até 5)"}<input id="business-gallery-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple aria-describedby="business-gallery-help" onChange={handleGallerySelection}/><small className="upload-help" id="business-gallery-help">Formatos JPG, PNG, WEBP ou GIF. Selecione até 5 fotos, cada uma com no máximo 5 MB.</small></label>
             {galleryFiles.length > 0 && <div className="selected-files" role="status" aria-live="polite"><strong>{galleryFiles.length} {galleryFiles.length === 1 ? "foto selecionada" : "fotos selecionadas"}:</strong>{galleryFiles.map((file,index)=><span key={`${file.name}-${index}`}>{file.name}</span>)}</div>}{galleryPreviewUrls.length > 0 && <div className="upload-gallery-preview" aria-label="Prévia das fotos selecionadas">{galleryPreviewUrls.map((item,index)=><figure key={item.url}><img src={item.url} alt={`Prévia da foto ${index+1}: ${item.name}`}/><figcaption>{index+1}</figcaption></figure>)}</div>}
             <button type="submit" className="btn modal-submit" disabled={formBusy}>{formBusy ? 'Enviando...' : 'Enviar para aprovação'}</button>
           </form>
-          <button type="button" className="text-switch" onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);setFormMessage('')}}>Sair da conta</button>
+          <button type="button" className="text-switch" onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);setFormMessage('')}}>{es ? "Cerrar sesión" : "Sair da conta"}</button>
         </>}
       </>}
       </>}
