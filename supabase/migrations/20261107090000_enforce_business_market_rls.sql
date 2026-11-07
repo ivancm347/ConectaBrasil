@@ -186,7 +186,7 @@ LANGUAGE plpgsql
 SET search_path = ''
 AS $
 BEGIN
-  IF auth.role() <> 'service_role'
+  IF coalesce(auth.role(), '') <> 'service_role'
      AND (auth.jwt() -> 'app_metadata' ->> 'role') IS DISTINCT FROM 'admin'
   THEN
     IF NEW.verified IS DISTINCT FROM OLD.verified
