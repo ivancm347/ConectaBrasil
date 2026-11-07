@@ -39,23 +39,24 @@ const paginationTestListings = Array.from({ length: 13 }, (_, index) => {
 });
 function LocationFields({ item, onChange, market }) {
   const visibility = item.location_visibility || 'neighborhood';
+  const es = market.code === 'PY';
   return <section className="location-fields">
-    <h4>Localização do anúncio</h4>
-    <label>Como deseja mostrar sua localização?
+    <h4>{es ? 'Ubicación del anuncio' : 'Localização do anúncio'}</h4>
+    <label>{es ? '¿Cómo desea mostrar su ubicación?' : 'Como deseja mostrar sua localização?'}
       <select value={visibility} onChange={e=>onChange({location_visibility:e.target.value})}>
-        <option value="exact">Endereço comercial completo</option>
-        <option value="neighborhood">Somente bairro e cidade</option>
-        <option value="service_area">Área de atendimento (várias localidades)</option>
+        <option value="exact">{es ? 'Dirección comercial completa' : 'Endereço comercial completo'}</option>
+        <option value="neighborhood">{es ? 'Solo barrio y ciudad' : 'Somente bairro e cidade'}</option>
+        <option value="service_area">{es ? 'Área de atención (varias localidades)' : 'Área de atendimento (várias localidades)'}</option>
       </select>
     </label>
     {visibility === 'exact' && <>
-      <div className="form-row"><label>{market.postalCodeLabel}<input inputMode="numeric" autoComplete="postal-code" maxLength={market.code === 'PY' ? 6 : 9} placeholder={market.code === 'PY' ? '000000' : '00000-000'} value={item.postal_code || ''} onChange={e=>onChange({postal_code:e.target.value.replace(/[^0-9-]/g,'')})}/></label><label>Bairro<input maxLength="100" autoComplete="address-level3" value={item.neighborhood || ''} onChange={e=>onChange({neighborhood:e.target.value})}/></label></div>
-      <label>Rua / Avenida<input maxLength="150" autoComplete="address-line1" value={item.street || ''} onChange={e=>onChange({street:e.target.value})}/></label>
-      <div className="form-row"><label>Número<input maxLength="20" value={item.street_number || ''} onChange={e=>onChange({street_number:e.target.value})}/></label><label>Complemento (opcional)<input maxLength="100" autoComplete="address-line2" value={item.address_complement || ''} onChange={e=>onChange({address_complement:e.target.value})}/></label></div>
-      <small>O endereço completo ficará visível no perfil público. Use esta opção somente para endereço comercial.</small>
+      <div className="form-row"><label>{market.postalCodeLabel}<input inputMode="numeric" autoComplete="postal-code" maxLength={market.code === 'PY' ? 6 : 9} placeholder={market.code === 'PY' ? '000000' : '00000-000'} value={item.postal_code || ''} onChange={e=>onChange({postal_code:e.target.value.replace(/[^0-9-]/g,'')})}/></label><label>{es ? 'Barrio' : 'Bairro'}<input maxLength="100" autoComplete="address-level3" value={item.neighborhood || ''} onChange={e=>onChange({neighborhood:e.target.value})}/></label></div>
+      <label>{es ? 'Calle / Avenida' : 'Rua / Avenida'}<input maxLength="150" autoComplete="address-line1" value={item.street || ''} onChange={e=>onChange({street:e.target.value})}/></label>
+      <div className="form-row"><label>{es ? 'Número' : 'Número'}<input maxLength="20" value={item.street_number || ''} onChange={e=>onChange({street_number:e.target.value})}/></label><label>{es ? 'Complemento (opcional)' : 'Complemento (opcional)'}<input maxLength="100" autoComplete="address-line2" value={item.address_complement || ''} onChange={e=>onChange({address_complement:e.target.value})}/></label></div>
+      <small>{es ? 'La dirección completa será visible en el perfil público. Use esta opción solo para una dirección comercial.' : 'O endereço completo ficará visível no perfil público. Use esta opção somente para endereço comercial.'}</small>
     </>}
-    {visibility === 'neighborhood' && <label>Bairro (opcional)<input maxLength="100" autoComplete="address-level3" value={item.neighborhood || ''} onChange={e=>onChange({neighborhood:e.target.value})}/></label>}
-    {visibility === 'service_area' && <label>Cidades ou regiões atendidas (separe por vírgulas)<input maxLength="300" placeholder="Ex.: Itanhaém, Mongaguá, Peruíbe" value={item.service_cities || ''} onChange={e=>onChange({service_cities:e.target.value})}/></label>}
+    {visibility === 'neighborhood' && <label>{es ? 'Barrio (opcional)' : 'Bairro (opcional)'}<input maxLength="100" autoComplete="address-level3" value={item.neighborhood || ''} onChange={e=>onChange({neighborhood:e.target.value})}/></label>}
+    {visibility === 'service_area' && <label>{es ? 'Ciudades o regiones atendidas (separadas por comas)' : 'Cidades ou regiões atendidas (separe por vírgulas)'}<input maxLength="300" placeholder={es ? 'Ej.: Encarnación, Cambyretá, Posadas' : 'Ex.: Itanhaém, Mongaguá, Peruíbe'} value={item.service_cities || ''} onChange={e=>onChange({service_cities:e.target.value})}/></label>}
   </section>;
 }
 
