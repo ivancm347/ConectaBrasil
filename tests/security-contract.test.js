@@ -110,3 +110,37 @@ test.todo('Integração RLS: proprietário A não lê nem altera anúncios do pr
 test.todo('Integração Storage: usuário A não envia, substitui, lê ou remove imagens do anúncio B.');
 test.todo('Integração de país: sessão BR não acessa anúncios/imagens PY e vice-versa.');
 test.todo('Integração pública: anúncios aprovados BR e PY permanecem públicos; a interface filtra a vitrine pelo country_code selecionado.');
+
+
+const metricsHardeningMigration = read('../supabase/migrations/20261106223000_harden_reviews_and_market_metrics.sql');
+
+test('migração de endurecimento mantém avaliações privadas limitadas ao mercado confiável', () => {
+  assert.match(metricsHardeningMigration, /create policy "Public read approved business reviews"[\s\S]*?status = 'approved'/i);
+  assert.match(metricsHardeningMigration, /business_reviews\.user_id = auth\.uid\(\)[\s\S]*?b\.country_code\s*=\s*\(auth\.jwt\(\)\s*->\s*'app_metadata'\s*->>\s*'market_code'\)/i);
+  assert.match(metricsHardeningMigration, /business_reviews\.status = 'pending'[\s\S]*?b\.status = 'approved'[\s\S]*?b\.country_code\s*=\s*\(auth\.jwt\(\)\s*->\s*'app_metadata'\s*->>\s*'market_code'\)/i);
+});
+
+test('funções SECURITY DEFINER de métricas usam search_path vazio', () => {
+  const functionDefinitions = metricsHardeningMigration.match(/create or replace function[\s\S]*?\$function\$;/gi) ?? [];
+  assert.equal(functionDefinitions.length, 3);
+  for (const definition of functionDefinitions) {
+    assert.match(definition, /security definer/i);
+    assert.match(definition, /set search_path = ''/i);
+  }
+});
+
+test('registro público de métricas aceita somente métricas permitidas e empresas aprovadas', () => {
+  assert.match(metricsHardeningMigration, /p_metric is null[\s\S]*?p_metric not in \('views_count', 'whatsapp_clicks'\)/i);
+  assert.match(metricsHardeningMigration, /where id = p_business_id[\s\S]*?and status = 'approved'/i);
+  assert.match(metricsHardeningMigration, /grant execute on function\s+public\.increment_business_metric\(uuid, text\)\s+to anon, authenticated, service_role/i);
+  assert.match(metricsHardeningMigration, /revoke all on function\s+public\.increment_business_metric\(uuid, text\)\s+from public, anon, authenticated, service_role/i);
+});
+
+test('RPC de métricas por mercado exige admin e filtra BR/PY', () => {
+  assert.match(metricsHardeningMigration, /get_admin_business_metrics_by_market/i);
+  assert.match(metricsHardeningMigration, /is distinct from 'admin'/i);
+  assert.match(metricsHardeningMigration, /p_country_code not in \('BR', 'PY'\)/i);
+  assert.match(metricsHardeningMigration, /b\.country_code = p_country_code/i);
+  assert.match(metricsHardeningMigration, /grant execute on function\s+public\.get_admin_business_metrics_by_market\(date, text\)\s+to authenticated, service_role/i);
+  assert.match(metricsHardeningMigration, /revoke all on function\s+public\.get_admin_business_metrics_by_market\(date, text\)\s+from public, anon, authenticated, service_role/i);
+});
