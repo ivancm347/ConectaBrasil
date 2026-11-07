@@ -10,7 +10,8 @@ export const MARKETS = {
     locale: 'pt-BR',
     dialingCode: '55',
     postalCodeLabel: 'CEP',
-    postalCodePattern: '^\\d{5}-?\\d{3}
+    regionLabel: 'Estado (UF)',
+    postalCodePattern: '^\\d{5}-?\\d{3}$',
     enabled: true,
   },
   PY: {
@@ -24,7 +25,8 @@ export const MARKETS = {
     locale: 'es-PY',
     dialingCode: '595',
     postalCodeLabel: 'Código postal',
-    postalCodePattern: '^\\d{6}
+    regionLabel: 'Departamento',
+    postalCodePattern: '^\\d{6}$',
     enabled: false,
   },
 };
