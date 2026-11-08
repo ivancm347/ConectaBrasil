@@ -71,7 +71,7 @@ O contexto de mercado selecionado é enviado ao banco pelo header `x-market-code
 ### 4.4 Privilégios e Storage
 
 - Privilégios diretos desnecessários foram revogados de `anon` e `authenticated`, incluindo operações de escrita em tabelas de auditoria e eventos de métricas.
-- O bucket `business-images` é privado (`public = false)), com limite de 5 MB por arquivo e tipos permitidos JPEG, PNG, WebP e GIF.
+- O bucket `business-images` é privado (`public = false`), com limite de 5 MB por arquivo e tipos permitidos JPEG, PNG, WebP e GIF.
 - A política SELECT de imagens permanece baseada em `can_view_business_image(name)`; o acesso público é condicionado à aprovação e ao mercado, e a exceção de administrador global permite a visualização dos dois mercados.
 - As três políticas de escrita foram atualizadas e verificadas diretamente em `pg_policy`:
   - `Owners upload business images` (INSERT): valida bucket, proprietário, caminho do arquivo, mercado do JWT e `country_code IN ('BR', 'PY')`.
