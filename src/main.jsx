@@ -4,7 +4,7 @@ import { Search, MapPin, Store, Wrench, ShoppingBag, Heart, ArrowRight, Menu, X,
 import './style.css';
 import '../public/image-fit.css';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
-import { getMarketFromPath, getMarketPath, getMarketStorageKey, getInternationalPhoneNumber } from './lib/market';
+import { getMarketFromPath, getMarketPath, getMarketStorageKey, getInternationalPhoneNumber, formatMarketCurrency } from './lib/market';
 import QRCode from 'qrcode';
 
 const categories = [
@@ -1444,9 +1444,9 @@ function App({ market }) {
     .filter(log => log.entity_type === 'plano' && log.action === 'plano ativado por 30 dias')
     .map(log => {
       const planType = log.details?.plan_type;
-      const amount = planType === 'destaque' ? 29.90 : planType === 'parceiro' ? 49.90 : 0;
+      const amount = market.code === 'BR' ? (planType === 'destaque' ? 29.90 : planType === 'parceiro' ? 49.90 : 0) : 0;
       return { ...log, planType, amount };
-    }).filter(log => log.amount > 0), [adminAuditLogs]);
+    }).filter(log => log.amount > 0), [adminAuditLogs, market.code]);
   const reportRows = useMemo(() => recordedPlanActivations.filter(log => {
     const date = new Date(log.created_at);
     const [year, month] = selectedReportMonth.split('-').map(Number);
@@ -1767,12 +1767,16 @@ function App({ market }) {
           </div>
           <small style={{display:'block',marginTop:10,color:'#64748b'}}>Os dados são aproximados e começam a compor o histórico mensal após a migração. Os totais acumulados já existentes são preservados; interações antigas não podem ser distribuídas retroativamente por mês.</small>
         </section>
-        <section className="admin-category-manager" style={{marginTop:18}}>
-          <h3>Relatório financeiro dos planos</h3>
-          <p>Consulte as ativações registradas por mês e exporte os dados para arquivo.</p>
+        {es ? <section className="admin-category-manager" style={{marginTop:18}}>
+          <h3>Relatório financeiro do Paraguai</h3>
+          <p>Os preços dos planos paraguaios ainda não foram definidos. Por segurança, este relatório não converte valores em reais nem apresenta preços estimados como cobranças reais.</p>
+          <small>Quando os preços em guaranis forem aprovados, o relatório do mercado PY será ativado separadamente.</small>
+        </section> : <section className="admin-category-manager" style={{marginTop:18}}>
+          <h3>Relatório financeiro dos planos — Brasil</h3>
+          <p>Consulte as ativações registradas em reais por mês e exporte os dados para arquivo.</p>
           <label style={{display:'block',maxWidth:240,margin:'12px 0'}}>Mês de referência<input type="month" value={selectedReportMonth} onChange={event=>setSelectedReportMonth(event.target.value)}/></label>
           <div className="admin-stats" style={{margin:'12px 0'}}>
-            <div className="admin-stat-button"><b>R$ {financeSummary.total.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</b><span>Valor registrado no mês</span></div>
+            <div className="admin-stat-button"><b>{formatMarketCurrency(financeSummary.total, 'BR')}</b><span>Valor registrado no mês</span></div>
             <div className="admin-stat-button"><b>{financeSummary.count}</b><span>Ativações no mês</span></div>
             <div className="admin-stat-button"><b>{financeSummary.destaque}</b><span>Planos Destaque</span></div>
             <div className="admin-stat-button"><b>{financeSummary.parceiro}</b><span>Planos Parceiro</span></div>
@@ -1783,11 +1787,11 @@ function App({ market }) {
             <button type="button" disabled={auditLoading} onClick={loadAdminAuditLogs}>Atualizar dados</button>
           </div>
           {reportRows.length ? <div className="audit-list">{reportRows.map(log=><article className="audit-item" key={log.id}>
-            <div><b>{log.entity_name || 'Negócio'}</b><span>{log.planType === 'destaque' ? 'Plano Destaque' : 'Plano Parceiro'} · R$ {log.amount.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>
+            <div><b>{log.entity_name || 'Negócio'}</b><span>{log.planType === 'destaque' ? 'Plano Destaque' : 'Plano Parceiro'} · {formatMarketCurrency(log.amount, 'BR')}</span></div>
             <small>{new Date(log.created_at).toLocaleDateString('pt-BR')}<br/>{log.actor_email || 'Administrador'}</small>
           </article>)}</div> : <div className="empty-state">Nenhuma ativação de plano registrada neste mês.</div>}
           <small style={{display:'block',marginTop:10,color:'#64748b'}}>O PDF é gerado pela opção de impressão do navegador. A planilha CSV abre no Excel. Os dados vêm das últimas 100 ações carregadas no histórico e usam os preços atuais (Destaque R$ 29,90 e Parceiro R$ 49,90); não representam confirmação bancária.</small>
-        </section>
+        </section>}
         <section className="admin-category-manager admin-audit"><h3>Histórico administrativo</h3><p>Últimas 100 ações realizadas no painel, com data e responsável.</p>
           {auditLoading ? <div className="empty-state">Carregando histórico...</div> : adminAuditLogs.length ? <div className="audit-list">{adminAuditLogs.map(log=><article className="audit-item" key={log.id}><div><b>{log.entity_name || log.entity_type}</b><span>{log.action} · {log.entity_type}</span></div><small>{log.actor_email || 'Administrador'}<br/>{new Date(log.created_at).toLocaleString('pt-BR')}</small></article>)}</div> : <div className="empty-state">Nenhuma ação registrada ainda.</div>}
           <button type="button" className="text-switch" disabled={auditLoading} onClick={loadAdminAuditLogs}>Atualizar histórico</button>
