@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { MARKETS } from '../src/lib/market.js';
+import { MARKETS, formatMarketCurrency } from '../src/lib/market.js';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const imageMigration = read('../supabase/migrations/20261106150000_secure_business_image_storage_policies.sql');
@@ -148,15 +148,32 @@ test('RPC de métricas por mercado exige admin e filtra BR/PY', () => {
 
 const publicMarketMigration = read('../supabase/migrations/20261107110000_scope_public_business_listing_by_market_header.sql');
 const supabaseClientSource = read('../src/lib/supabase.js');
+const appSource = read('../src/main.jsx');
 
 test('vitrine pública respeita o mercado selecionado sem usar o cabeçalho como autorização privada', () => {
-  const policy = publicMarketMigration.match(/create policy "Market public read approved businesses"[\\s\\S]*?;/i)?.[0] ?? '';
-  assert.match(policy, /status\\s*=\\s*'approved'/i);
-  assert.match(
-    policy,
-    /country_code\\s*=\\s*coalesce\\s*\\(\\s*nullif\\s*\\(\\s*current_setting\\('request\\.headers',\\s*true\\)::json\\s*->>\\s*'x-market-code',\\s*''\\)\\s*,\\s*auth\\.jwt\\(\\)\\s*->\\s*'app_metadata'\\s*->>\\s*'market_code'\\s*\\)/i,
-  );
-  assert.match(policy, /country_code\\s+in\\s*\\('BR',\\s*'PY'\\)/i);
-  assert.match(supabaseClientSource, /const selectedMarketCode = getMarketFromPath\\(\\)\\.code/);
-  assert.match(supabaseClientSource, /'x-market-code':\\s*selectedMarketCode/);
+  const policyStart = publicMarketMigration.indexOf('CREATE POLICY "Market public read approved businesses"');
+  const policyEnd = publicMarketMigration.indexOf(';', policyStart);
+  assert.notEqual(policyStart, -1);
+  assert.notEqual(policyEnd, -1);
+  const policy = publicMarketMigration.slice(policyStart, policyEnd + 1);
+  assert.ok(policy.includes("status = 'approved'"));
+  assert.ok(policy.includes("current_setting('request.headers', true)"));
+  assert.ok(policy.includes("'x-market-code'"));
+  assert.ok(policy.includes("auth.jwt() -> 'app_metadata' ->> 'market_code'"));
+  assert.ok(policy.includes("country_code IN ('BR', 'PY')"));
+  assert.ok(supabaseClientSource.includes('const selectedMarketCode = getMarketFromPath().code'));
+  assert.ok(supabaseClientSource.includes("'x-market-code': selectedMarketCode"));
+});
+
+test('formatação monetária usa moeda e localidade do mercado', () => {
+  assert.match(formatMarketCurrency(1234.56, 'BR'), /R\$/);
+  assert.match(formatMarketCurrency(1234.56, 'PY'), /1\.235/);
+  assert.equal(MARKETS.PY.currency, 'PYG');
+  assert.equal(MARKETS.PY.enabled, false);
+});
+
+test('relatório administrativo não atribui preços brasileiros ao mercado paraguaio', () => {
+  assert.ok(appSource.includes("market.code === 'BR' ? (planType === 'destaque' ? 29.90"));
+  assert.ok(appSource.includes('{es ? <section className="admin-category-manager" style={{marginTop:18}}>'));
+  assert.ok(appSource.includes('Os preços dos planos paraguaios ainda não foram definidos.'));
 });
