@@ -148,7 +148,6 @@ test('RPC de métricas por mercado exige admin e filtra BR/PY', () => {
 
 const publicMarketMigration = read('../supabase/migrations/20261107110000_scope_public_business_listing_by_market_header.sql');
 const supabaseClientSource = read('../src/lib/supabase.js');
-const appSource = read('../src/main.jsx');
 
 test('vitrine pública respeita o mercado selecionado sem usar o cabeçalho como autorização privada', () => {
   const policyStart = publicMarketMigration.indexOf('CREATE POLICY "Market public read approved businesses"');
