@@ -62,15 +62,23 @@ O contexto de mercado selecionado é enviado ao banco pelo header `x-market-code
 
 - O Custom Access Token Hook `custom_access_token_hook` está habilitado e utiliza `app_metadata.market_code` como fonte confiável para emitir a claim `market_code`, aceitando BR/PY.
 - A função `can_view_business_image(object_name)` valida o acesso à imagem considerando empresa, proprietário, aprovação, administração e mercado.
+- A exceção de administrador global na função de leitura de imagens foi mantida intencionalmente: o administrador global pode visualizar imagens dos dois mercados.
 - As funções administrativas de métricas verificam a permissão de administrador.
+- As funções `get_admin_business_metrics` e `get_admin_business_metrics_by_market` têm EXECUTE concedido a `authenticated` e `service_role`; ambas validam internamente a claim administrativa antes de retornar dados.
 - `increment_business_metric` aceita somente as métricas previstas e contabiliza eventos de empresas aprovadas no mercado selecionado.
 - A função de manutenção automática de RLS `rls_auto_enable()` está restrita a papéis de serviço/administrador do banco; não é executável por `anon` ou `authenticated`.
 
 ### 4.4 Privilégios e Storage
 
 - Privilégios diretos desnecessários foram revogados de `anon` e `authenticated`, incluindo operações de escrita em tabelas de auditoria e eventos de métricas.
-- O bucket `business-images` é privado e possui políticas de leitura/escrita que utilizam a função de autorização e a relação entre proprietário, caminho e mercado.
-- **Ponto pendente de revisão:** reforçar explicitamente as condições de mercado permitido nas políticas de escrita do Storage e validar o comportamento em testes com usuários e arquivos fictícios de BR e PY.
+- O bucket `business-images` é privado (`public = false)), com limite de 5 MB por arquivo e tipos permitidos JPEG, PNG, WebP e GIF.
+- A política SELECT de imagens permanece baseada em `can_view_business_image(name)`; o acesso público é condicionado à aprovação e ao mercado, e a exceção de administrador global permite a visualização dos dois mercados.
+- As três políticas de escrita foram atualizadas e verificadas diretamente em `pg_policy`:
+  - `Owners upload business images` (INSERT): valida bucket, proprietário, caminho do arquivo, mercado do JWT e `country_code IN ('BR', 'PY')`.
+  - `Owners update business images` (UPDATE): aplica as mesmas validações tanto em `USING` quanto em `WITH CHECK`.
+  - `Owners delete business images` (DELETE): aplica as mesmas validações em `USING`.
+- As expressões verificadas usam `storage.foldername(objects.name)`, evitando resolver `name` como coluna da tabela interna `businesses`.
+- A validação confirmou a presença das condições BR e PY nas três políticas. Isso confirma a definição das políticas no catálogo do PostgreSQL, mas não substitui testes funcionais de upload, atualização, leitura e exclusão com sessões e arquivos de teste.
 
 ## 5. Validações já executadas
 
@@ -79,35 +87,40 @@ O contexto de mercado selecionado é enviado ao banco pelo header `x-market-code
 - A função do Custom Access Token Hook foi verificada para os códigos BR/PY e para código inválido.
 - Consultas de consistência entre país da empresa e país da categoria não apontaram divergências.
 - Testes com contexto BR retornaram as seis categorias brasileiras; com contexto PY não retornaram categorias, pois ainda não há catálogo PY.
+- As duas funções administrativas de métricas foram verificadas: ambas exigem `app_metadata.role = 'admin'`; suas permissões EXECUTE foram conferidas.
+- O bucket `business-images` foi confirmado como privado, com limite de 5 MB e lista de MIME types restrita a imagens.
+- As políticas de INSERT, UPDATE e DELETE do Storage foram atualizadas individualmente e suas expressões finais foram verificadas diretamente em `pg_policy`. As três contêm a restrição explícita `country_code IN ('BR', 'PY')`, a comparação com o mercado do JWT e a validação do proprietário e do caminho.
+- A regra de administrador global para leitura de imagens foi mantida conforme decisão explícita: pode visualizar imagens de BR e PY.
 - A branch `feature/arquitetura-internacional` teve o teste automatizado corrigido após remover uma declaração duplicada de variável em `tests/security-contract.test.js`. A execução seguinte do GitHub Actions foi reportada como concluída com testes e build aprovados.
 
 ### Limitação importante dos testes atuais
 
 As tabelas de empresas, perfis, associações de categorias, avaliações e eventos de métricas estavam sem registros no momento da auditoria. Portanto, resultados vazios nas consultas BR/PY **não comprovam, por si só, o isolamento real de anúncios entre países**. Ainda é necessário testar com registros fictícios distintos em cada mercado e usuários de teste com claims apropriadas.
 
+A conferência das expressões RLS do Storage também é uma validação estrutural: ainda não foram realizados testes funcionais de upload, substituição, leitura e exclusão com usuários BR/PY. O Supabase auditado é o projeto de produção; não inserir dados fictícios nele. Usar um projeto de staging separado para os testes de integração.
+
 ## 6. Pendências antes de habilitar o Paraguai
 
-1. Criar uma massa de dados exclusivamente fictícia para BR e PY em ambiente controlado.
+1. Criar uma massa de dados exclusivamente fictícia para BR e PY em ambiente controlado e separado da produção.
 2. Testar leitura, criação, edição e exclusão por usuários de cada mercado, incluindo tentativas de acesso cruzado.
-3. Validar avaliações, métricas, imagens e políticas de Storage com arquivos e usuários de teste.
-4. Revisar explicitamente as políticas de escrita do Storage para aceitar somente mercados válidos.
-5. Revisar cache local, busca, formulários, campos de localização, idioma, moeda e categorias no frontend.
-6. Revisar o painel administrativo para filtros, indicadores e relatórios por país.
-7. Confirmar que o mercado brasileiro não sofreu regressões.
-8. Definir operação comercial, suporte, termos, pagamentos e recebimento no Paraguai.
-9. Atualizar esta documentação com os resultados dos testes antes de propor a ativação.
+3. Validar avaliações, métricas e imagens com usuários e arquivos de teste, incluindo upload, substituição, leitura e exclusão no Storage.
+4. Revisar cache local, busca, formulários, campos de localização, idioma, moeda e categorias no frontend.
+5. Revisar o painel administrativo para filtros, indicadores e relatórios por país.
+6. Confirmar que o mercado brasileiro não sofreu regressões.
+7. Definir operação comercial, suporte, termos, pagamentos e recebimento no Paraguai.
+8. Atualizar esta documentação com os resultados dos testes antes de propor a ativação.
 
 ## 7. Sequência de trabalho
 
 ### Etapa A — Isolamento no banco
-**Implementada parcialmente; requer testes de integração com dados fictícios.**
+**Implementada estruturalmente; requer testes de integração com dados fictícios.**
 
 Inclui códigos de país, categorias separadas, políticas RLS, revisão de privilégios, funções seguras e contexto de mercado.
 
 ### Etapa B — Testes de segurança
 **Em andamento.**
 
-Executar testes positivos e negativos para BR/PY, inclusive acesso cruzado, Storage, avaliações e métricas. Não considerar consultas vazias como prova suficiente.
+Executar testes positivos e negativos para BR/PY, inclusive acesso cruzado, Storage, avaliações e métricas. Não considerar consultas vazias nem a inspeção estática de políticas como prova suficiente de isolamento funcional.
 
 ### Etapa C — Aplicativo e experiência internacional
 **Pendente de validação.**
@@ -130,5 +143,5 @@ Somente após testes documentados, revisão das pendências e autorização expl
 - Empresas, categorias, avaliações, imagens, métricas, buscas e cache respeitam o mercado.
 - O painel administrativo identifica claramente o país e respeita os papéis autorizados.
 - O mercado BR continua funcionando sem regressões.
-- Testes positivos e negativos são executados com dados fictícios e resultados registrados.
+- Testes positivos e negativos são executados com dados fictícios em ambiente isolado e resultados registrados.
 - Nenhuma mudança é publicada em produção ou habilita o mercado PY antes de revisão e aprovação explícitas.
