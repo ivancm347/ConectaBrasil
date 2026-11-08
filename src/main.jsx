@@ -939,7 +939,7 @@ function App({ market }) {
       const { error } = await supabase.from('businesses').update(payload).eq('id', item.id);
       if (error) throw error;
       setAdminBusinesses(rows => rows.map(row => row.id === item.id ? { ...row, ...payload } : row));
-      await recordAdminAction(planType === 'gratuito' ? 'plano removido' : (isRenewal ? 'plano renovado por 30 dias' : 'plano ativado por 30 dias'), 'plano', item.id, item.name, { plan_type: planType, expires_at: expiresAt, renewal: isRenewal });
+      await recordAdminAction(planType === 'gratuito' ? 'plano removido' : (isRenewal ? 'plano renovado por 30 dias' : 'plano ativado por 30 dias'), 'plano', item.id, item.name, { plan_type: planType, market_code: market.code, expires_at: expiresAt, renewal: isRenewal });
       try {
         setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
@@ -1441,7 +1441,7 @@ function App({ market }) {
       .slice(0, 24);
   }, [listingSource, query]);
   const recordedPlanActivations = useMemo(() => adminAuditLogs
-    .filter(log => log.entity_type === 'plano' && log.action === 'plano ativado por 30 dias')
+    .filter(log => log.entity_type === 'plano' && log.action === 'plano ativado por 30 dias' && (!log.details?.market_code || log.details.market_code === 'BR'))
     .map(log => {
       const planType = log.details?.plan_type;
       const amount = market.code === 'BR' ? (planType === 'destaque' ? 29.90 : planType === 'parceiro' ? 49.90 : 0) : 0;
