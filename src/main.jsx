@@ -326,6 +326,7 @@ function App({ market }) {
   const [marketAssignmentError, setMarketAssignmentError] = useState('');
   const [editingBusiness, setEditingBusiness] = useState(null);
   const [adminCategories, setAdminCategories] = useState([]);
+  const [adminCategoryMarket, setAdminCategoryMarket] = useState('BR');
   const [newCategory, setNewCategory] = useState('');
   const [adminAuditLogs, setAdminAuditLogs] = useState([]);
   const [monthlyBusinessMetrics, setMonthlyBusinessMetrics] = useState([]);
@@ -347,6 +348,25 @@ function App({ market }) {
   const [marketingOutput, setMarketingOutput] = useState('');
   const [marketingCopied, setMarketingCopied] = useState(false);
   const isAdmin = authUser?.app_metadata?.role === 'admin';
+
+  useEffect(() => {
+    if (!isAdmin || !supabase || !navigator.onLine) return;
+    let active = true;
+    supabase.from('categories')
+      .select('id,name,active,country_code')
+      .eq('country_code', adminCategoryMarket)
+      .order('name')
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) {
+          setAdminError('Não foi possível carregar as categorias deste mercado.');
+          setAdminCategories([]);
+          return;
+        }
+        setAdminCategories(data || []);
+      });
+    return () => { active = false; };
+  }, [isAdmin, adminCategoryMarket]);
 
   async function assignBrazilOwnerMarket() {
     if (!isAdmin || !supabase || marketAssignmentBusy) return;
@@ -758,9 +778,6 @@ function App({ market }) {
         gallery_urls: await Promise.all((item.gallery_urls || []).map(createBusinessImageUrl)),
       })));
       setAdminBusinesses(businessesWithImages);
-      const cats = await supabase.from('categories').select('id,name,active').order('name');
-      if (cats.error) throw cats.error;
-      setAdminCategories(cats.data || []);
       await loadAdminAuditLogs();
       await loadAdminReviews();
     } catch {
@@ -847,7 +864,8 @@ function App({ market }) {
     setAdminError('');
     try {
       const { data, error } = await supabase.from('categories')
-        .insert({ name, slug, active: true }).select('id,name,active').single();
+        .insert({ name, slug, active: true, country_code: adminCategoryMarket })
+        .select('id,name,active,country_code').single();
       if (error) {
         const message = error.code === '23505'
           ? 'Já existe uma categoria com esse nome ou endereço. Escolha outro nome.'
@@ -1386,7 +1404,7 @@ function App({ market }) {
     try {
       const [publicRows, categoryResult] = await Promise.all([
         fetchPublicBusinesses(market),
-        supabase.from('categories').select('id,name').eq('active', true).order('name')
+        supabase.from('categories').select('id,name').eq('active', true).eq('country_code', market.code).order('name')
       ]);
       setBusinesses(publicRows);
       if (!categoryResult.error) setAvailableCategories(categoryResult.data || []);
@@ -1739,8 +1757,15 @@ function App({ market }) {
             {(adminSearch.trim() || adminFilter !== 'all') && <button type="button" onClick={()=>{setAdminSearch('');setAdminFilter('all')}}>Limpar busca e filtros</button>}
           </div>}
         </div>}
-        <section className="admin-category-manager"><h3>Gerenciar categorias</h3><p>Cadastre novas categorias ou desative as que não devem aparecer no formulário de anunciantes.</p>
-          <form onSubmit={addAdminCategory}><input aria-label="Nome da nova categoria" maxLength="60" value={newCategory} onChange={e=>setNewCategory(e.target.value)} maxLength="60" placeholder="Nome da nova categoria" required/><button type="submit" className="approve-action" disabled={formBusy}>Adicionar</button></form>
+        <section className="admin-category-manager"><h3>Gerenciar categorias</h3><p>Escolha um país para visualizar e administrar somente o catálogo correspondente.</p>
+          <label style={{display:'block',maxWidth:320,margin:'12px 0'}}>Mercado do catálogo
+            <select value={adminCategoryMarket} onChange={event=>{setAdminCategoryMarket(event.target.value);setNewCategory('');}} disabled={formBusy}>
+              <option value="BR">🇧🇷 Brasil</option>
+              <option value="PY" disabled>🇵🇾 Paraguai — Em preparação</option>
+            </select>
+          </label>
+          <p style={{fontSize:12,color:'#64748b'}}>O catálogo do Paraguai permanece bloqueado até a conclusão dos testes de segurança.</p>
+          <form onSubmit={addAdminCategory}><input aria-label="Nome da nova categoria" maxLength="60" value={newCategory} onChange={e=>setNewCategory(e.target.value)} placeholder="Nome da nova categoria" required/><button type="submit" className="approve-action" disabled={formBusy || adminCategoryMarket !== 'BR'}>Adicionar</button></form>
           <div className="admin-category-list">{adminCategories.length ? adminCategories.map(cat=><div key={cat.id}><span>{cat.name}<small>{cat.active?'Ativa':'Inativa'}</small></span><button type="button" disabled={formBusy} onClick={()=>toggleCategory(cat)}>{cat.active?'Desativar':'Ativar'}</button></div>) : <div className="admin-inline-empty">Nenhuma categoria cadastrada ainda.</div>}</div>
         </section>
         <section className="admin-category-manager" style={{marginTop:18}}>
