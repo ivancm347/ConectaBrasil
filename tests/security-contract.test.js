@@ -174,6 +174,8 @@ test('formatação monetária usa moeda e localidade do mercado', () => {
 
 test('relatório administrativo não atribui preços brasileiros ao mercado paraguaio', () => {
   assert.ok(appSource.includes("market.code === 'BR' ? (planType === 'destaque' ? 29.90"));
+  assert.ok(appSource.includes("log.details.market_code === 'BR'"));
+  assert.ok(appSource.includes('market_code: market.code'));
   assert.ok(appSource.includes('{es ? <section className="admin-category-manager" style={{marginTop:18}}>'));
   assert.ok(appSource.includes('Os preços dos planos paraguaios ainda não foram definidos.'));
 });
