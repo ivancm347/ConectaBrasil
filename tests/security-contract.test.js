@@ -144,3 +144,19 @@ test('RPC de métricas por mercado exige admin e filtra BR/PY', () => {
   assert.match(metricsHardeningMigration, /grant execute on function\s+public\.get_admin_business_metrics_by_market\(date, text\)\s+to authenticated, service_role/i);
   assert.match(metricsHardeningMigration, /revoke all on function\s+public\.get_admin_business_metrics_by_market\(date, text\)\s+from public, anon, authenticated, service_role/i);
 });
+
+
+const publicMarketMigration = read('../supabase/migrations/20261107110000_scope_public_business_listing_by_market_header.sql');
+const supabaseClientSource = read('../src/lib/supabase.js');
+
+test('vitrine pública respeita o mercado selecionado sem usar o cabeçalho como autorização privada', () => {
+  const policy = publicMarketMigration.match(/create policy "Market public read approved businesses"[\\s\\S]*?;/i)?.[0] ?? '';
+  assert.match(policy, /status\\s*=\\s*'approved'/i);
+  assert.match(
+    policy,
+    /country_code\\s*=\\s*coalesce\\s*\\(\\s*nullif\\s*\\(\\s*current_setting\\('request\\.headers',\\s*true\\)::json\\s*->>\\s*'x-market-code',\\s*''\\)\\s*,\\s*auth\\.jwt\\(\\)\\s*->\\s*'app_metadata'\\s*->>\\s*'market_code'\\s*\\)/i,
+  );
+  assert.match(policy, /country_code\\s+in\\s*\\('BR',\\s*'PY'\\)/i);
+  assert.match(supabaseClientSource, /const selectedMarketCode = getMarketFromPath\\(\\)\\.code/);
+  assert.match(supabaseClientSource, /'x-market-code':\\s*selectedMarketCode/);
+});
