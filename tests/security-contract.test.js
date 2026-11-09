@@ -94,12 +94,12 @@ test('consultas de anúncios usam country_code como filtro operacional BR/PY', (
 });
 
 test('categorias da vitrine são carregadas na inicialização e isoladas pelo mercado ativo', () => {
-  const start = appSource.search(/Promise\\.all\\(\\[\\s*fetchPublicBusinesses\\(market\\)/);
+  const start = appSource.indexOf('Promise.all([');
   const end = appSource.indexOf('async function retryPublicBusinesses()', start);
   assert.ok(start >= 0 && end > start, 'Carregamento inicial da vitrine não encontrado');
   const initialLoad = appSource.slice(start, end);
-  assert.match(initialLoad, /from\\('categories'\\)[\\s\\S]*?eq\\('active',\\s*true\\)[\\s\\S]*?eq\\('country_code',\\s*market\\.code\\)/);
-  assert.match(initialLoad, /setAvailableCategories\\(categoryResult\\.data \\|\\| \\[\\]\\)/);
+  assert.match(initialLoad, /from\('categories'\)[\s\S]*?eq\('active',\s*true\)[\s\S]*?eq\('country_code',\s*market\.code\)/);
+  assert.match(initialLoad, /setAvailableCategories\(categoryResult\.data \|\| \[\]\)/);
 });
 
 test('avaliações aprovadas continuam públicas, mas leitura privada exige mercado da sessão', () => {
