@@ -94,7 +94,7 @@ test('consultas de anúncios usam country_code como filtro operacional BR/PY', (
 });
 
 test('categorias da vitrine são carregadas na inicialização e isoladas pelo mercado ativo', () => {
-  const start = appSource.indexOf('Promise.all([\\n      fetchPublicBusinesses(market)');
+  const start = appSource.search(/Promise\\.all\\(\\[\\s*fetchPublicBusinesses\\(market\\)/);
   const end = appSource.indexOf('async function retryPublicBusinesses()', start);
   assert.ok(start >= 0 && end > start, 'Carregamento inicial da vitrine não encontrado');
   const initialLoad = appSource.slice(start, end);
