@@ -1131,7 +1131,7 @@ function App({ market }) {
         ...(originalStatus === 'approved' ? { status: 'pending', featured: false } : {})
       };
       const { data, error } = await supabase.from('businesses').update(payload)
-        .eq('id', ownerEditing.id).eq('owner_id', authUser.id).eq('status', originalStatus)
+        .eq('id', ownerEditing.id).eq('owner_id', authUser.id).eq('country_code', market.code).eq('status', originalStatus)
         .select('id').maybeSingle();
       if (error || !data) {
         setOwnerError((es ? 'No fue posible guardar. Revisa tu conexión e inténtalo de nuevo.' : 'Não foi possível salvar. Confira sua conexão e tente novamente.') + (error?.message ? ' ' + error.message : ''));
