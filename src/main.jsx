@@ -1001,7 +1001,7 @@ function App({ market }) {
 
   async function deleteBusiness(item) {
     if (!navigator.onLine) { setAdminError(es ? 'Sin conexión. Reconéctate antes de eliminar un anuncio.' : 'Sem conexão. Reconecte-se antes de excluir um anúncio.'); return; }
-    const confirmed = window.confirm("Excluir definitivamente o anúncio \"" + item.name + "\"? Esta ação não pode ser desfeita.");
+    const confirmed = window.confirm(es ? '¿Eliminar definitivamente el anuncio "' + item.name + '"? Esta acción no se puede deshacer.' : "Excluir definitivamente o anúncio \"" + item.name + "\"? Esta ação não pode ser desfeita.");
     if (!confirmed || formBusy) return;
     setFormBusy(true);
     setAdminError('');
