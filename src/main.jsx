@@ -512,7 +512,7 @@ function App({ market }) {
       }
     }, error => {
       setNearbyMapUrl('');
-      setLocationMessage(error.code === 1 ? 'Permissão negada. Digite sua cidade para encontrar negócios próximos.' : 'Não foi possível obter a localização. Confira as permissões do navegador ou digite sua cidade.');
+      setLocationMessage(error.code === 1 ? (es ? 'Permiso denegado. Escribe tu ciudad para encontrar negocios cercanos.' : 'Permissão negada. Digite sua cidade para encontrar negócios próximos.') : (es ? 'No se pudo obtener la ubicación. Revisa los permisos del navegador o escribe la ciudad.' : 'Não foi possível obter a localização. Confira as permissões do navegador ou digite sua cidade.'));
     }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 });
   }
   async function installApp() {
