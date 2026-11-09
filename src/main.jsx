@@ -474,41 +474,41 @@ function App({ market }) {
 
   function startVoiceSearch() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) { setVoiceMessage('Busca por voz indisponível neste navegador. Digite sua busca.'); return; }
+    if (!SpeechRecognition) { setVoiceMessage(es ? 'La búsqueda por voz no está disponible en este navegador. Escribe tu búsqueda.' : 'Busca por voz indisponível neste navegador. Digite sua busca.'); return; }
     try {
       const recognition = new SpeechRecognition();
       recognition.lang = market.language; recognition.interimResults = false; recognition.maxAlternatives = 1;
-      setVoiceMessage('Pode falar o serviço ou negócio que procura...'); setIsListening(true);
-      recognition.onresult = event => { const spoken = event.results?.[0]?.[0]?.transcript || ''; if (spoken.trim()) { setQuery(spoken.trim()); setVoiceMessage('Busca preenchida. Toque em Buscar para ver os resultados.'); } };
-      recognition.onerror = event => setVoiceMessage(event.error === 'not-allowed' ? 'Permita o microfone no navegador para pesquisar por voz.' : 'Não foi possível reconhecer a fala. Tente novamente ou digite.');
+      setVoiceMessage(es ? 'Puedes decir qué servicio o negocio estás buscando...' : 'Pode falar o serviço ou negócio que procura...'); setIsListening(true);
+      recognition.onresult = event => { const spoken = event.results?.[0]?.[0]?.transcript || ''; if (spoken.trim()) { setQuery(spoken.trim()); setVoiceMessage(es ? 'Búsqueda completada. Pulsa Buscar para ver los resultados.' : 'Busca preenchida. Toque em Buscar para ver os resultados.'); } };
+      recognition.onerror = event => setVoiceMessage(event.error === 'not-allowed' ? (es ? 'Permite el uso del micrófono en el navegador para buscar por voz.' : 'Permita o microfone no navegador para pesquisar por voz.') : (es ? 'No se pudo reconocer la voz. Inténtalo de nuevo o escribe tu búsqueda.' : 'Não foi possível reconhecer a fala. Tente novamente ou digite.'));
       recognition.onend = () => setIsListening(false); recognition.start();
-    } catch { setIsListening(false); setVoiceMessage('Não foi possível iniciar o microfone.'); }
+    } catch { setIsListening(false); setVoiceMessage(es ? 'No se pudo iniciar el micrófono.' : 'Não foi possível iniciar o microfone.'); }
   }
   async function openNearbyMap() {
-    if (!navigator.geolocation) { setLocationMessage('Localização não disponível neste navegador. Digite sua cidade para encontrar negócios próximos.'); return; }
+    if (!navigator.geolocation) { setLocationMessage(es ? 'La ubicación no está disponible en este navegador. Escribe tu ciudad para encontrar negocios cercanos.' : 'Localização não disponível neste navegador. Digite sua cidade para encontrar negócios próximos.'); return; }
     setNearbyMapUrl('');
-    setLocationMessage('Aguardando sua permissão de localização...');
+    setLocationMessage(es ? 'Esperando tu permiso de ubicación...' : 'Aguardando sua permissão de localização...');
     navigator.geolocation.getCurrentPosition(async position => {
       const lat = position.coords.latitude; const lon = position.coords.longitude;
       const url = 'https://www.openstreetmap.org/?mlat=' + encodeURIComponent(lat) + '&mlon=' + encodeURIComponent(lon) + '#map=14/' + encodeURIComponent(lat) + '/' + encodeURIComponent(lon);
       setNearbyMapUrl(url);
-      setLocationMessage('Localização encontrada. Identificando sua cidade para filtrar os anúncios próximos...');
+      setLocationMessage(es ? 'Ubicación encontrada. Identificando tu ciudad para filtrar los anuncios cercanos...' : 'Localização encontrada. Identificando sua cidade para filtrar os anúncios próximos...');
       try {
         const endpoint = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=10&lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lon);
         const response = await fetch(endpoint, { headers: { Accept: 'application/json' } });
-        if (!response.ok) throw new Error('Falha ao consultar a região');
+        if (!response.ok) throw new Error(es ? 'No se pudo consultar la región' : 'Falha ao consultar a região');
         const result = await response.json();
         const address = result.address || {};
         const detectedCity = address.city || address.town || address.village || address.municipality || address.county;
         if (detectedCity) {
           setCity(detectedCity);
-          setLocationMessage('Cidade identificada: ' + detectedCity + '. A vitrine foi filtrada para mostrar anúncios dessa cidade. Você pode alterar o filtro manualmente.');
+          setLocationMessage(es ? 'Ciudad identificada: ' + detectedCity + '. La vitrina se filtró para mostrar anuncios de esta ciudad. Puedes cambiar el filtro manualmente.' : 'Cidade identificada: ' + detectedCity + '. A vitrine foi filtrada para mostrar anúncios dessa cidade. Você pode alterar o filtro manualmente.');
           document.getElementById('explorar')?.scrollIntoView({ behavior: 'smooth' });
         } else {
-          setLocationMessage('Não foi possível identificar sua cidade automaticamente. Você ainda pode abrir o mapa ou digitar a cidade no campo de busca.');
+          setLocationMessage(es ? 'No se pudo identificar tu ciudad automáticamente. Puedes abrir el mapa o escribir la ciudad en el campo de búsqueda.' : 'Não foi possível identificar sua cidade automaticamente. Você ainda pode abrir o mapa ou digitar a cidade no campo de busca.');
         }
       } catch {
-        setLocationMessage('Não foi possível identificar sua cidade agora. Você ainda pode abrir o mapa ou digitar a cidade no campo de busca.');
+        setLocationMessage(es ? 'No se pudo identificar tu ciudad en este momento. Puedes abrir el mapa o escribir la ciudad en el campo de búsqueda.' : 'Não foi possível identificar sua cidade agora. Você ainda pode abrir o mapa ou digitar a cidade no campo de busca.');
       }
     }, error => {
       setNearbyMapUrl('');
