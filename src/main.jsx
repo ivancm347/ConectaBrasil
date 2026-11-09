@@ -1641,26 +1641,26 @@ function App({ market }) {
       {isAdmin ? <>
         <div className="eyebrow dark">{es ? 'ÁREA RESTRINGIDA' : 'ÁREA RESTRITA'}</div>
         <div className="admin-panel-heading">
-          <div><h2>Painel administrativo</h2>
-          <p>Revise os anúncios enviados e escolha quais podem aparecer publicamente na vitrine.</p></div>
-          <button type="button" className="admin-refresh-button" onClick={loadAdminBusinesses} disabled={adminLoading || formBusy} aria-label="Atualizar painel administrativo">
-            <span aria-hidden="true">↻</span> {adminLoading ? 'Atualizando...' : 'Atualizar'}
+          <div><h2>{es ? 'Panel administrativo' : 'Painel administrativo'}</h2>
+          <p>{es ? 'Revisa los anuncios enviados y decide cuáles pueden aparecer públicamente en la vitrina.' : 'Revise os anúncios enviados e escolha quais podem aparecer publicamente na vitrine.'}</p></div>
+          <button type="button" className="admin-refresh-button" onClick={loadAdminBusinesses} disabled={adminLoading || formBusy} aria-label={es ? 'Actualizar panel administrativo' : 'Atualizar painel administrativo'}>
+            <span aria-hidden="true">↻</span> {adminLoading ? (es ? 'Actualizando...' : 'Atualizando...') : (es ? 'Actualizar' : 'Atualizar')}
           </button>
         </div>
         <section className="admin-category-manager" style={{margin:"16px 0",padding:16,border:"1px solid #dbe6ed",borderRadius:16,background:"#fff"}}>
-          <h3>Configuração internacional — conta proprietária</h3>
-          <p>Operação restrita ao administrador global. A função no servidor valida a identidade da conta e registra a alteração na auditoria.</p>
+          <h3>{es ? 'Configuración internacional — cuenta propietaria' : 'Configuração internacional — conta proprietária'}</h3>
+          <p>{es ? 'Operación restringida al administrador global. La función del servidor valida la identidad de la cuenta y registra el cambio en la auditoría.' : 'Operação restrita ao administrador global. A função no servidor valida a identidade da conta e registra a alteração na auditoria.'}</p>
           <button type="button" className="btn" onClick={assignBrazilOwnerMarket} disabled={marketAssignmentBusy}>
-            {marketAssignmentBusy ? 'Processando...' : 'Atribuir mercado BR à conta proprietária'}
+            {marketAssignmentBusy ? (es ? 'Procesando...' : 'Processando...') : (es ? 'Asignar el mercado BR a la cuenta propietaria' : 'Atribuir mercado BR à conta proprietária')}
           </button>
           {marketAssignmentMessage && <p role="status" style={{color:'#18794e',marginTop:10}}>{marketAssignmentMessage}</p>}
           {marketAssignmentError && <p role="alert" style={{color:'#b42318',marginTop:10}}>{marketAssignmentError}</p>}
-          <small>Esta ação só funcionará quando ENABLE_OWNER_MARKET_ASSIGNMENT estiver autorizado no servidor.</small>
+          <small>{es ? 'Esta acción solo funcionará cuando ENABLE_OWNER_MARKET_ASSIGNMENT esté autorizado en el servidor.' : 'Esta ação só funcionará quando ENABLE_OWNER_MARKET_ASSIGNMENT estiver autorizado no servidor.'}</small>
         </section>
         <section className="admin-category-manager" style={{margin:"16px 0",padding:16,border:"1px solid #dbe6ed",borderRadius:16,background:"#fff"}}>
           <h3>{es ? 'Reseñas de negocios' : 'Avaliações dos negócios'}</h3><p>{es ? 'Revisa los comentarios antes de publicarlos. Solo las reseñas aprobadas aparecen en los perfiles.' : 'Revise os comentários antes de publicá-los. Somente avaliações aprovadas aparecem nos perfis.'}</p>
           {adminReviewsError && <p role="alert">{adminReviewsError}</p>}
-          {adminReviewsLoading ? <p>Carregando avaliações...</p> : adminReviews.length ? adminReviews.map(review=><article key={review.id} style={{padding:"12px 0",borderTop:"1px solid #e5edf2"}}><strong>{review.businesses?.name || "Negócio"} · <span style={{color:"#d58a12"}}>{"★".repeat(review.rating)}{"☆".repeat(5-review.rating)}</span></strong><p>{review.comment}</p><small>{new Date(review.created_at).toLocaleString("pt-BR")} · {({pending:"Aguardando análise",approved:"Aprovada",rejected:"Rejeitada"})[review.status] || review.status}</small><div className="admin-actions">{review.status !== "approved" && <button type="button" className="approve-action" disabled={formBusy} onClick={()=>moderateReview(review,"approved")}>Aprovar</button>}{review.status !== "rejected" && <button type="button" disabled={formBusy} onClick={()=>moderateReview(review,"rejected")}>Rejeitar</button>}</div></article>) : <p>Nenhuma avaliação recebida até agora.</p>}
+          {adminReviewsLoading ? <p>{es ? 'Cargando reseñas...' : 'Carregando avaliações...'}</p> : adminReviews.length ? adminReviews.map(review=><article key={review.id} style={{padding:"12px 0",borderTop:"1px solid #e5edf2"}}><strong>{review.businesses?.name || "Negócio"} · <span style={{color:"#d58a12"}}>{"★".repeat(review.rating)}{"☆".repeat(5-review.rating)}</span></strong><p>{review.comment}</p><small>{new Date(review.created_at).toLocaleString("pt-BR")} · {({pending: es ? 'Pendiente de revisión' : 'Aguardando análise',approved: es ? 'Aprobada' : 'Aprovada',rejected: es ? 'Rechazada' : 'Rejeitada'})[review.status] || review.status}</small><div className="admin-actions">{review.status !== "approved" && <button type="button" className="approve-action" disabled={formBusy} onClick={()=>moderateReview(review,"approved")}>{es ? 'Aprobar' : 'Aprovar'}</button>}{review.status !== "rejected" && <button type="button" disabled={formBusy} onClick={()=>moderateReview(review,"rejected")}>{es ? 'Rechazar' : 'Rejeitar'}</button>}</div></article>)  : <p>{es ? 'Todavía no se han recibido reseñas.' : 'Nenhuma avaliação recebida até agora.'}</p>}
         </section>
         <section className="admin-category-manager admin-central-dashboard" style={{margin:'16px 0',padding:16,border:'1px solid #dbe6ed',borderRadius:16,background:'linear-gradient(145deg,#f7fbfd,#eef6f4)'}}>
           <div style={{display:'flex',justifyContent:'space-between',gap:12,flexWrap:'wrap',alignItems:'center'}}>
