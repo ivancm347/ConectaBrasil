@@ -1931,6 +1931,8 @@ function ParaguayTestGate({ market }) {
   const [denied, setDenied] = useState(false);
 
   const isParaguayUser = user => user?.app_metadata?.market_code === 'PY';
+  const isAdminUser = user => user?.app_metadata?.role === 'admin';
+  const canAccessTest = user => isParaguayUser(user) || isAdminUser(user);
 
   useEffect(() => {
     if (!supabase) {
@@ -1943,8 +1945,8 @@ function ParaguayTestGate({ market }) {
       if (!active) return;
       if (sessionError) setError('Não foi possível verificar sua sessão. Entre novamente.');
       const user = data.session?.user || null;
-      setSessionUser(isParaguayUser(user) ? user : null);
-      setDenied(Boolean(user && !isParaguayUser(user)));
+      setSessionUser(canAccessTest(user) ? user : null);
+      setDenied(Boolean(user && !canAccessTest(user)));
       setCheckingSession(false);
     }).catch(() => {
       if (active) {
@@ -1955,8 +1957,8 @@ function ParaguayTestGate({ market }) {
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
       const user = session?.user || null;
-      setSessionUser(isParaguayUser(user) ? user : null);
-      setDenied(Boolean(user && !isParaguayUser(user)));
+      setSessionUser(canAccessTest(user) ? user : null);
+      setDenied(Boolean(user && !canAccessTest(user)));
       setCheckingSession(false);
       setError('');
     });
@@ -1977,10 +1979,10 @@ function ParaguayTestGate({ market }) {
         password,
       });
       if (loginError) throw loginError;
-      if (!isParaguayUser(data.user)) {
+      if (!canAccessTest(data.user)) {
         setSessionUser(null);
         setDenied(true);
-        setError('Esta conta não está vinculada ao mercado PY. Use a conta de teste paraguaia.');
+        setError('Esta conta não tem permissão para acessar o ambiente de testes PY. Use uma conta PY ou administradora.');
         return;
       }
       setSessionUser(data.user);
@@ -2002,7 +2004,7 @@ function ParaguayTestGate({ market }) {
     setError('');
   }
 
-  if (sessionUser && isParaguayUser(sessionUser)) {
+  if (sessionUser && canAccessTest(sessionUser)) {
     return <App market={market} />;
   }
 
@@ -2012,10 +2014,10 @@ function ParaguayTestGate({ market }) {
       <p style={{textAlign:'center',color:'#53d6b0',fontWeight:800,letterSpacing:'2px',fontSize:'11px'}}>CONECTA PARAGUAY · TESTE RESTRITO</p>
       <h1 style={{fontSize:'26px',margin:'12px 0',textAlign:'center'}}>Acesso de testes</h1>
       <p style={{color:'#b5c2d4',lineHeight:1.6,fontSize:'14px',textAlign:'center'}}>
-        Este ambiente está disponível somente para contas autenticadas vinculadas ao mercado PY. A vitrine paraguaia continua bloqueada para visitantes.
+        Este ambiente está disponível somente para contas PY ou administradoras autenticadas. A vitrine paraguaia continua bloqueada para visitantes e usuários comuns do mercado BR.
       </p>
       {checkingSession ? <p style={{textAlign:'center',color:'#b5c2d4'}}>Verificando sessão...</p> : denied ? <>
-        <p role="alert" style={{color:'#ffd18a',fontSize:'14px',lineHeight:1.5}}>{error || 'A conta conectada não pertence ao mercado PY.'}</p>
+        <p role="alert" style={{color:'#ffd18a',fontSize:'14px',lineHeight:1.5}}>{error || 'A conta conectada não tem permissão para acessar este ambiente.'}</p>
         <button type="button" onClick={switchAccount} style={{width:'100%',padding:'12px',border:0,borderRadius:'9px',background:'#53d6b0',color:'#082238',fontWeight:800,cursor:'pointer'}}>Trocar de conta</button>
       </> : <form onSubmit={handleLogin} style={{display:'grid',gap:'12px',marginTop:'20px'}}>
         <label style={{display:'grid',gap:'6px',fontSize:'13px'}}>E-mail
