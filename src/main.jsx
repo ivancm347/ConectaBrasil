@@ -656,6 +656,10 @@ function App({ market }) {
     setAdminReviewsLoading(false);
   }
   async function moderateReview(review, status) {
+    if (!['approved', 'rejected'].includes(status)) {
+      setAdminReviewsError('Situação inválida para moderar a avaliação.');
+      return;
+    }
     if (formBusy || !navigator.onLine) { setAdminReviewsError('Conecte-se à internet antes de moderar.'); return; }
     setFormBusy(true); setAdminReviewsError('');
     const { error } = await supabase.from('business_reviews').update({ status }).eq('id', review.id);
@@ -1022,6 +1026,10 @@ function App({ market }) {
   }
 
   async function moderateBusiness(id, status) {
+    if (!['pending', 'approved', 'rejected', 'suspended'].includes(status)) {
+      setAdminError('Situação inválida para moderar o anúncio.');
+      return;
+    }
     if (formBusy) return;
     if (!navigator.onLine) { setAdminError('Sem conexão. Reconecte-se antes de moderar este cadastro.'); return; }
     setFormBusy(true);
