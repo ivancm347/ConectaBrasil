@@ -1581,9 +1581,13 @@ function App({ market }) {
         ...category,
         name: displayCategoryName(category.name, market),
         icon: categories[index % categories.length].icon,
-        count: 'Explore negócios nesta categoria'
+        count: es ? 'Explora negocios de esta categoría' : 'Explore negócios nesta categoria'
       }))
-    : categories;
+    : categories.map(category => ({
+        ...category,
+        name: displayCategoryName(category.name, market),
+        count: es ? 'Obras, servicios y comercios' : category.count
+      }));
   return <div className="app">
     {!isOnline && <div className="connection-banner" role="status"><strong>Você está offline.</strong> {businesses.length ? 'Exibindo a última lista disponível neste dispositivo. Novos dados e envio de cadastros precisam de internet.' : 'A vitrine pode abrir, mas carregar anúncios e enviar cadastros exige internet.'} <span>As alterações não são enviadas automaticamente.</span></div>}{isOnline && loadError && <div className="cache-status" role="status"><strong>{businesses.length ? 'Última lista disponível.' : 'Não foi possível carregar a vitrine.'}</strong> {businesses.length ? 'A atualização online falhou; os dados locais continuam visíveis.' : 'Confira sua conexão e tente novamente.'} <button type="button" onClick={retryPublicBusinesses} disabled={loadingBusinesses || isRefreshingBusinesses}>{loadingBusinesses || isRefreshingBusinesses ? 'Atualizando...' : 'Tentar novamente'}</button></div>}
     <header className="topbar"><a className="brand" href="#"><span className="brand-mark"><span></span><span></span><span></span></span><span>conecta<span className="brand-light">brasil</span><small>CONEXÕES QUE MOVIMENTAM</small></span></a>
@@ -2051,6 +2055,28 @@ function ParaguayTestGate({ market }) {
 
 function MarketApp() {
   const market = getMarketFromPath();
+  useEffect(() => {
+    const isParaguay = market.code === 'PY';
+    const title = isParaguay
+      ? 'Conecta Paraguay | Encuentra negocios y servicios cerca de ti'
+      : 'Conecta Brasil | Encontre negócios e serviços perto de você';
+    const description = isParaguay
+      ? 'Encuentra empresas, tiendas, profesionales y servicios por ciudad y categoría. Contacta directamente por WhatsApp.'
+      : 'Encontre empresas, lojas, profissionais e serviços por cidade e categoria. Fale diretamente pelo WhatsApp.';
+    document.documentElement.lang = market.language;
+    document.title = title;
+    const descriptionTag = document.querySelector('meta[name="description"]');
+    if (descriptionTag) descriptionTag.setAttribute('content', description);
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', title);
+    const ogDescription = document.querySelector('meta[property="og:description"]');
+    if (ogDescription) ogDescription.setAttribute('content', description);
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    if (ogUrl) ogUrl.setAttribute('content', new URL(market.path, window.location.origin + import.meta.env.BASE_URL).toString());
+    const canonical = document.querySelector('link[rel="canonical"]');
+    if (canonical) canonical.setAttribute('href', new URL(market.path, window.location.origin + import.meta.env.BASE_URL).toString());
+  }, [market]);
+
   if (market.code === 'PY' && !market.enabled) {
     return <ParaguayTestGate market={market} />;
   }
