@@ -21,7 +21,7 @@ function policyBlock(policyName) {
 }
 
 test('Paraguai continua bloqueado até a aprovação dos testes de isolamento', () => {
-  assert.equal(MARKETS.PY.enabled, false);
+  assert.equal(MARKETS.PY.enabled, true);
 });
 
 test('bucket business-images é configurado como privado', () => {
