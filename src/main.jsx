@@ -1768,7 +1768,7 @@ function App({ market }) {
             <div className="admin-stat-button"><b>{adminOverview.whatsappClicks.toLocaleString('pt-BR')}</b><span>{es ? 'Clics acumulados en WhatsApp' : 'Cliques acumulados no WhatsApp'}</span></div>
           </div>
           <label style={{display:'block',maxWidth:240,margin:'12px 0'}}>{es ? 'Mes de referencia' : 'Mês de referência'}<input type="month" value={selectedReportMonth} onChange={event=>setSelectedReportMonth(event.target.value)}/></label>
-          {metricsLoading ? <div className="admin-inline-empty">{es ? 'Cargando rendimiento del mes...' : '{es ? 'Cargando rendimiento del mes...' : 'Carregando desempenho do mês...'}'}</div> : metricsError ? <div className="form-notice" role="status">{metricsError}</div> : <div className="admin-stats" style={{margin:'12px 0'}}>
+          {metricsLoading ? <div className="admin-inline-empty">{es ? 'Cargando rendimiento del mes...' : 'Carregando desempenho do mês...'}</div> : metricsError ? <div className="form-notice" role="status">{metricsError}</div> : <div className="admin-stats" style={{margin:'12px 0'}}>
             <div className="admin-stat-button"><b>{monthlyBusinessMetrics.reduce((sum,row)=>sum+Number(row.views_count || 0),0).toLocaleString('pt-BR')}</b><span>{es ? 'Visualizaciones del mes' : 'Visualizações no mês'}</span></div>
             <div className="admin-stat-button"><b>{monthlyBusinessMetrics.reduce((sum,row)=>sum+Number(row.whatsapp_clicks || 0),0).toLocaleString('pt-BR')}</b><span>{es ? 'Clics en WhatsApp del mes' : 'Cliques no WhatsApp no mês'}</span></div>
           </div>}
