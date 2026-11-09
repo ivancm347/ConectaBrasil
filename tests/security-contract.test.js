@@ -20,7 +20,7 @@ function policyBlock(policyName) {
   return imageMigration.slice(start, end + 1);
 }
 
-test('Paraguai continua bloqueado até a aprovação dos testes de isolamento', () => {
+test('mercado PY está habilitado sem remover os controles de dados privados', () => {
   assert.equal(MARKETS.PY.enabled, true);
 });
 
