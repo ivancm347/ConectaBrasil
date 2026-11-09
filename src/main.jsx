@@ -1768,7 +1768,7 @@ function App({ market }) {
             <div className="admin-stat-button"><b>{adminOverview.whatsappClicks.toLocaleString('pt-BR')}</b><span>{es ? 'Clics acumulados en WhatsApp' : 'Cliques acumulados no WhatsApp'}</span></div>
           </div>
           <label style={{display:'block',maxWidth:240,margin:'12px 0'}}>{es ? 'Mes de referencia' : 'Mês de referência'}<input type="month" value={selectedReportMonth} onChange={event=>setSelectedReportMonth(event.target.value)}/></label>
-          {metricsLoading ? <div className="admin-inline-empty">{es ? 'Cargando rendimiento del mes...' : 'Carregando desempenho do mês...'}</div> : metricsError ? <div className="form-notice" role="status">{metricsError}</div> : <div className="admin-stats" style={{margin:'12px 0'}}>
+          {metricsLoading ? <div className="admin-inline-empty">{es ? 'Cargando rendimiento del mes...' : '{es ? 'Cargando rendimiento del mes...' : 'Carregando desempenho do mês...'}'}</div> : metricsError ? <div className="form-notice" role="status">{metricsError}</div> : <div className="admin-stats" style={{margin:'12px 0'}}>
             <div className="admin-stat-button"><b>{monthlyBusinessMetrics.reduce((sum,row)=>sum+Number(row.views_count || 0),0).toLocaleString('pt-BR')}</b><span>{es ? 'Visualizaciones del mes' : 'Visualizações no mês'}</span></div>
             <div className="admin-stat-button"><b>{monthlyBusinessMetrics.reduce((sum,row)=>sum+Number(row.whatsapp_clicks || 0),0).toLocaleString('pt-BR')}</b><span>{es ? 'Clics en WhatsApp del mes' : 'Cliques no WhatsApp no mês'}</span></div>
           </div>}
@@ -1787,7 +1787,7 @@ function App({ market }) {
         <section className="admin-category-manager" style={{marginTop:18}}>
           <h3>{es ? 'Informe financiero de los planes' : 'Relatório financeiro dos planos'}</h3>
           <p>{es ? 'Consulta las activaciones registradas por mes y exporta los datos a un archivo.' : 'Consulte as ativações registradas por mês e exporte os dados para arquivo.'}</p>
-          <label style={{display:'block',maxWidth:240,margin:'12px 0'}}>Mês de referência<input type="month" value={selectedReportMonth} onChange={event=>setSelectedReportMonth(event.target.value)}/></label>
+          <label style={{display:'block',maxWidth:240,margin:'12px 0'}}>{es ? 'Mes de referencia' : 'Mês de referência'}<input type="month" value={selectedReportMonth} onChange={event=>setSelectedReportMonth(event.target.value)}/></label>
           <div className="admin-stats" style={{margin:'12px 0'}}>
             <div className="admin-stat-button"><b>R$ {financeSummary.total.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</b><span>{es ? 'Valor registrado en el mes' : 'Valor registrado no mês'}</span></div>
             <div className="admin-stat-button"><b>{financeSummary.count}</b><span>{es ? 'Activaciones del mes' : 'Ativações no mês'}</span></div>
@@ -1807,9 +1807,9 @@ function App({ market }) {
         </section>
         <section className="admin-category-manager admin-audit"><h3>{es ? 'Historial administrativo' : 'Histórico administrativo'}</h3><p>{es ? 'Últimas 100 acciones realizadas en el panel, con fecha y responsable.' : 'Últimas 100 ações realizadas no painel, com data e responsável.'}</p>
           {auditLoading ? <div className="empty-state">Carregando histórico...</div> : adminAuditLogs.length ? <div className="audit-list">{adminAuditLogs.map(log=><article className="audit-item" key={log.id}><div><b>{log.entity_name || log.entity_type}</b><span>{log.action} · {log.entity_type}</span></div><small>{log.actor_email || 'Administrador'}<br/>{new Date(log.created_at).toLocaleString('pt-BR')}</small></article>)}</div> : <div className="empty-state">Nenhuma ação registrada ainda.</div>}
-          <button type="button" className="text-switch" disabled={auditLoading} onClick={loadAdminAuditLogs}>Atualizar histórico</button>
+          <button type="button" className="text-switch" disabled={auditLoading} onClick={loadAdminAuditLogs}>{es ? 'Actualizar historial' : 'Atualizar histórico'}</button>
         </section>
-        <button type="button" className="text-switch" onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);setShowForm(false)}}>Sair da conta administrativa</button>
+        <button type="button" className="text-switch" onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);setShowForm(false)}}>{es ? 'Cerrar sesión de administración' : 'Sair da conta administrativa'}</button>
       </> : <>
       <div className="eyebrow dark">{es ? "REGISTRO DE ANUNCIANTE" : "CADASTRO DE ANUNCIANTE"}</div>
       <h2>{authUser ? (es ? 'Presenta tu negocio.' : 'Apresente seu negócio.') : (es ? 'Inicia sesión para publicar.' : 'Entre para anunciar.')}</h2>
