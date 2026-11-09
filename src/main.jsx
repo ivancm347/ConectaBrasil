@@ -2071,6 +2071,25 @@ function MarketApp() {
     if (ogTitle) ogTitle.setAttribute('content', title);
     const ogDescription = document.querySelector('meta[property="og:description"]');
     if (ogDescription) ogDescription.setAttribute('content', description);
+    const ogLocale = document.querySelector('meta[property="og:locale"]');
+    if (ogLocale) ogLocale.setAttribute('content', isParaguay ? 'es_PY' : 'pt_BR');
+    const ogSiteName = document.querySelector('meta[property="og:site_name"]');
+    if (ogSiteName) ogSiteName.setAttribute('content', isParaguay ? 'Conecta Paraguay' : 'Conecta Brasil');
+    const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (appleTitle) appleTitle.setAttribute('content', isParaguay ? 'Conecta Paraguay' : 'Conecta Brasil');
+    const structuredData = document.querySelector('script[type="application/ld+json"]');
+    if (structuredData) {
+      try {
+        const data = JSON.parse(structuredData.textContent);
+        data.name = isParaguay ? 'Conecta Paraguay' : 'Conecta Brasil';
+        data.inLanguage = market.language;
+        data.description = description;
+        data.url = new URL(market.path, window.location.origin + import.meta.env.BASE_URL).toString();
+        structuredData.textContent = JSON.stringify(data);
+      } catch (error) {
+        console.warn('No se pudo actualizar los metadatos estructurados:', error);
+      }
+    }
     const ogUrl = document.querySelector('meta[property="og:url"]');
     if (ogUrl) ogUrl.setAttribute('content', new URL(market.path, window.location.origin + import.meta.env.BASE_URL).toString());
     const canonical = document.querySelector('link[rel="canonical"]');
