@@ -1954,20 +1954,20 @@ function ParaguayTestGate({ market }) {
   useEffect(() => {
     if (!supabase) {
       setCheckingSession(false);
-      setError('O serviço de autenticação não está configurado neste ambiente.');
+      setError('El servicio de autenticación no está configurado en este entorno.');
       return undefined;
     }
     let active = true;
     supabase.auth.getSession().then(({ data, error: sessionError }) => {
       if (!active) return;
-      if (sessionError) setError('Não foi possível verificar sua sessão. Entre novamente.');
+      if (sessionError) setError('No fue posible verificar tu sesión. Inicia sesión nuevamente.');
       const user = data.session?.user || null;
       setSessionUser(canAccessTest(user) ? user : null);
       setDenied(Boolean(user && !canAccessTest(user)));
       setCheckingSession(false);
     }).catch(() => {
       if (active) {
-        setError('Não foi possível verificar sua sessão. Entre novamente.');
+        setError('No fue posible verificar tu sesión. Inicia sesión nuevamente.');
         setCheckingSession(false);
       }
     });
@@ -1999,14 +1999,14 @@ function ParaguayTestGate({ market }) {
       if (!canAccessTest(data.user)) {
         setSessionUser(null);
         setDenied(true);
-        setError('Esta conta não tem permissão para acessar o ambiente de testes PY. Use uma conta PY ou administradora.');
+        setError('Esta cuenta no tiene permiso para acceder al entorno de pruebas PY. Usa una cuenta PY o administradora.');
         return;
       }
       setSessionUser(data.user);
       setDenied(false);
       setPassword('');
     } catch (loginError) {
-      setError(loginError?.message || 'Não foi possível entrar. Confira os dados e tente novamente.');
+      setError(loginError?.message || 'No fue posible iniciar sesión. Revisa tus datos e inténtalo de nuevo.');
     } finally {
       setBusy(false);
     }
