@@ -60,6 +60,18 @@ function LocationFields({ item, onChange, market }) {
   </section>;
 }
 
+function displayCategoryName(name, market) {
+  if (market.code !== 'PY') return name;
+  const translations = {
+    'Casa e construção': 'Hogar y construcción',
+    'Serviços profissionais': 'Servicios profesionales',
+    'Lojas e comércio': 'Tiendas y comercio',
+    'Empresas': 'Empresas',
+    'Gesso e Drywall': 'Yeso y drywall',
+  };
+  return translations[name] || name;
+}
+
 function isValidRegion(value, market) {
   const region = String(value || '').trim();
   return market.code === 'PY'
@@ -198,7 +210,7 @@ async function fetchPublicBusinesses(market) {
     return {
       id: item.id,
       name: item.name,
-      category: item.business_categories?.[0]?.categories?.name || 'Empresas',
+      category: displayCategoryName(item.business_categories?.[0]?.categories?.name || 'Empresas', market),
       city: [item.city, item.state].filter(Boolean).join(' - '),
       desc: item.description || 'Conheça este negócio cadastrado no Conecta Brasil.',
       tag: item.business_type || 'Negócio',
@@ -758,7 +770,7 @@ function App({ market }) {
         gallery_urls: await Promise.all((item.gallery_urls || []).map(createBusinessImageUrl)),
       })));
       setAdminBusinesses(businessesWithImages);
-      const cats = await supabase.from('categories').select('id,name,active').order('name');
+      const cats = await supabase.from('categories').select('id,name,active').eq('country_code', market.code).order('name');
       if (cats.error) throw cats.error;
       setAdminCategories(cats.data || []);
       await loadAdminAuditLogs();
@@ -847,7 +859,7 @@ function App({ market }) {
     setAdminError('');
     try {
       const { data, error } = await supabase.from('categories')
-        .insert({ name, slug, active: true }).select('id,name,active').single();
+        .insert({ name, slug, active: true, country_code: market.code }).select('id,name,active').single();
       if (error) {
         const message = error.code === '23505'
           ? 'Já existe uma categoria com esse nome ou endereço. Escolha outro nome.'
@@ -1386,7 +1398,7 @@ function App({ market }) {
     try {
       const [publicRows, categoryResult] = await Promise.all([
         fetchPublicBusinesses(market),
-        supabase.from('categories').select('id,name').eq('active', true).order('name')
+        supabase.from('categories').select('id,name').eq('active', true).eq('country_code', market.code).order('name')
       ]);
       setBusinesses(publicRows);
       if (!categoryResult.error) setAvailableCategories(categoryResult.data || []);
@@ -1426,7 +1438,7 @@ function App({ market }) {
   const searchSuggestions = useMemo(() => {
     const terms = [
       ...Object.keys(searchSynonyms),
-      ...categories.map(item => item.name),
+      ...categories.map(item => displayCategoryName(item.name, market)), 
       ...listingSource.flatMap(item => [item.name, item.category, item.tag])
     ];
     const typed = normalizeSearch(query);
@@ -1567,6 +1579,7 @@ function App({ market }) {
   const publicCategories = availableCategories.length
     ? availableCategories.map((category, index) => ({
         ...category,
+        name: displayCategoryName(category.name, market),
         icon: categories[index % categories.length].icon,
         count: 'Explore negócios nesta categoria'
       }))
