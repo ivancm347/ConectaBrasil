@@ -162,3 +162,17 @@ test('edição de anúncio pelo proprietário exige o mercado ativo além do own
   const ownerEdit = appSource.slice(start, end);
   assert.match(ownerEdit, /\.eq\('owner_id',\s*authUser\.id\)\.eq\('country_code',\s*market\.code\)/);
 });
+
+test('moderação de anúncios e avaliações aceita somente estados previstos', () => {
+  const businessStart = appSource.indexOf('async function moderateBusiness(id, status)');
+  const businessEnd = appSource.indexOf('\\n  async function ', businessStart + 10);
+  assert.ok(businessStart >= 0 && businessEnd > businessStart, 'Função de moderação de anúncios não encontrada');
+  const businessModeration = appSource.slice(businessStart, businessEnd);
+  assert.match(businessModeration, /!\\['pending', 'approved', 'rejected', 'suspended'\\]\\.includes\\(status\\)/);
+
+  const reviewStart = appSource.indexOf('async function moderateReview(review, status)');
+  const reviewEnd = appSource.indexOf('\\n  function ', reviewStart + 10);
+  assert.ok(reviewStart >= 0 && reviewEnd > reviewStart, 'Função de moderação de avaliações não encontrada');
+  const reviewModeration = appSource.slice(reviewStart, reviewEnd);
+  assert.match(reviewModeration, /!\\['approved', 'rejected'\\]\\.includes\\(status\\)/);
+});
