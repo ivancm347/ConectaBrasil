@@ -770,13 +770,13 @@ function App({ market }) {
         gallery_urls: await Promise.all((item.gallery_urls || []).map(createBusinessImageUrl)),
       })));
       setAdminBusinesses(businessesWithImages);
-      const cats = await supabase.from('categories').select('id,name,active').order('name');
+      const cats = await supabase.from('categories').select('id,name,active').eq('country_code', market.code).order('name');
       if (cats.error) throw cats.error;
       setAdminCategories(cats.data || []);
       await loadAdminAuditLogs();
       await loadAdminReviews();
     } catch {
-      setAdminError('Não foi possível atualizar o painel administrativo. Verifique sua conexão e tente novamente.');
+      setAdminError(es ? 'No fue posible actualizar el panel administrativo. Verifica tu conexión e inténtalo de nuevo.' : 'Não foi possível atualizar o painel administrativo. Verifique sua conexão e tente novamente.');
     } finally {
       setAdminLoading(false);
     }
@@ -785,17 +785,17 @@ function App({ market }) {
   async function saveBusinessEdit(event) {
     event.preventDefault();
     if (!editingBusiness || formBusy) return;
-    if (!navigator.onLine) { setAdminError('Você está sem internet. Reconecte-se antes de salvar as alterações.'); return; }
+    if (!navigator.onLine) { setAdminError(es ? 'No tienes conexión a internet. Reconéctate antes de guardar los cambios.' : 'Você está sem internet. Reconecte-se antes de salvar as alterações.'); return; }
     const cleanName = String(editingBusiness.name || '').trim();
     const cleanCity = String(editingBusiness.city || '').trim();
     const cleanState = String(editingBusiness.state || '').trim().toUpperCase();
     const phoneDigits = String(editingBusiness.phone || '').replace(/\D/g, '');
     if (!cleanName || !cleanCity || !isValidRegion(cleanState, market)) {
-      setAdminError('Preencha o nome, a cidade e informe a região válida.');
+      setAdminError(es ? 'Completa el nombre, la ciudad y una región válida.' : 'Preencha o nome, a cidade e informe a região válida.');
       return;
     }
     if (phoneDigits && (phoneDigits.length < (market.code === 'PY' ? 8 : 10) || phoneDigits.length > 15)) {
-      setAdminError('Confira o telefone/WhatsApp: informe DDD e número.');
+      setAdminError(es ? 'Revisa el teléfono/WhatsApp e informa el código de área y el número.' : 'Confira o telefone/WhatsApp: informe DDD e número.');
       return;
     }
     if ((editingBusiness.location_visibility || 'neighborhood') === 'exact' &&
@@ -803,7 +803,7 @@ function App({ market }) {
        !String(editingBusiness.street || '').trim() ||
        !String(editingBusiness.street_number || '').trim() ||
        !String(editingBusiness.neighborhood || '').trim())) {
-      setAdminError('Para mostrar o endereço completo, informe código postal, rua/avenida, número e bairro.');
+      setAdminError(es ? 'Para mostrar la dirección completa, indica el código postal, la calle, el número y el barrio.' : 'Para mostrar o endereço completo, informe código postal, rua/avenida, número e bairro.');
       return;
     }
     setFormBusy(true);
@@ -1075,7 +1075,7 @@ function App({ market }) {
       if (result.error) throw result.error;
       setOwnerBusinesses(result.data || []);
     } catch {
-      setOwnerError('Não foi possível atualizar seus anúncios. Verifique sua conexão e tente novamente.');
+      setOwnerError(es ? 'No fue posible actualizar tus anuncios. Verifica tu conexión e inténtalo de nuevo.' : 'Não foi possível atualizar seus anúncios. Verifique sua conexão e tente novamente.');
     } finally {
       setOwnerLoading(false);
     }
@@ -1086,16 +1086,16 @@ function App({ market }) {
     url.searchParams.set('negocio', item.id);
     try {
       await navigator.clipboard.writeText(url.toString());
-      setOwnerShareMessage('Link público de ' + item.name + ' copiado!');
+      setOwnerShareMessage(es ? '¡Enlace público de ' + item.name + ' copiado!' : 'Link público de ' + item.name + ' copiado!');
     } catch {
-      setOwnerShareMessage('Não foi possível copiar automaticamente. Abra o anúncio na vitrine para compartilhar.');
+      setOwnerShareMessage(es ? 'No fue posible copiar automáticamente. Abre el anuncio en la vitrina para compartirlo.' : 'Não foi possível copiar automaticamente. Abra o anúncio na vitrine para compartilhar.');
     }
   }
 
   async function saveOwnerBusiness(event) {
     event.preventDefault();
     if (!ownerEditing || formBusy) return;
-    if (!navigator.onLine) { setOwnerError('Você está sem internet. Reconecte-se antes de salvar; suas alterações continuam nesta tela.'); return; }
+    if (!navigator.onLine) { setOwnerError(es ? 'No tienes conexión a internet. Reconéctate antes de guardar; tus cambios siguen en esta pantalla.' : 'Você está sem internet. Reconecte-se antes de salvar; suas alterações continuam nesta tela.'); return; }
     setFormBusy(true);
     setOwnerError('');
     try {
@@ -1105,17 +1105,17 @@ function App({ market }) {
       const cleanState = String(ownerEditing.state || '').trim().toUpperCase();
       const phoneDigits = String(ownerEditing.phone || '').replace(/\D/g, '');
       if (!cleanName || !cleanCity || !isValidRegion(cleanState, market)) {
-        setOwnerError('Preencha o nome, a cidade e informe a região válida.');
+        setOwnerError(es ? 'Completa el nombre, la ciudad y una región válida.' : 'Preencha o nome, a cidade e informe a região válida.');
         return;
       }
       if (phoneDigits && (phoneDigits.length < (market.code === 'PY' ? 8 : 10) || phoneDigits.length > 15)) {
-        setOwnerError('Confira o telefone/WhatsApp: informe DDD e número.');
+        setOwnerError(es ? 'Revisa el teléfono/WhatsApp e informa el código de área y el número.' : 'Confira o telefone/WhatsApp: informe DDD e número.');
         return;
       }
       const visibility = ownerEditing.location_visibility || 'neighborhood';
       const postalCode = String(ownerEditing.postal_code || '').trim();
       if (visibility === 'exact' && (!isValidPostalCode(postalCode, market) || !String(ownerEditing.street || '').trim() || !String(ownerEditing.street_number || '').trim() || !String(ownerEditing.neighborhood || '').trim())) {
-        setOwnerError('Para mostrar o endereço completo, informe código postal, rua/avenida, número e bairro.');
+        setOwnerError(es ? 'Para mostrar la dirección completa, indica el código postal, la calle, el número y el barrio.' : 'Para mostrar o endereço completo, informe código postal, rua/avenida, número e bairro.');
         return;
       }
       const payload = {
@@ -1134,7 +1134,7 @@ function App({ market }) {
         .eq('id', ownerEditing.id).eq('owner_id', authUser.id).eq('status', originalStatus)
         .select('id').maybeSingle();
       if (error || !data) {
-        setOwnerError('Não foi possível salvar. Confira sua conexão e tente novamente.' + (error?.message ? ' ' + error.message : ''));
+        setOwnerError((es ? 'No fue posible guardar. Revisa tu conexión e inténtalo de nuevo.' : 'Não foi possível salvar. Confira sua conexão e tente novamente.') + (error?.message ? ' ' + error.message : ''));
         return;
       }
       setOwnerBusinesses(rows => rows.map(row => row.id === ownerEditing.id ? { ...row, ...payload, updated_at: new Date().toISOString() } : row));
@@ -1284,30 +1284,30 @@ function App({ market }) {
     event.preventDefault();
     if (formBusy) return;
     setFormError(''); setFormMessage('');
-    if (!navigator.onLine) { setFormError('Você está sem internet. Reconecte-se antes de enviar o cadastro; seus dados preenchidos continuam nesta tela.'); return; }
-    if (!supabase || !authUser) { setFormError('Entre na sua conta para enviar o cadastro.'); return; }
+    if (!navigator.onLine) { setFormError(es ? 'No tienes conexión a internet. Reconéctate antes de enviar el registro; los datos completados siguen en esta pantalla.' : 'Você está sem internet. Reconecte-se antes de enviar o cadastro; seus dados preenchidos continuam nesta tela.'); return; }
+    if (!supabase || !authUser) { setFormError(es ? 'Inicia sesión para enviar el registro.' : 'Entre na sua conta para enviar o cadastro.'); return; }
     const name = businessForm.name.trim();
     const city = businessForm.city.trim();
     const state = businessForm.state.trim().toUpperCase();
     const phoneDigits = businessForm.phone.replace(/\D/g, '');
     const selectedImages = [logoFile, ...galleryFiles].filter(Boolean);
     if (!name || !city || !isValidRegion(state, market)) {
-      setFormError('Informe o nome do negócio, a cidade e a região válida.');
+      setFormError(es ? 'Indica el nombre del negocio, la ciudad y una región válida.' : 'Informe o nome do negócio, a cidade e a região válida.');
       return;
     }
     if (phoneDigits && (phoneDigits.length < (market.code === 'PY' ? 8 : 10) || phoneDigits.length > 15)) {
-      setFormError('Confira o telefone/WhatsApp. Informe o DDD e o número completo.');
+      setFormError(es ? 'Revisa el teléfono/WhatsApp. Informa el código de área y el número completo.' : 'Confira o telefone/WhatsApp. Informe o DDD e o número completo.');
       return;
     }
     if (galleryFiles.length > 5) {
-      setFormError('Selecione no máximo 5 fotos para a galeria.');
+      setFormError(es ? 'Selecciona un máximo de 5 fotos para la galería.' : 'Selecione no máximo 5 fotos para a galeria.');
       return;
     }
     const invalidImage = selectedImages.find(file => !allowedImageTypes.includes(file.type) || file.size === 0 || file.size > 5 * 1024 * 1024);
     if (invalidImage) {
       setFormError(!allowedImageTypes.includes(invalidImage.type)
-        ? 'Use somente imagens JPG, PNG, WEBP ou GIF.'
-        : `A imagem ${invalidImage.name} ultrapassa o limite de 5 MB.`);
+        ? (es ? 'Usa solamente imágenes JPG, PNG, WEBP o GIF.' : 'Use somente imagens JPG, PNG, WEBP ou GIF.')
+        : (es ? `La imagen ${invalidImage.name} supera el límite de 5 MB.` : `A imagem ${invalidImage.name} ultrapassa o limite de 5 MB.`));
       return;
     }
     setFormBusy(true);
@@ -1317,7 +1317,7 @@ function App({ market }) {
       const visibility = businessForm.location_visibility || 'neighborhood';
       const postalCode = String(businessForm.postal_code || '').trim();
       if (visibility === 'exact' && (!isValidPostalCode(postalCode, market) || !businessForm.street.trim() || !businessForm.street_number.trim() || !businessForm.neighborhood.trim())) {
-        setFormError('Para mostrar o endereço completo, informe código postal, rua/avenida, número e bairro.');
+        setFormError(es ? 'Para mostrar la dirección completa, indica el código postal, la calle, el número y el barrio.' : 'Para mostrar o endereço completo, informe código postal, rua/avenida, número e bairro.');
         return;
       }
       const slugBase = businessForm.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
