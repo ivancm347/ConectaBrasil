@@ -524,3 +524,22 @@ button,a{touch-action:manipulation}
 .business-review-form .review-comment-input::placeholder{color:#8493a1;opacity:1}
 .business-review-form>button{width:100%;min-height:48px;margin-top:2px}
 @media(max-width:600px){.business-review-form{padding:13px;gap:11px}.business-review-form .review-rating-select,.business-review-form .review-comment-input{font-size:16px}}
+
+
+/* Melhor legibilidade dos anúncios públicos — texto maior e com contraste */
+.listing-body{padding:20px}
+.listing-body>small{font-size:12px;letter-spacing:.6px}
+.listing-body h3{font-size:19px;line-height:1.35;margin:9px 0}
+.listing-body p{font-size:15px;line-height:1.65;color:#526176;min-height:0}
+.listing-foot{gap:12px;flex-wrap:wrap}
+.listing-foot>span{font-size:13px;line-height:1.5;color:#46566d}
+.listing-foot .coming{font-size:13px;line-height:1.5;color:#46566d;font-weight:600}
+.listing-details-button{font-size:13px;padding:9px 12px;min-height:40px}
+.listing-contact{font-size:13px;padding:9px 12px;min-height:40px}
+@media(max-width:560px){
+  .listing-body{padding:18px}
+  .listing-body h3{font-size:20px}
+  .listing-body p{font-size:15px}
+  .listing-foot>span,.listing-foot .coming{font-size:14px}
+  .listing-details-button,.listing-contact{font-size:14px;min-height:44px}
+}
