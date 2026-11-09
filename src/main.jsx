@@ -334,6 +334,7 @@ function App({ market }) {
   const [adminSearch, setAdminSearch] = useState('');
   const [adminError, setAdminError] = useState('');
   const [marketAssignmentBusy, setMarketAssignmentBusy] = useState(false);
+  const [marketAssignmentTarget, setMarketAssignmentTarget] = useState('BR');
   const [marketAssignmentMessage, setMarketAssignmentMessage] = useState('');
   const [marketAssignmentError, setMarketAssignmentError] = useState('');
   const [editingBusiness, setEditingBusiness] = useState(null);
@@ -360,10 +361,13 @@ function App({ market }) {
   const [marketingCopied, setMarketingCopied] = useState(false);
   const isAdmin = authUser?.app_metadata?.role === 'admin';
 
-  async function assignBrazilOwnerMarket() {
+  async function assignOwnerMarket() {
     if (!isAdmin || !supabase || marketAssignmentBusy) return;
+    const targetMarket = marketAssignmentTarget;
+    if (!['BR', 'PY'].includes(targetMarket)) return;
+    const marketName = targetMarket === 'PY' ? 'Paraguai (PY)' : 'Brasil (BR)';
     const confirmed = window.confirm(
-      'Confirma atribuir o mercado BR à conta proprietária magicfilly347@gmail.com?'
+      `Confirma alterar a conta proprietária magicfilly347@gmail.com para ${marketName}? A sessão da conta deverá ser renovada.`
     );
     if (!confirmed) return;
     setMarketAssignmentBusy(true);
@@ -371,19 +375,24 @@ function App({ market }) {
     setMarketAssignmentError('');
     try {
       const { data, error } = await supabase.functions.invoke('assign-owner-market', {
-        body: { confirm: 'ASSIGN_OWNER_TO_BR' },
+        body: { market_code: targetMarket, confirm: `ASSIGN_OWNER_MARKET:${targetMarket}` },
       });
-      if (error) throw error;
-      if (!data?.ok || data?.market_code !== 'BR' || data?.audit_recorded !== true) {
-        throw new Error(data?.error || 'A função não confirmou a atribuição e o registro de auditoria.');
+      if (error) {
+        const status = error?.context?.status;
+        throw new Error(status
+          ? `A Edge Function respondeu com HTTP ${status}. Confira se a versão atual está implantada e se ENABLE_OWNER_MARKET_ASSIGNMENT está habilitado.`
+          : `Falha ao comunicar com a Edge Function. Verifique a implantação da função e a configuração CORS. Detalhe: ${error.message || 'erro de rede'}`);
+      }
+      if (!data?.ok || data?.market_code !== targetMarket || data?.audit_recorded !== true) {
+        throw new Error(data?.error || 'A função não confirmou a alteração e o registro de auditoria.');
       }
       setMarketAssignmentMessage(
         data.unchanged
-          ? 'A conta já estava vinculada ao mercado BR. Auditoria conferida.'
-          : 'Mercado BR atribuído e registrado na auditoria. A conta proprietária deve entrar novamente para renovar a sessão.'
+          ? `A conta já estava vinculada a ${marketName}. Auditoria conferida.`
+          : `Mercado da conta alterado para ${marketName} e registrado na auditoria. A conta proprietária deve entrar novamente para renovar a sessão.`
       );
     } catch (error) {
-      setMarketAssignmentError(error?.message || 'Não foi possível executar a atribuição.');
+      setMarketAssignmentError(error?.message || 'Não foi possível alterar o mercado da conta.');
     } finally {
       setMarketAssignmentBusy(false);
     }
@@ -1672,8 +1681,13 @@ function App({ market }) {
         <section className="admin-category-manager" style={{margin:"16px 0",padding:16,border:"1px solid #dbe6ed",borderRadius:16,background:"#fff"}}>
           <h3>{es ? 'Configuración internacional — cuenta propietaria' : 'Configuração internacional — conta proprietária'}</h3>
           <p>{es ? 'Operación restringida al administrador global. La función del servidor valida la identidad de la cuenta y registra el cambio en la auditoría.' : 'Operação restrita ao administrador global. A função no servidor valida a identidade da conta e registra a alteração na auditoria.'}</p>
-          <button type="button" className="btn" onClick={assignBrazilOwnerMarket} disabled={marketAssignmentBusy}>
-            {marketAssignmentBusy ? (es ? 'Procesando...' : 'Processando...') : (es ? 'Asignar el mercado BR a la cuenta propietaria' : 'Atribuir mercado BR à conta proprietária')}
+          <label htmlFor="owner-market-target" style={{display:'block',fontWeight:600,margin:'12px 0 6px'}}>{es ? 'Mercado de destino' : 'Mercado de destino'}</label>
+          <select id="owner-market-target" value={marketAssignmentTarget} onChange={event=>setMarketAssignmentTarget(event.target.value)} disabled={marketAssignmentBusy} style={{width:'100%',padding:'12px',border:'1px solid #cbd5e1',borderRadius:10,marginBottom:10,background:'#fff',color:'#172b4d'}}>
+            <option value="BR">Brasil (BR)</option>
+            <option value="PY">Paraguai (PY)</option>
+          </select>
+          <button type="button" className="btn" onClick={assignOwnerMarket} disabled={marketAssignmentBusy}>
+            {marketAssignmentBusy ? (es ? 'Procesando...' : 'Processando...') : (es ? 'Cambiar el mercado de la cuenta propietaria' : 'Alterar mercado da conta proprietária')}
           </button>
           {marketAssignmentMessage && <p role="status" style={{color:'#18794e',marginTop:10}}>{marketAssignmentMessage}</p>}
           {marketAssignmentError && <p role="alert" style={{color:'#b42318',marginTop:10}}>{marketAssignmentError}</p>}
