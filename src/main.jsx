@@ -1784,7 +1784,10 @@ function App({ market }) {
           </div>
           <small style={{display:'block',marginTop:10,color:'#64748b'}}>{es ? 'Los datos son aproximados y comienzan a formar el historial mensual después de la migración. Se conservan los totales acumulados existentes; las interacciones anteriores no pueden distribuirse retroactivamente por mes.' : 'Os dados são aproximados e começam a compor o histórico mensal após a migração. Os totais acumulados já existentes são preservados; interações antigas não podem ser distribuídas retroativamente por mês.'}</small>
         </section>
-        <section className="admin-category-manager" style={{marginTop:18}}>
+        {es ? <section className="admin-category-manager" style={{marginTop:18}}>
+          <h3>Informe financiero de los planes</h3>
+          <p>El informe financiero de Paraguay está deshabilitado hasta que se definan y registren los precios de los planes en guaraníes (PYG). Así evitamos mostrar valores en reales brasileños (BRL) como si fueran precios paraguayos.</p>
+        </section> : <section className="admin-category-manager" style={{marginTop:18}}>
           <h3>{es ? 'Informe financiero de los planes' : 'Relatório financeiro dos planos'}</h3>
           <p>{es ? 'Consulta las activaciones registradas por mes y exporta los datos a un archivo.' : 'Consulte as ativações registradas por mês e exporte os dados para arquivo.'}</p>
           <label style={{display:'block',maxWidth:240,margin:'12px 0'}}>{es ? 'Mes de referencia' : 'Mês de referência'}<input type="month" value={selectedReportMonth} onChange={event=>setSelectedReportMonth(event.target.value)}/></label>
@@ -1804,7 +1807,7 @@ function App({ market }) {
             <small>{new Date(log.created_at).toLocaleDateString('pt-BR')}<br/>{log.actor_email || 'Administrador'}</small>
           </article>)}</div> : <div className="empty-state">Nenhuma ativação de plano registrada neste mês.</div>}
           <small style={{display:'block',marginTop:10,color:'#64748b'}}>O PDF é gerado pela opção de impressão do navegador. A planilha CSV abre no Excel. Os dados vêm das últimas 100 ações carregadas no histórico e usam os preços atuais (Destaque R$ 29,90 e Parceiro R$ 49,90); não representam confirmação bancária.</small>
-        </section>
+        </section>}
         <section className="admin-category-manager admin-audit"><h3>{es ? 'Historial administrativo' : 'Histórico administrativo'}</h3><p>{es ? 'Últimas 100 acciones realizadas en el panel, con fecha y responsable.' : 'Últimas 100 ações realizadas no painel, com data e responsável.'}</p>
           {auditLoading ? <div className="empty-state">Carregando histórico...</div> : adminAuditLogs.length ? <div className="audit-list">{adminAuditLogs.map(log=><article className="audit-item" key={log.id}><div><b>{log.entity_name || log.entity_type}</b><span>{log.action} · {log.entity_type}</span></div><small>{log.actor_email || 'Administrador'}<br/>{new Date(log.created_at).toLocaleString('pt-BR')}</small></article>)}</div> : <div className="empty-state">Nenhuma ação registrada ainda.</div>}
           <button type="button" className="text-switch" disabled={auditLoading} onClick={loadAdminAuditLogs}>{es ? 'Actualizar historial' : 'Atualizar histórico'}</button>
