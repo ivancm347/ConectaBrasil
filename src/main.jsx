@@ -1151,7 +1151,7 @@ function App({ market }) {
         ? 'Alterações enviadas! Seu anúncio ficará temporariamente em análise até a nova aprovação.'
         : 'Alterações salvas. Seu anúncio continua aguardando aprovação.');
     } catch (error) {
-      setOwnerError('Ocorreu uma falha ao salvar. Verifique sua conexão e tente novamente.' + (error?.message ? ' ' + error.message : ''));
+      setOwnerError((es ? 'Ocurrió un error al guardar. Verifica tu conexión e inténtalo de nuevo.' : 'Ocorreu uma falha ao salvar. Verifique sua conexão e tente novamente.') + (error?.message ? ' ' + error.message : ''));
     } finally {
       setFormBusy(false);
     }
@@ -1165,41 +1165,41 @@ function App({ market }) {
   function openPasswordRecovery() {
     setForgotPasswordMode(true);
     setFormError('');
-    setFormMessage('Digite seu e-mail para receber o link de recuperação.');
+    setFormMessage(es ? 'Ingresa tu correo electrónico para recibir el enlace de recuperación.' : 'Digite seu e-mail para receber o link de recuperação.');
   }
 
   async function requestPasswordRecovery(event) {
     event.preventDefault();
-    if (!navigator.onLine) { setFormError('Sem conexão com a internet. Reconecte-se para solicitar a recuperação de senha.'); return; }
+    if (!navigator.onLine) { setFormError(es ? 'No tienes conexión a internet. Reconéctate para solicitar la recuperación de contraseña.' : 'Sem conexão com a internet. Reconecte-se para solicitar a recuperação de senha.'); return; }
     const email = String(authEmailInput.current?.value || authEmail || '').trim();
-    if (!email) { setFormError('Informe seu e-mail para receber o link de recuperação.'); authEmailInput.current?.focus(); return; }
+    if (!email) { setFormError(es ? 'Ingresa tu correo electrónico para recibir el enlace de recuperación.' : 'Informe seu e-mail para receber o link de recuperação.'); authEmailInput.current?.focus(); return; }
     setAuthEmail(email);
     setFormBusy(true); setFormError(''); setFormMessage('');
     try {
       const redirectTo = `${window.location.origin}${window.location.pathname}`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
-      setFormMessage('Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha. Confira também a caixa de spam.');
+      setFormMessage(es ? 'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña. Revisa también la carpeta de spam.' : 'Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha. Confira também a caixa de spam.');
     } catch (error) { setFormError(error.message || 'Não foi possível solicitar a recuperação.'); }
     finally { setFormBusy(false); }
   }
 
   async function updateRecoveredPassword(event) {
     event.preventDefault();
-    if (newPassword.length < 6) { setFormError('A nova senha deve ter pelo menos 6 caracteres.'); return; }
+    if (newPassword.length < 6) { setFormError(es ? 'La nueva contraseña debe tener al menos 6 caracteres.' : 'A nova senha deve ter pelo menos 6 caracteres.'); return; }
     setFormBusy(true); setFormError(''); setFormMessage('');
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
       setPasswordRecovery(false); setNewPassword(''); setAuthPassword('');
-      setFormMessage('Senha alterada com sucesso! Sua conta já está pronta para uso.');
+      setFormMessage(es ? '¡Contraseña actualizada! Tu cuenta ya está lista para usar.' : 'Senha alterada com sucesso! Sua conta já está pronta para uso.');
     } catch (error) { setFormError(error.message || 'Não foi possível alterar a senha.'); }
     finally { setFormBusy(false); }
   }
 
   async function handleAuthSubmit(event) {
     event.preventDefault();
-    if (!navigator.onLine) { setFormError('Sem conexão com a internet. Reconecte-se para entrar ou criar sua conta.'); return; }
+    if (!navigator.onLine) { setFormError(es ? 'No tienes conexión a internet. Reconéctate para iniciar sesión o crear una cuenta.' : 'Sem conexão com a internet. Reconecte-se para entrar ou criar sua conta.'); return; }
     setFormBusy(true); setFormError(''); setFormMessage('');
     try {
       if (authMode === 'signup') {
@@ -1207,15 +1207,15 @@ function App({ market }) {
         if (error) throw error;
         if (data.session) {
           setAuthUser(data.user);
-          setFormMessage('Conta criada! Agora preencha os dados do seu negócio.');
+          setFormMessage(es ? '¡Cuenta creada! Ahora completa los datos de tu negocio.' : 'Conta criada! Agora preencha os dados do seu negócio.');
         } else {
-          setFormMessage('Conta criada. Confira seu e-mail para confirmar o cadastro. Depois, entre aqui para anunciar.');
+          setFormMessage(es ? 'Cuenta creada. Revisa tu correo para confirmar el registro. Después, inicia sesión aquí para publicar tu negocio.' : 'Conta criada. Confira seu e-mail para confirmar o cadastro. Depois, entre aqui para anunciar.');
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
         if (error) throw error;
         setAuthUser(data.user);
-        setFormMessage('Acesso confirmado. Preencha os dados do seu negócio.');
+        setFormMessage(es ? 'Acceso confirmado. Completa los datos de tu negocio.' : 'Acesso confirmado. Preencha os dados do seu negócio.');
       }
     } catch (error) { setFormError(error.message || 'Não foi possível concluir o acesso.'); }
     finally { setFormBusy(false); }
@@ -1229,19 +1229,19 @@ function App({ market }) {
     if (file && !allowedImageTypes.includes(file.type)) {
       setLogoFile(null);
       event.target.value = '';
-      setFormError('Formato de logo não permitido. Use JPG, PNG, WEBP ou GIF.');
+      setFormError(es ? 'Formato de logotipo no permitido. Usa JPG, PNG, WEBP o GIF.' : 'Formato de logo não permitido. Use JPG, PNG, WEBP ou GIF.');
       return;
     }
     if (file && file.size === 0) {
       setLogoFile(null);
       event.target.value = '';
-      setFormError('O arquivo da logo está vazio. Escolha outra imagem.');
+      setFormError(es ? 'El archivo del logotipo está vacío. Elige otra imagen.' : 'O arquivo da logo está vazio. Escolha outra imagem.');
       return;
     }
     if (file && file.size > 5 * 1024 * 1024) {
       setLogoFile(null);
       event.target.value = '';
-      setFormError('A logo ultrapassa o limite de 5 MB. Escolha uma imagem menor.');
+      setFormError(es ? 'El logotipo supera el límite de 5 MB. Elige una imagen más pequeña.' : 'A logo ultrapassa o limite de 5 MB. Escolha uma imagem menor.');
       return;
     }
     setLogoFile(file);
@@ -1253,28 +1253,28 @@ function App({ market }) {
     if (files.length > 5) {
       setGalleryFiles([]);
       event.target.value = '';
-      setFormError('Você selecionou mais de 5 fotos. Escolha no máximo 5 imagens.');
+      setFormError(es ? 'Seleccionaste más de 5 fotos. Elige un máximo de 5 imágenes.' : 'Você selecionou mais de 5 fotos. Escolha no máximo 5 imagens.');
       return;
     }
     const invalidType = files.find(file => !allowedImageTypes.includes(file.type));
     if (invalidType) {
       setGalleryFiles([]);
       event.target.value = '';
-      setFormError(`O arquivo "${invalidType.name}" não é JPG, PNG, WEBP ou GIF.`);
+      setFormError(es ? `El archivo "${invalidType.name}" no es JPG, PNG, WEBP ni GIF.` : `O arquivo "${invalidType.name}" não é JPG, PNG, WEBP ou GIF.`);
       return;
     }
     const emptyFile = files.find(file => file.size === 0);
     if (emptyFile) {
       setGalleryFiles([]);
       event.target.value = '';
-      setFormError(`O arquivo \"${emptyFile.name}\" está vazio. Escolha outra imagem.`);
+      setFormError(es ? `El archivo "${emptyFile.name}" está vacío. Elige otra imagen.` : `O arquivo \"${emptyFile.name}\" está vazio. Escolha outra imagem.`);
       return;
     }
     const oversized = files.find(file => file.size > 5 * 1024 * 1024);
     if (oversized) {
       setGalleryFiles([]);
       event.target.value = '';
-      setFormError(`A foto "${oversized.name}" ultrapassa o limite de 5 MB.`);
+      setFormError(es ? `La foto "${oversized.name}" supera el límite de 5 MB.` : `A foto "${oversized.name}" ultrapassa o limite de 5 MB.`);
       return;
     }
     setGalleryFiles(files);
@@ -1337,8 +1337,8 @@ function App({ market }) {
       const uploadedPhotos = [];
       const uploadImage = async (file, label) => {
         if (!file) return null;
-        if (!allowedImageTypes.includes(file.type)) throw new Error('Use somente imagens JPG, PNG, WEBP ou GIF.');
-        if (file.size > 5 * 1024 * 1024) throw new Error(`A imagem ${file.name} ultrapassa o limite de 5 MB.`);
+        if (!allowedImageTypes.includes(file.type)) throw new Error(es ? 'Usa solamente imágenes JPG, PNG, WEBP o GIF.' : 'Use somente imagens JPG, PNG, WEBP ou GIF.');
+        if (file.size > 5 * 1024 * 1024) throw new Error(es ? `La imagen ${file.name} supera el límite de 5 MB.` : `A imagem ${file.name} ultrapassa o limite de 5 MB.`);
         const safeName = file.name.toLowerCase().replace(/[^a-z0-9.-]+/g, '-');
         const path = `${authUser.id}/${createdBusinessId}/${label}-${Date.now()}-${safeName}`;
         const { error: uploadError } = await supabase.storage.from('business-images').upload(path, file, { cacheControl: '3600', upsert: false });
@@ -1358,7 +1358,7 @@ function App({ market }) {
         });
         if (categoryError) throw categoryError;
       }
-      setFormMessage('Cadastro enviado para análise! Seu negócio aparecerá na vitrine depois da aprovação.');
+      setFormMessage(es ? '¡Registro enviado para revisión! Tu negocio aparecerá en la vitrina después de la aprobación.' : 'Cadastro enviado para análise! Seu negócio aparecerá na vitrine depois da aprovação.');
       await loadOwnerBusinesses();
       setBusinessForm(emptyBusinessForm);
       setLogoFile(null); setGalleryFiles([]);
@@ -1383,7 +1383,7 @@ function App({ market }) {
     let alive = true;
     fetchPublicBusinesses(market)
       .then(rows => { if (alive) { setBusinesses(rows); const syncedAt = new Date().toISOString(); setLastSuccessfulSync(syncedAt); try { localStorage.setItem(getMarketStorageKey('last-sync'), syncedAt); } catch { /* A lista segue disponível na sessão. */ } } })
-      .catch(() => { if (alive) setLoadError('Não foi possível carregar os cadastros agora.'); })
+      .catch(() => { if (alive) setLoadError(es ? 'No se pudieron cargar los registros en este momento.' : 'Não foi possível carregar os cadastros agora.'); })
       .finally(() => { if (alive) setLoadingBusinesses(false); });
     return () => { alive = false; };
   }, []);
