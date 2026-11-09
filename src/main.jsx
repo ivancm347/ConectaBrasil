@@ -743,22 +743,22 @@ function App({ market }) {
     try {
       let result = await supabase.from('businesses')
         .select('id,name,description,business_type,phone,city,state,postal_code,street,street_number,neighborhood,address_complement,location_visibility,service_cities,status,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,views_count,whatsapp_clicks,created_at,logo_url,gallery_urls,business_categories(categories(name))')
-        .order('created_at', { ascending: false });
+        .eq('country_code', market.code).order('created_at', { ascending: false });
       if (result.error && /postal_code|street_number|address_complement|location_visibility|service_cities|column/i.test(result.error.message || '')) {
         result = await supabase.from('businesses')
           .select('id,name,description,business_type,phone,city,state,status,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,views_count,whatsapp_clicks,created_at,logo_url,gallery_urls,business_categories(categories(name))')
-          .order('created_at', { ascending: false });
+          .eq('country_code', market.code).order('created_at', { ascending: false });
       }
       if (result.error && /plan_type|plan_started_at|plan_expires_at|featured_expires_at|column/i.test(result.error.message || '')) {
           setPlanSchemaReady(false);
           result = await supabase.from('businesses')
             .select('id,name,description,business_type,phone,city,state,status,featured,verified,views_count,whatsapp_clicks,created_at,logo_url,gallery_urls,business_categories(categories(name))')
-            .order('created_at', { ascending: false });
+            .eq('country_code', market.code).order('created_at', { ascending: false });
         }
         if (result.error && /verified|views_count|whatsapp_clicks|column/i.test(result.error.message || '')) {
         result = await supabase.from('businesses')
           .select('id,name,description,business_type,phone,city,state,status,featured,created_at,logo_url,gallery_urls,business_categories(categories(name))')
-          .order('created_at', { ascending: false });
+          .eq('country_code', market.code).order('created_at', { ascending: false });
       }
       if (result.error) throw result.error;
       setPlanSchemaReady(Boolean(result.data?.length === 0 || Object.prototype.hasOwnProperty.call(result.data?.[0] || {}, 'plan_type')));
@@ -770,7 +770,7 @@ function App({ market }) {
         gallery_urls: await Promise.all((item.gallery_urls || []).map(createBusinessImageUrl)),
       })));
       setAdminBusinesses(businessesWithImages);
-      const cats = await supabase.from('categories').select('id,name,active').order('name');
+      const cats = await supabase.from('categories').select('id,name,active').eq('country_code', market.code).order('name');
       if (cats.error) throw cats.error;
       setAdminCategories(cats.data || []);
       await loadAdminAuditLogs();
