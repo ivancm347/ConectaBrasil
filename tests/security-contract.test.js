@@ -20,8 +20,8 @@ function policyBlock(policyName) {
   return imageMigration.slice(start, end + 1);
 }
 
-test('Paraguai continua bloqueado até a aprovação dos testes de isolamento', () => {
-  assert.equal(MARKETS.PY.enabled, false);
+test('mercado PY está habilitado sem remover os controles de dados privados', () => {
+  assert.equal(MARKETS.PY.enabled, true);
 });
 
 test('bucket business-images é configurado como privado', () => {
@@ -93,6 +93,15 @@ test('consultas de anúncios usam country_code como filtro operacional BR/PY', (
   assert.doesNotMatch(appSource, /\.eq\('country',\s*market\.legacyCountry\)/);
 });
 
+test('categorias da vitrine são carregadas na inicialização e isoladas pelo mercado ativo', () => {
+  const effectStart = appSource.indexOf('if (!isSupabaseConfigured || !supabase) return;');
+  const end = appSource.indexOf('async function retryPublicBusinesses()', effectStart);
+  assert.ok(effectStart >= 0 && end > effectStart, 'Carregamento inicial da vitrine não encontrado');
+  const initialLoad = appSource.slice(effectStart, end);
+  assert.match(initialLoad, /Promise\.all\(\[[\s\S]*?fetchPublicBusinesses\(market\)[\s\S]*?from\('categories'\)[\s\S]*?eq\('active',\s*true\)[\s\S]*?eq\('country_code',\s*market\.code\)/);
+  assert.match(initialLoad, /setAvailableCategories\(categoryResult\.data \|\| \[\]\)/);
+});
+
 test('avaliações aprovadas continuam públicas, mas leitura privada exige mercado da sessão', () => {
   assert.match(reviewMigration, /status\s*=\s*'approved'/i);
   assert.match(reviewMigration, /user_id\s*=\s*auth\.uid\(\)[\s\S]*?b\.country_code\s*=\s*\(auth\.jwt\(\)\s*->\s*'app_metadata'\s*->>\s*'market_code'\)/i);
@@ -143,4 +152,27 @@ test('RPC de métricas por mercado exige admin e filtra BR/PY', () => {
   assert.match(metricsHardeningMigration, /b\.country_code = p_country_code/i);
   assert.match(metricsHardeningMigration, /grant execute on function\s+public\.get_admin_business_metrics_by_market\(date, text\)\s+to authenticated, service_role/i);
   assert.match(metricsHardeningMigration, /revoke all on function\s+public\.get_admin_business_metrics_by_market\(date, text\)\s+from public, anon, authenticated, service_role/i);
+});
+
+
+test('edição de anúncio pelo proprietário exige o mercado ativo além do owner_id', () => {
+  const start = appSource.indexOf('async function saveOwnerBusiness(event)');
+  const end = appSource.indexOf("\n  useEffect(() => {\n    if (authUser && !isAdmin) loadOwnerBusinesses();", start);
+  assert.ok(start >= 0 && end > start, 'Função de edição do proprietário não encontrada');
+  const ownerEdit = appSource.slice(start, end);
+  assert.match(ownerEdit, /\.eq\('owner_id',\s*authUser\.id\)\.eq\('country_code',\s*market\.code\)/);
+});
+
+test('moderação de anúncios e avaliações aceita somente estados previstos', () => {
+  const businessStart = appSource.indexOf('async function moderateBusiness(id, status)');
+  const businessEnd = appSource.indexOf('\n  async function loadOwnerBusinesses()', businessStart);
+  assert.ok(businessStart >= 0 && businessEnd > businessStart, 'Função de moderação de anúncios não encontrada');
+  const businessModeration = appSource.slice(businessStart, businessEnd);
+  assert.match(businessModeration, /!\['pending', 'approved', 'rejected', 'suspended'\]\.includes\(status\)/);
+
+  const reviewStart = appSource.indexOf('async function moderateReview(review, status)');
+  const reviewEnd = appSource.indexOf('\n  function closeBusinessDetails()', reviewStart);
+  assert.ok(reviewStart >= 0 && reviewEnd > reviewStart, 'Função de moderação de avaliações não encontrada');
+  const reviewModeration = appSource.slice(reviewStart, reviewEnd);
+  assert.match(reviewModeration, /!\['approved', 'rejected'\]\.includes\(status\)/);
 });
