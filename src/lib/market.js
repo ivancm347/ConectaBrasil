@@ -27,7 +27,7 @@ export const MARKETS = {
     postalCodeLabel: 'Código postal',
     regionLabel: 'Departamento',
     postalCodePattern: '^\\d{6}$',
-    enabled: false,
+    enabled: true,
   },
 };
 
