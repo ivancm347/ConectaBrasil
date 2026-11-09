@@ -843,7 +843,7 @@ function App({ market }) {
         setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
-        setLoadError('A edição foi salva, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
+        setLoadError(es ? 'La edición se guardó, pero la vitrina no pudo actualizarse ahora. Usa «Actualizar anuncios» para sincronizar.' : 'A edição foi salva, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
       }
     } catch (error) {
       setAdminError((es ? 'Error de conexión al guardar la edición. Inténtalo de nuevo. ' : 'Falha de conexão ao salvar a edição. Tente novamente. ') + (error?.message || ''));
@@ -919,7 +919,7 @@ function App({ market }) {
         setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
-        setLoadError('O selo foi salvo, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
+        setLoadError(es ? 'La verificación se guardó, pero la vitrina no pudo actualizarse ahora. Usa «Actualizar anuncios» para sincronizar.' : 'O selo foi salvo, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
       }
     } catch (error) {
       setAdminError((es ? 'No fue posible cambiar la verificación: ' : 'Não foi possível alterar o selo de verificação: ') + (error?.message || (es ? 'Verifica la conexión y las migraciones necesarias.' : 'verifique a conexão e as migrações necessárias.')));
@@ -936,9 +936,13 @@ function App({ market }) {
       return;
     }
     const isRenewal = planType !== 'gratuito' && (item.plan_type || (item.featured ? 'destaque' : 'gratuito')) === planType;
-    const confirmed = window.confirm(planType === 'gratuito'
-      ? 'Remover o plano e o destaque de ' + item.name + '?'
-      : (isRenewal ? 'Renovar o plano ' : 'Ativar o plano ') + (planType === 'destaque' ? 'Destaque' : 'Parceiro') + ' por mais 30 dias para ' + item.name + '? Confirme somente após verificar a contratação.');
+    const confirmed = window.confirm(es
+      ? (planType === 'gratuito'
+        ? '¿Quitar el plan y el destacado de ' + item.name + '?'
+        : (isRenewal ? '¿Renovar el plan ' : '¿Activar el plan ') + (planType === 'destaque' ? 'Destacado' : 'Socio') + ' por 30 días más para ' + item.name + '? Confirma solo después de verificar la contratación.')
+      : (planType === 'gratuito'
+        ? 'Remover o plano e o destaque de ' + item.name + '?'
+        : (isRenewal ? 'Renovar o plano ' : 'Ativar o plano ') + (planType === 'destaque' ? 'Destaque' : 'Parceiro') + ' por mais 30 dias para ' + item.name + '? Confirme somente após verificar a contratação.'));
     if (!confirmed) return;
     setFormBusy(true);
     setAdminError('');
@@ -960,7 +964,7 @@ function App({ market }) {
         setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
-        setLoadError('O plano foi salvo, mas a vitrine ainda não foi atualizada. Atualize os anúncios.');
+        setLoadError(es ? 'El plan se guardó, pero la vitrina aún no se actualizó. Actualiza los anuncios.' : 'O plano foi salvo, mas a vitrine ainda não foi atualizada. Atualize os anúncios.');
       }
     } catch (error) {
       setAdminError((es ? 'No fue posible guardar el plan. Verifica si ejecutaste supabase/plans.sql. ' : 'Não foi possível salvar o plano. Confira se executou supabase/plans.sql. ') + (error?.message || ''));
@@ -986,7 +990,7 @@ function App({ market }) {
         setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
-        setLoadError('O destaque foi salvo, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
+        setLoadError(es ? 'El destacado se guardó, pero la vitrina no pudo actualizarse ahora. Usa «Actualizar anuncios» para sincronizar.' : 'O destaque foi salvo, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
       }
     } catch (error) {
       setAdminError((es ? 'Error de conexión al cambiar el destacado. ' : 'Falha de conexão ao alterar destaque. ') + (error?.message || (es ? 'Inténtalo de nuevo.' : 'Tente novamente.')));
@@ -1016,7 +1020,7 @@ function App({ market }) {
         setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
-        setLoadError('O anúncio foi excluído, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
+        setLoadError(es ? 'El anuncio se eliminó, pero la vitrina no pudo actualizarse ahora. Usa «Actualizar anuncios» para sincronizar.' : 'O anúncio foi excluído, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
       }
     } catch (error) {
       setAdminError((es ? 'Error de conexión al eliminar el anuncio. ' : 'Falha de conexão ao excluir o anúncio. ') + (error?.message || ''));
@@ -1052,7 +1056,7 @@ function App({ market }) {
         setBusinesses(await fetchPublicBusinesses(market));
         setLoadError('');
       } catch {
-        setLoadError('A moderação foi salva, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
+        setLoadError(es ? 'La moderación se guardó, pero la vitrina no pudo actualizarse ahora. Usa «Actualizar anuncios» para sincronizar.' : 'A moderação foi salva, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
       }
     } catch (error) {
       setAdminError((es ? 'Error de conexión al actualizar el registro. Inténtalo de nuevo. ' : 'Falha de conexão ao atualizar o cadastro. Tente novamente. ') + (error?.message || ''));
