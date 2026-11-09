@@ -144,3 +144,12 @@ test('RPC de métricas por mercado exige admin e filtra BR/PY', () => {
   assert.match(metricsHardeningMigration, /grant execute on function\s+public\.get_admin_business_metrics_by_market\(date, text\)\s+to authenticated, service_role/i);
   assert.match(metricsHardeningMigration, /revoke all on function\s+public\.get_admin_business_metrics_by_market\(date, text\)\s+from public, anon, authenticated, service_role/i);
 });
+
+
+test('edição de anúncio pelo proprietário exige o mercado ativo além do owner_id', () => {
+  const start = appSource.indexOf('async function saveOwnerBusiness(event)');
+  const end = appSource.indexOf("\n  useEffect(() => {\n    if (authUser && !isAdmin) loadOwnerBusinesses();", start);
+  assert.ok(start >= 0 && end > start, 'Função de edição do proprietário não encontrada');
+  const ownerEdit = appSource.slice(start, end);
+  assert.match(ownerEdit, /\.eq\('owner_id',\s*authUser\.id\)\.eq\('country_code',\s*market\.code\)/);
+});
