@@ -1381,8 +1381,18 @@ function App({ market }) {
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
     let alive = true;
-    fetchPublicBusinesses(market)
-      .then(rows => { if (alive) { setBusinesses(rows); const syncedAt = new Date().toISOString(); setLastSuccessfulSync(syncedAt); try { localStorage.setItem(getMarketStorageKey('last-sync'), syncedAt); } catch { /* A lista segue disponível na sessão. */ } } })
+    Promise.all([
+      fetchPublicBusinesses(market),
+      supabase.from('categories').select('id,name').eq('active', true).eq('country_code', market.code).order('name')
+    ])
+      .then(([rows, categoryResult]) => {
+        if (!alive) return;
+        setBusinesses(rows);
+        if (!categoryResult.error) setAvailableCategories(categoryResult.data || []);
+        const syncedAt = new Date().toISOString();
+        setLastSuccessfulSync(syncedAt);
+        try { localStorage.setItem(getMarketStorageKey('last-sync'), syncedAt); } catch { /* A lista segue disponível na sessão. */ }
+      })
       .catch(() => { if (alive) setLoadError(es ? 'No se pudieron cargar los registros en este momento.' : 'Não foi possível carregar os cadastros agora.'); })
       .finally(() => { if (alive) setLoadingBusinesses(false); });
     return () => { alive = false; };
