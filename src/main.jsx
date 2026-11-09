@@ -650,7 +650,7 @@ function App({ market }) {
   async function loadAdminReviews() {
     if (!isAdmin || !navigator.onLine) return;
     setAdminReviewsLoading(true); setAdminReviewsError('');
-    const { data, error } = await supabase.from('business_reviews').select('id,business_id,user_id,rating,comment,status,created_at,businesses(name)').order('created_at', { ascending: false }).limit(100);
+    const { data, error } = await supabase.from('business_reviews').select('id,business_id,user_id,rating,comment,status,created_at,businesses!inner(name,country_code)').eq('businesses.country_code', market.code).order('created_at', { ascending: false }).limit(100);
     if (error) { setAdminReviewsError('Não foi possível carregar avaliações. Confira se business_reviews.sql foi executado.'); setAdminReviews([]); }
     else setAdminReviews(data || []);
     setAdminReviewsLoading(false);
