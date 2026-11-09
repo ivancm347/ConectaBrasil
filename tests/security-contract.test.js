@@ -94,11 +94,11 @@ test('consultas de anúncios usam country_code como filtro operacional BR/PY', (
 });
 
 test('categorias da vitrine são carregadas na inicialização e isoladas pelo mercado ativo', () => {
-  const start = appSource.indexOf('Promise.all([');
-  const end = appSource.indexOf('async function retryPublicBusinesses()', start);
-  assert.ok(start >= 0 && end > start, 'Carregamento inicial da vitrine não encontrado');
-  const initialLoad = appSource.slice(start, end);
-  assert.match(initialLoad, /from\('categories'\)[\s\S]*?eq\('active',\s*true\)[\s\S]*?eq\('country_code',\s*market\.code\)/);
+  const effectStart = appSource.indexOf('if (!isSupabaseConfigured || !supabase) return;');
+  const end = appSource.indexOf('async function retryPublicBusinesses()', effectStart);
+  assert.ok(effectStart >= 0 && end > effectStart, 'Carregamento inicial da vitrine não encontrado');
+  const initialLoad = appSource.slice(effectStart, end);
+  assert.match(initialLoad, /Promise\.all\(\[[\s\S]*?fetchPublicBusinesses\(market\)[\s\S]*?from\('categories'\)[\s\S]*?eq\('active',\s*true\)[\s\S]*?eq\('country_code',\s*market\.code\)/);
   assert.match(initialLoad, /setAvailableCategories\(categoryResult\.data \|\| \[\]\)/);
 });
 
