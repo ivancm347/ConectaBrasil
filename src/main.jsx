@@ -770,7 +770,7 @@ function App({ market }) {
         gallery_urls: await Promise.all((item.gallery_urls || []).map(createBusinessImageUrl)),
       })));
       setAdminBusinesses(businessesWithImages);
-      const cats = await supabase.from('categories').select('id,name,active').eq('country_code', market.code).order('name');
+      const cats = await supabase.from('categories').select('id,name,active').order('name');
       if (cats.error) throw cats.error;
       setAdminCategories(cats.data || []);
       await loadAdminAuditLogs();
