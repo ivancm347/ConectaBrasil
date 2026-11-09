@@ -1762,42 +1762,42 @@ function App({ market }) {
         </section>
         <section className="admin-category-manager" style={{marginTop:18}}>
           <h3>{es ? 'Rendimiento de la vitrina' : 'Desempenho da vitrine'}</h3>
-          <p>Indicadores aproximados dos anúncios aprovados. Visualizações contam aberturas do perfil; cliques contam acionamentos do botão de WhatsApp.</p>
+          <p>{es ? 'Indicadores aproximados de los anuncios aprobados. Las visualizaciones cuentan las aperturas del perfil; los clics cuentan las veces que se pulsa el botón de WhatsApp.' : 'Indicadores aproximados dos anúncios aprovados. Visualizações contam aberturas do perfil; cliques contam acionamentos do botão de WhatsApp.'}</p>
           <div className="admin-stats" style={{margin:'12px 0'}}>
-            <div className="admin-stat-button"><b>{adminOverview.views.toLocaleString('pt-BR')}</b><span>Visualizações acumuladas</span></div>
-            <div className="admin-stat-button"><b>{adminOverview.whatsappClicks.toLocaleString('pt-BR')}</b><span>Cliques acumulados no WhatsApp</span></div>
+            <div className="admin-stat-button"><b>{adminOverview.views.toLocaleString('pt-BR')}</b><span>{es ? 'Visualizaciones acumuladas' : 'Visualizações acumuladas'}</span></div>
+            <div className="admin-stat-button"><b>{adminOverview.whatsappClicks.toLocaleString('pt-BR')}</b><span>{es ? 'Clics acumulados en WhatsApp' : 'Cliques acumulados no WhatsApp'}</span></div>
           </div>
-          <label style={{display:'block',maxWidth:240,margin:'12px 0'}}>Mês de referência<input type="month" value={selectedReportMonth} onChange={event=>setSelectedReportMonth(event.target.value)}/></label>
-          {metricsLoading ? <div className="admin-inline-empty">Carregando desempenho do mês...</div> : metricsError ? <div className="form-notice" role="status">{metricsError}</div> : <div className="admin-stats" style={{margin:'12px 0'}}>
-            <div className="admin-stat-button"><b>{monthlyBusinessMetrics.reduce((sum,row)=>sum+Number(row.views_count || 0),0).toLocaleString('pt-BR')}</b><span>Visualizações no mês</span></div>
-            <div className="admin-stat-button"><b>{monthlyBusinessMetrics.reduce((sum,row)=>sum+Number(row.whatsapp_clicks || 0),0).toLocaleString('pt-BR')}</b><span>Cliques no WhatsApp no mês</span></div>
+          <label style={{display:'block',maxWidth:240,margin:'12px 0'}}>{es ? 'Mes de referencia' : 'Mês de referência'}<input type="month" value={selectedReportMonth} onChange={event=>setSelectedReportMonth(event.target.value)}/></label>
+          {metricsLoading ? <div className="admin-inline-empty">{es ? 'Cargando rendimiento del mes...' : 'Carregando desempenho do mês...'}</div> : metricsError ? <div className="form-notice" role="status">{metricsError}</div> : <div className="admin-stats" style={{margin:'12px 0'}}>
+            <div className="admin-stat-button"><b>{monthlyBusinessMetrics.reduce((sum,row)=>sum+Number(row.views_count || 0),0).toLocaleString('pt-BR')}</b><span>{es ? 'Visualizaciones del mes' : 'Visualizações no mês'}</span></div>
+            <div className="admin-stat-button"><b>{monthlyBusinessMetrics.reduce((sum,row)=>sum+Number(row.whatsapp_clicks || 0),0).toLocaleString('pt-BR')}</b><span>{es ? 'Clics en WhatsApp del mes' : 'Cliques no WhatsApp no mês'}</span></div>
           </div>}
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(230px,1fr))',gap:12,marginTop:12}}>
             <div style={{background:'#fff',border:'1px solid #e0e8ed',borderRadius:12,padding:12}}>
-              <strong style={{display:'block',marginBottom:8}}>Mais visualizados</strong>
-              {adminOverview.topViewed.length ? adminOverview.topViewed.map(item=><div key={item.id} style={{display:'flex',justifyContent:'space-between',gap:8,padding:'7px 0',borderTop:'1px solid #edf1f4',fontSize:12}}><span>{item.name}</span><b>{Number(item.views_count || 0).toLocaleString('pt-BR')}</b></div>) : <small style={{color:'#64748b'}}>Ainda não há visualizações registradas.</small>}
+              <strong style={{display:'block',marginBottom:8}}>{es ? 'Más visualizados' : 'Mais visualizados'}</strong>
+              {adminOverview.topViewed.length ? adminOverview.topViewed.map(item=><div key={item.id} style={{display:'flex',justifyContent:'space-between',gap:8,padding:'7px 0',borderTop:'1px solid #edf1f4',fontSize:12}}><span>{item.name}</span><b>{Number(item.views_count || 0).toLocaleString('pt-BR')}</b></div>) : <small style={{color:'#64748b'}}>{es ? 'Todavía no hay visualizaciones registradas.' : 'Ainda não há visualizações registradas.'}</small>}
             </div>
             <div style={{background:'#fff',border:'1px solid #e0e8ed',borderRadius:12,padding:12}}>
-              <strong style={{display:'block',marginBottom:8}}>Mais contatos pelo WhatsApp</strong>
-              {adminOverview.topContacted.length ? adminOverview.topContacted.map(item=><div key={item.id} style={{display:'flex',justifyContent:'space-between',gap:8,padding:'7px 0',borderTop:'1px solid #edf1f4',fontSize:12}}><span>{item.name}</span><b>{Number(item.whatsapp_clicks || 0).toLocaleString('pt-BR')}</b></div>) : <small style={{color:'#64748b'}}>Ainda não há cliques registrados.</small>}
+              <strong style={{display:'block',marginBottom:8}}>{es ? 'Más contactos por WhatsApp' : 'Mais contatos pelo WhatsApp'}</strong>
+              {adminOverview.topContacted.length ? adminOverview.topContacted.map(item=><div key={item.id} style={{display:'flex',justifyContent:'space-between',gap:8,padding:'7px 0',borderTop:'1px solid #edf1f4',fontSize:12}}><span>{item.name}</span><b>{Number(item.whatsapp_clicks || 0).toLocaleString('pt-BR')}</b></div>) : <small style={{color:'#64748b'}}>{es ? 'Todavía no hay clics registrados.' : 'Ainda não há cliques registrados.'}</small>}
             </div>
           </div>
-          <small style={{display:'block',marginTop:10,color:'#64748b'}}>Os dados são aproximados e começam a compor o histórico mensal após a migração. Os totais acumulados já existentes são preservados; interações antigas não podem ser distribuídas retroativamente por mês.</small>
+          <small style={{display:'block',marginTop:10,color:'#64748b'}}>{es ? 'Los datos son aproximados y comienzan a formar el historial mensual después de la migración. Se conservan los totales acumulados existentes; las interacciones anteriores no pueden distribuirse retroactivamente por mes.' : 'Os dados são aproximados e começam a compor o histórico mensal após a migração. Os totais acumulados já existentes são preservados; interações antigas não podem ser distribuídas retroativamente por mês.'}</small>
         </section>
         <section className="admin-category-manager" style={{marginTop:18}}>
           <h3>{es ? 'Informe financiero de los planes' : 'Relatório financeiro dos planos'}</h3>
-          <p>Consulte as ativações registradas por mês e exporte os dados para arquivo.</p>
+          <p>{es ? 'Consulta las activaciones registradas por mes y exporta los datos a un archivo.' : 'Consulte as ativações registradas por mês e exporte os dados para arquivo.'}</p>
           <label style={{display:'block',maxWidth:240,margin:'12px 0'}}>Mês de referência<input type="month" value={selectedReportMonth} onChange={event=>setSelectedReportMonth(event.target.value)}/></label>
           <div className="admin-stats" style={{margin:'12px 0'}}>
-            <div className="admin-stat-button"><b>R$ {financeSummary.total.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</b><span>Valor registrado no mês</span></div>
-            <div className="admin-stat-button"><b>{financeSummary.count}</b><span>Ativações no mês</span></div>
-            <div className="admin-stat-button"><b>{financeSummary.destaque}</b><span>Planos Destaque</span></div>
-            <div className="admin-stat-button"><b>{financeSummary.parceiro}</b><span>Planos Parceiro</span></div>
+            <div className="admin-stat-button"><b>R$ {financeSummary.total.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</b><span>{es ? 'Valor registrado en el mes' : 'Valor registrado no mês'}</span></div>
+            <div className="admin-stat-button"><b>{financeSummary.count}</b><span>{es ? 'Activaciones del mes' : 'Ativações no mês'}</span></div>
+            <div className="admin-stat-button"><b>{financeSummary.destaque}</b><span>{es ? 'Planes destacados' : 'Planos Destaque'}</span></div>
+            <div className="admin-stat-button"><b>{financeSummary.parceiro}</b><span>{es ? 'Planes socio' : 'Planos Parceiro'}</span></div>
           </div>
           <div className="admin-actions" style={{margin:'12px 0'}}>
-            <button type="button" disabled={!reportRows.length} onClick={()=>exportPlanReport('pdf')}>Imprimir / salvar PDF</button>
-            <button type="button" disabled={!reportRows.length} onClick={()=>exportPlanReport('csv')}>Exportar planilha Excel (CSV)</button>
-            <button type="button" disabled={auditLoading} onClick={loadAdminAuditLogs}>Atualizar dados</button>
+            <button type="button" disabled={!reportRows.length} onClick={()=>exportPlanReport('pdf')}>{es ? 'Imprimir / guardar PDF' : 'Imprimir / salvar PDF'}</button>
+            <button type="button" disabled={!reportRows.length} onClick={()=>exportPlanReport('csv')}>{es ? 'Exportar hoja de cálculo (CSV)' : 'Exportar planilha Excel (CSV)'}</button>
+            <button type="button" disabled={auditLoading} onClick={loadAdminAuditLogs}>{es ? 'Actualizar datos' : 'Atualizar dados'}</button>
           </div>
           {reportRows.length ? <div className="audit-list">{reportRows.map(log=><article className="audit-item" key={log.id}>
             <div><b>{log.entity_name || 'Negócio'}</b><span>{log.planType === 'destaque' ? 'Plano Destaque' : 'Plano Parceiro'} · R$ {log.amount.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>
