@@ -542,23 +542,24 @@ function App({ market }) {
   function generateMarketingCopy() {
     const selectedMarketingBusiness = ownerBusinesses.find(item => String(item.id) === String(marketingBusinessId));
     const source = ownerEditing || selectedMarketingBusiness || ownerBusinesses[0] || businessForm;
-    const name = String(source.name || '').trim() || 'Meu negócio';
+    const name = String(source.name || '').trim() || (es ? 'Mi negocio' : 'Meu negócio');
     const description = String(source.description || '').trim();
     const cityName = [source.city, source.state].filter(Boolean).join(' - ');
-    const service = description || 'Conheça nossos produtos e serviços. Entre em contato para saber mais.';
-    const location = cityName ? ` Atendemos em ${cityName}.` : '';
+    const service = description || (es ? 'Conoce nuestros productos y servicios. Escríbenos para obtener más información.' : 'Conheça nossos produtos e serviços. Entre em contato para saber mais.');
+    const location = cityName ? (es ? ` Atendemos en ${cityName}.` : ` Atendemos em ${cityName}.`) : '';
     const opening = marketingTone === 'proximo'
-      ? 'Olá! Queremos apresentar nosso trabalho para você.'
+      ? (es ? '¡Hola! Queremos presentarte nuestro trabajo.' : 'Olá! Queremos apresentar nosso trabalho para você.')
       : marketingTone === 'direto'
-        ? 'Está procurando produtos ou serviços? Conte com a gente.'
-        : 'Qualidade, compromisso e atendimento para você.';
+        ? (es ? '¿Buscas productos o servicios? Cuenta con nosotros.' : 'Está procurando produtos ou serviços? Conte com a gente.')
+        : (es ? 'Calidad, compromiso y atención para ti.' : 'Qualidade, compromisso e atendimento para você.');
+    const brandTags = es ? '#ConectaParaguay #NegociosLocales #Emprendimiento #Paraguay' : '#ConectaBrasil #NegócioLocal #Empreendedorismo #Brasil';
     const platformText = marketingPlatform === 'whatsapp'
-      ? `${opening}\n\n*${name}*\n${service}${location}\n\nChame nesta conversa para pedir informações ou solicitar um orçamento.`
+      ? `${opening}\n\n*${name}*\n${service}${location}\n\n${es ? 'Escríbenos por aquí para pedir información o solicitar un presupuesto.' : 'Chame nesta conversa para pedir informações ou solicitar um orçamento.'}`
       : marketingPlatform === 'facebook'
-        ? `${opening}\n\n*${name}* — ${service}${location}\n\nEnvie uma mensagem e saiba mais!\n\n#ConectaBrasil #NegócioLocal #Empreendedorismo`
+        ? `${opening}\n\n*${name}* — ${service}${location}\n\n${es ? 'Envíanos un mensaje para saber más.' : 'Envie uma mensagem e saiba mais!'}\n\n${brandTags}`
         : marketingPlatform === 'tiktok'
-          ? `${opening}\n\n✨ ${name}\n${service}${location}\n\nSiga o perfil e compartilhe com quem precisa conhecer nosso trabalho!\n\n#ConectaBrasil #NegócioLocal #TikTokBrasil`
-          : `${opening}\n\n*${name}*\n${service}${location}\n\nSalve este perfil e entre em contato para saber mais!\n\n#ConectaBrasil #NegócioLocal #Empreendedorismo #Brasil`;
+          ? `${opening}\n\n✨ ${name}\n${service}${location}\n\n${es ? 'Sigue el perfil y compártelo con quien necesite conocer nuestro trabajo.' : 'Siga o perfil e compartilhe com quem precisa conhecer nosso trabalho!'}\n\n${brandTags}`
+          : `${opening}\n\n*${name}*\n${service}${location}\n\n${es ? 'Guarda este perfil y contáctanos para obtener más información.' : 'Salve este perfil e entre em contato para saber mais!'}\n\n${brandTags}`;
     const publicProfileLink = source.id && source.status === 'approved'
       ? (() => {
           const profileUrl = new URL(window.location.href);
@@ -566,10 +567,9 @@ function App({ market }) {
           return profileUrl.toString();
         })()
       : '';
-    setMarketingOutput(`${platformText}${publicProfileLink ? `\n\nVeja o perfil no Conecta Brasil:\n${publicProfileLink}` : ''}`);
+    setMarketingOutput(`${platformText}${publicProfileLink ? `\n\n${es ? 'Consulta el perfil en Conecta Paraguay:' : 'Veja o perfil no Conecta Brasil:'}\n${publicProfileLink}` : ''}`);
     setMarketingCopied(false);
   }
-
   async function copyMarketingCopy() {
     if (!marketingOutput) return;
     try {
@@ -680,33 +680,33 @@ function App({ market }) {
   async function shareBusiness(item) {
     const url = new URL(window.location.href);
     url.searchParams.set('negocio', item.id);
+    const brand = es ? 'Conecta Paraguay' : 'Conecta Brasil';
     const details = [
       item.name,
-      item.category ? `Categoria: ${item.category}` : '',
-      item.city ? `Localização: ${item.city}` : '',
+      item.category ? (es ? `Categoría: ${item.category}` : `Categoria: ${item.category}`) : '',
+      item.city ? (es ? `Ubicación: ${item.city}` : `Localização: ${item.city}`) : '',
       item.desc ? String(item.desc).trim() : '',
-      'Encontre este negócio no Conecta Brasil:',
+      es ? `Encuentra este negocio en ${brand}:` : `Encontre este negócio no ${brand}:`,
       url.toString(),
     ].filter(Boolean).join('\n');
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `${item.name} | Conecta Brasil`,
+          title: `${item.name} | ${brand}`,
           text: details,
           url: url.toString(),
         });
-        setShareMessage('Compartilhamento preparado com os dados do negócio.');
+        setShareMessage(es ? 'Enlace listo para compartir.' : 'Compartilhamento preparado com os dados do negócio.');
       } else if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(details);
-        setShareMessage('Texto e link copiados! Agora é só compartilhar.');
+        setShareMessage(es ? '¡Texto y enlace copiados!' : 'Texto e link copiados! Agora é só compartilhar.');
       } else {
-        setShareMessage('Seu navegador não permite compartilhar automaticamente. Copie o endereço exibido na barra do navegador.');
+        setShareMessage(es ? 'Tu navegador no permite compartir automáticamente. Copia la dirección de la barra del navegador.' : 'Seu navegador não permite compartilhar automaticamente. Copie o endereço exibido na barra do navegador.');
       }
     } catch (error) {
-      if (error.name !== 'AbortError') setShareMessage('Não foi possível compartilhar automaticamente. Tente copiar o link do perfil.');
+      if (error.name !== 'AbortError') setShareMessage(es ? 'No fue posible compartir automáticamente. Intenta copiar el enlace del perfil.' : 'Não foi possível compartilhar automaticamente. Tente copiar o link do perfil.');
     }
   }
-
   async function loadAdminAuditLogs() {
     if (!isAdmin || auditLoading) return;
     setAuditLoading(true);
