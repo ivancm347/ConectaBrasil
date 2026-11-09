@@ -2028,27 +2028,27 @@ function ParaguayTestGate({ market }) {
   return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',padding:'24px',background:'#0b1730',color:'#fff',fontFamily:'DM Sans, sans-serif'}}>
     <section style={{width:'min(100%,460px)',padding:'32px',border:'1px solid #29415f',borderRadius:'20px',background:'#10233e'}}>
       <div style={{textAlign:'center',fontSize:'42px',marginBottom:'10px'}}>🇵🇾</div>
-      <p style={{textAlign:'center',color:'#53d6b0',fontWeight:800,letterSpacing:'2px',fontSize:'11px'}}>CONECTA PARAGUAY · TESTE RESTRITO</p>
-      <h1 style={{fontSize:'26px',margin:'12px 0',textAlign:'center'}}>Acesso de testes</h1>
+      <p style={{textAlign:'center',color:'#53d6b0',fontWeight:800,letterSpacing:'2px',fontSize:'11px'}}>CONECTA PARAGUAY · PRUEBAS RESTRINGIDAS</p>
+      <h1 style={{fontSize:'26px',margin:'12px 0',textAlign:'center'}}>Acceso de prueba</h1>
       <p style={{color:'#b5c2d4',lineHeight:1.6,fontSize:'14px',textAlign:'center'}}>
-        Este ambiente está disponível somente para contas PY ou administradoras autenticadas. A vitrine paraguaia continua bloqueada para visitantes e usuários comuns do mercado BR.
+        Este entorno está disponible únicamente para cuentas PY o administradoras autenticadas. La vitrina paraguaya sigue bloqueada para visitantes y usuarios comunes del mercado BR.
       </p>
-      {checkingSession ? <p style={{textAlign:'center',color:'#b5c2d4'}}>Verificando sessão...</p> : denied ? <>
-        <p role="alert" style={{color:'#ffd18a',fontSize:'14px',lineHeight:1.5}}>{error || 'A conta conectada não tem permissão para acessar este ambiente.'}</p>
-        <button type="button" onClick={switchAccount} style={{width:'100%',padding:'12px',border:0,borderRadius:'9px',background:'#53d6b0',color:'#082238',fontWeight:800,cursor:'pointer'}}>Trocar de conta</button>
+      {checkingSession ? <p style={{textAlign:'center',color:'#b5c2d4'}}>Verificando sesión...</p> : denied ? <>
+        <p role="alert" style={{color:'#ffd18a',fontSize:'14px',lineHeight:1.5}}>{error || 'La cuenta conectada no tiene permiso para acceder a este entorno.'}</p>
+        <button type="button" onClick={switchAccount} style={{width:'100%',padding:'12px',border:0,borderRadius:'9px',background:'#53d6b0',color:'#082238',fontWeight:800,cursor:'pointer'}}>Cambiar de cuenta</button>
       </> : <form onSubmit={handleLogin} style={{display:'grid',gap:'12px',marginTop:'20px'}}>
-        <label style={{display:'grid',gap:'6px',fontSize:'13px'}}>E-mail
+        <label style={{display:'grid',gap:'6px',fontSize:'13px'}}>Correo electrónico
           <input required type="email" autoComplete="username" value={email} onChange={event=>setEmail(event.target.value)} style={{padding:'12px',borderRadius:'8px',border:'1px solid #49617d',background:'#fff',color:'#142238'}}/>
         </label>
-        <label style={{display:'grid',gap:'6px',fontSize:'13px'}}>Senha
+        <label style={{display:'grid',gap:'6px',fontSize:'13px'}}>Contraseña
           <input required type="password" autoComplete="current-password" value={password} onChange={event=>setPassword(event.target.value)} style={{padding:'12px',borderRadius:'8px',border:'1px solid #49617d',background:'#fff',color:'#142238'}}/>
         </label>
         {error && <p role="alert" style={{color:'#ffb4a9',fontSize:'13px',margin:0}}>{error}</p>}
         <button type="submit" disabled={busy || checkingSession} style={{padding:'13px',border:0,borderRadius:'9px',background:'#53d6b0',color:'#082238',fontWeight:800,cursor:'pointer'}}>
-          {busy ? 'Verificando...' : 'Entrar no ambiente de testes'}
+          {busy ? 'Verificando...' : 'Entrar al entorno de pruebas'}
         </button>
       </form>}
-      <a href={getMarketPath('BR')} style={{display:'block',textAlign:'center',marginTop:'20px',color:'#b5c2d4',fontSize:'13px'}}>Voltar ao ConectaBrasil</a>
+      <a href={getMarketPath('BR')} style={{display:'block',textAlign:'center',marginTop:'20px',color:'#b5c2d4',fontSize:'13px'}}>Volver a Conecta Paraguay</a>
     </section>
   </main>;
 }
