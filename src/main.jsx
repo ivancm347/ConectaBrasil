@@ -770,7 +770,7 @@ function App({ market }) {
         gallery_urls: await Promise.all((item.gallery_urls || []).map(createBusinessImageUrl)),
       })));
       setAdminBusinesses(businessesWithImages);
-      const cats = await supabase.from('categories').select('id,name,active').order('name');
+      const cats = await supabase.from('categories').select('id,name,active').eq('country_code', market.code).order('name');
       if (cats.error) throw cats.error;
       setAdminCategories(cats.data || []);
       await loadAdminAuditLogs();
@@ -1758,7 +1758,7 @@ function App({ market }) {
         </div>}
         <section className="admin-category-manager"><h3>Gerenciar categorias</h3><p>Cadastre novas categorias ou desative as que não devem aparecer no formulário de anunciantes.</p>
           <form onSubmit={addAdminCategory}><input aria-label="Nome da nova categoria" maxLength="60" value={newCategory} onChange={e=>setNewCategory(e.target.value)} maxLength="60" placeholder="Nome da nova categoria" required/><button type="submit" className="approve-action" disabled={formBusy}>Adicionar</button></form>
-          <div className="admin-category-list">{adminCategories.length ? adminCategories.map(cat=><div key={cat.id}><span>{cat.name}<small>{cat.active?'Ativa':'Inativa'}</small></span><button type="button" disabled={formBusy} onClick={()=>toggleCategory(cat)}>{cat.active?'Desativar':'Ativar'}</button></div>) : <div className="admin-inline-empty">Nenhuma categoria cadastrada ainda.</div>}</div>
+          <div className="admin-category-list">{adminCategories.length ? adminCategories.map(cat=><div key={cat.id}><span>{displayCategoryName(cat.name, market)}<small>{cat.active ? (es ? 'Activa' : 'Ativa') : (es ? 'Inactiva' : 'Inativa')}</small></span><button type="button" disabled={formBusy} onClick={()=>toggleCategory(cat)}>{cat.active ? (es ? 'Desactivar' : 'Desativar') : (es ? 'Activar' : 'Ativar')}</button></div>) : <div className="admin-inline-empty">{es ? 'Todavía no hay categorías registradas.' : 'Nenhuma categoria cadastrada ainda.'}</div>}</div>
         </section>
         <section className="admin-category-manager" style={{marginTop:18}}>
           <h3>Desempenho da vitrine</h3>
