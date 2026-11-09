@@ -14,9 +14,9 @@ test('Brasil continua sendo o mercado padrão e habilitado', () => {
   assert.equal(getMarketFromPath('/ConectaBrasil/br', '/ConectaBrasil/').code, 'BR');
 });
 
-test('Paraguai é reconhecido pela rota, mas permanece desabilitado', () => {
+test('Paraguai é reconhecido pela rota e está habilitado para abertura', () => {
   assert.equal(getMarketFromPath('/ConectaBrasil/py', '/ConectaBrasil/').code, 'PY');
-  assert.equal(MARKETS.PY.enabled, false);
+  assert.equal(MARKETS.PY.enabled, true);
 });
 
 test('rotas respeitam o base path do GitHub Pages', () => {
