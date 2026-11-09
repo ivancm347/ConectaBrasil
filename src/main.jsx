@@ -1664,71 +1664,71 @@ function App({ market }) {
         </section>
         <section className="admin-category-manager admin-central-dashboard" style={{margin:'16px 0',padding:16,border:'1px solid #dbe6ed',borderRadius:16,background:'linear-gradient(145deg,#f7fbfd,#eef6f4)'}}>
           <div style={{display:'flex',justifyContent:'space-between',gap:12,flexWrap:'wrap',alignItems:'center'}}>
-            <div><div className="eyebrow dark">VISÃO GERAL</div><h3 style={{margin:'4px 0'}}>Central de gestão</h3><p style={{margin:0}}>Indicadores calculados sobre os cadastros carregados no painel.</p></div>
+            <div><div className="eyebrow dark">{es ? 'RESUMEN' : 'VISÃO GERAL'}</div><h3 style={{margin:'4px 0'}}>{es ? 'Centro de gestión' : 'Central de gestão'}</h3><p style={{margin:0}}>{es ? 'Indicadores calculados sobre los registros cargados en el panel.' : 'Indicadores calculados sobre os cadastros carregados no painel.'}</p></div>
             <small style={{color:'#64748b'}}>Atualizado em {new Date(adminOverview.checkedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</small>
           </div>
           {(adminOverview.pending > 0 || adminOverview.expiring.length > 0 || adminOverview.expired > 0) && <div role="status" aria-live="polite" style={{margin:'12px 0',padding:14,border:'1px solid #f2d39a',borderRadius:12,background:'#fffaf0'}}>
-            <strong style={{display:'block',marginBottom:6}}>Atenção administrativa</strong>
+            <strong style={{display:'block',marginBottom:6}}>{es ? 'Atención administrativa' : 'Atenção administrativa'}</strong>
             <p style={{margin:'0 0 10px',fontSize:13,color:'#72551e'}}>{[
-              adminOverview.pending ? adminOverview.pending + ' cadastro(s) aguardando aprovação' : '',
-              adminOverview.expiring.length ? adminOverview.expiring.length + ' plano(s) vencem nos próximos 7 dias' : '',
-              adminOverview.expired ? adminOverview.expired + ' plano(s) vencido(s)' : ''
+              adminOverview.pending ? adminOverview.pending + (es ? ' registro(s) pendientes de aprobación' : ' cadastro(s) aguardando aprovação') : '',
+              adminOverview.expiring.length ? adminOverview.expiring.length + (es ? ' plan(es) vencen en los próximos 7 días' : ' plano(s) vencem nos próximos 7 dias') : '',
+              adminOverview.expired ? adminOverview.expired + (es ? ' plan(es) vencido(s)' : ' plano(s) vencido(s)') : ''
             ].filter(Boolean).join(' · ')}.</p>
             <div className="admin-actions">
-              {adminOverview.pending > 0 && <button type="button" onClick={()=>setAdminFilter('pending')}>Revisar pendentes</button>}
-              {adminOverview.expiring.length > 0 && <button type="button" onClick={()=>setAdminFilter('expiring')}>Ver renovações próximas</button>}
-              {adminOverview.expired > 0 && <button type="button" onClick={()=>setAdminFilter('expired')}>Ver planos vencidos</button>}
+              {adminOverview.pending > 0 && <button type="button" onClick={()=>setAdminFilter('pending')}>{es ? 'Revisar pendientes' : 'Revisar pendentes'}</button>}
+              {adminOverview.expiring.length > 0 && <button type="button" onClick={()=>setAdminFilter('expiring')}>{es ? 'Ver próximas renovaciones' : 'Ver renovações próximas'}</button>}
+              {adminOverview.expired > 0 && <button type="button" onClick={()=>setAdminFilter('expired')}>{es ? 'Ver planes vencidos' : 'Ver planos vencidos'}</button>}
             </div>
           </div>}
           <div className="admin-stats" style={{margin:'14px 0 8px'}}>
-            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('all')}><b>{adminOverview.total}</b><span>Total de negócios</span></button>
+            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('all')}><b>{adminOverview.total}</b><span>{es ? 'Total de negocios' : 'Total de negócios'}</span></button>
             <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('approved')}><b>{adminOverview.approved}</b><span>{es ? "Aprobados" : "Aprovados"}</span></button>
-            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('pending')}><b>{adminOverview.pending}</b><span>Aguardando análise</span></button>
-            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('free')}><b>{adminOverview.free}</b><span>Gratuitos ativos</span></button>
-            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('destaque')}><b>{adminOverview.destaque}</b><span>Destaque ativo</span></button>
-            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('parceiro')}><b>{adminOverview.parceiro}</b><span>Parceiro ativo</span></button>
-            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('expiring')}><b>{adminOverview.expiring.length}</b><span>Vencem em até 7 dias</span></button>
-            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('expired')}><b>{adminOverview.expired}</b><span>Planos vencidos</span></button>
+            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('pending')}><b>{adminOverview.pending}</b><span>{es ? 'Pendientes de revisión' : 'Aguardando análise'}</span></button>
+            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('free')}><b>{adminOverview.free}</b><span>{es ? 'Gratuitos activos' : 'Gratuitos ativos'}</span></button>
+            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('destaque')}><b>{adminOverview.destaque}</b><span>{es ? 'Destacados activos' : 'Destaque ativo'}</span></button>
+            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('parceiro')}><b>{adminOverview.parceiro}</b><span>{es ? 'Socios activos' : 'Parceiro ativo'}</span></button>
+            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('expiring')}><b>{adminOverview.expiring.length}</b><span>{es ? 'Vencen en hasta 7 días' : 'Vencem em até 7 dias'}</span></button>
+            <button type="button" className="admin-stat-button" onClick={()=>setAdminFilter('expired')}><b>{adminOverview.expired}</b><span>{es ? 'Planes vencidos' : 'Planos vencidos'}</span></button>
           </div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(230px,1fr))',gap:12,marginTop:12}}>
             <div style={{background:'#fff',border:'1px solid #e0e8ed',borderRadius:12,padding:12}}>
-              <strong style={{display:'block',marginBottom:8}}>Vencimentos próximos</strong>
-              {adminOverview.expiring.length ? adminOverview.expiring.slice(0,5).map(({item,type})=><div key={item.id} style={{display:'flex',justifyContent:'space-between',gap:8,padding:'7px 0',borderTop:'1px solid #edf1f4',fontSize:12}}><span>{item.name}<small style={{display:'block',color:'#64748b'}}>{type === 'destaque' ? 'Destaque' : 'Parceiro'}</small></span><b>{new Date(item.plan_expires_at || item.featured_expires_at).toLocaleDateString('pt-BR')}</b></div>) : <small style={{color:'#64748b'}}>Nenhum plano vence nos próximos 7 dias.</small>}
+              <strong style={{display:'block',marginBottom:8}}>{es ? 'Próximos vencimientos' : 'Vencimentos próximos'}</strong>
+              {adminOverview.expiring.length ? adminOverview.expiring.slice(0,5).map(({item,type})=><div key={item.id} style={{display:'flex',justifyContent:'space-between',gap:8,padding:'7px 0',borderTop:'1px solid #edf1f4',fontSize:12}}><span>{item.name}<small style={{display:'block',color:'#64748b'}}>{type === 'destaque' ? 'Destaque' : 'Parceiro'}</small></span><b>{new Date(item.plan_expires_at || item.featured_expires_at).toLocaleDateString('pt-BR')}</b></div>) : <small style={{color:'#64748b'}}>{es ? 'Ningún plan vence en los próximos 7 días.' : 'Nenhum plano vence nos próximos 7 dias.'}</small>}
             </div>
             <div style={{background:'#fff',border:'1px solid #e0e8ed',borderRadius:12,padding:12}}>
-              <strong style={{display:'block',marginBottom:8}}>Planos vencidos</strong>
-              {adminOverview.expiredItems.length ? adminOverview.expiredItems.slice(0,5).map(({item,type})=><div key={item.id} style={{display:'flex',justifyContent:'space-between',gap:8,padding:'7px 0',borderTop:'1px solid #edf1f4',fontSize:12}}><span>{item.name}<small style={{display:'block',color:'#64748b'}}>{type === 'destaque' ? 'Destaque' : 'Parceiro'}</small></span><b>{new Date(item.plan_expires_at || item.featured_expires_at).toLocaleDateString('pt-BR')}</b></div>) : <small style={{color:'#64748b'}}>Nenhum plano vencido identificado.</small>}
+              <strong style={{display:'block',marginBottom:8}}>{es ? 'Planes vencidos' : 'Planos vencidos'}</strong>
+              {adminOverview.expiredItems.length ? adminOverview.expiredItems.slice(0,5).map(({item,type})=><div key={item.id} style={{display:'flex',justifyContent:'space-between',gap:8,padding:'7px 0',borderTop:'1px solid #edf1f4',fontSize:12}}><span>{item.name}<small style={{display:'block',color:'#64748b'}}>{type === 'destaque' ? 'Destaque' : 'Parceiro'}</small></span><b>{new Date(item.plan_expires_at || item.featured_expires_at).toLocaleDateString('pt-BR')}</b></div>) : <small style={{color:'#64748b'}}>{es ? 'No se identificaron planes vencidos.' : 'Nenhum plano vencido identificado.'}</small>}
             </div>
           </div>
-          <small style={{display:'block',marginTop:10,color:'#64748b'}}>Os planos são considerados ativos quando o negócio está aprovado e a data de vencimento ainda não passou. Os indicadores refletem os registros carregados pelo Supabase; os valores financeiros estimados ficam no relatório abaixo.</small>
+          <small style={{display:'block',marginTop:10,color:'#64748b'}}>{es ? 'Los planes se consideran activos cuando el negocio está aprobado y la fecha de vencimiento aún no ha pasado. Los indicadores reflejan los registros cargados desde Supabase; los valores financieros estimados aparecen en el informe siguiente.' : 'Os planos são considerados ativos quando o negócio está aprovado e a data de vencimento ainda não passou. Os indicadores refletem os registros carregados pelo Supabase; os valores financeiros estimados ficam no relatório abaixo.'}</small>
         </section>
         <div className="admin-stats">
-          <button type="button" className={`admin-stat-button ${adminFilter==='all'?'selected':''}`} onClick={()=>setAdminFilter('all')} aria-label="Mostrar todos os cadastros"><b>{adminBusinesses.length}</b><span>Cadastros</span></button>
-          <button type="button" className={`admin-stat-button ${adminFilter==='pending'?'selected':''}`} onClick={()=>setAdminFilter('pending')} aria-label="Mostrar cadastros pendentes"><b>{adminBusinesses.filter(item=>item.status==='pending').length}</b><span>Pendentes</span></button>
+          <button type="button" className={`admin-stat-button ${adminFilter==='all'?'selected':''}`} onClick={()=>setAdminFilter('all')} aria-label={es ? 'Mostrar todos los registros' : 'Mostrar todos os cadastros'}><b>{adminBusinesses.length}</b><span>Cadastros</span></button>
+          <button type="button" className={`admin-stat-button ${adminFilter==='pending'?'selected':''}`} onClick={()=>setAdminFilter('pending')} aria-label={es ? 'Mostrar registros pendientes' : 'Mostrar cadastros pendentes'}><b>{adminBusinesses.filter(item=>item.status==='pending').length}</b><span>Pendentes</span></button>
           <button type="button" className={`admin-stat-button ${adminFilter==='approved'?'selected':''}`} onClick={()=>setAdminFilter('approved')} aria-label="Mostrar cadastros aprovados"><b>{adminBusinesses.filter(item=>item.status==='approved').length}</b><span>{es ? "Aprobados" : "Aprovados"}</span></button>
-          <button type="button" className={`admin-stat-button ${adminFilter==='featured'?'selected':''}`} onClick={()=>setAdminFilter('featured')} aria-label="Mostrar anúncios em destaque"><b>{adminBusinesses.filter(item=>item.featured).length}</b><span>Em destaque</span></button>
+          <button type="button" className={`admin-stat-button ${adminFilter==='featured'?'selected':''}`} onClick={()=>setAdminFilter('featured')} aria-label={es ? 'Mostrar anuncios destacados' : 'Mostrar anúncios em destaque'}><b>{adminBusinesses.filter(item=>item.featured).length}</b><span>Em destaque</span></button>
         </div>
         <div className="admin-filters">{[['pending','Pendentes'],['approved','Aprovados'],['rejected','Rejeitados'],['suspended','Suspensos'],['all','Todos']].map(([value,label])=><button key={value} type="button" className={adminFilter===value?'active':''} aria-pressed={adminFilter===value} onClick={()=>setAdminFilter(value)}>{label}</button>)}</div>
-        <input type="search" maxLength="120" className="admin-search" value={adminSearch} onChange={e=>setAdminSearch(e.target.value)} placeholder="Buscar por negócio, cidade ou telefone..." aria-label="Buscar cadastros" />
-        <div className="admin-search-summary" role="status" aria-live="polite" aria-atomic="true"><span>{filteredAdminBusinesses.length} {filteredAdminBusinesses.length === 1 ? "cadastro encontrado" : "cadastros encontrados"}</span>{(adminSearch.trim() || adminFilter !== "all") && <button type="button" onClick={()=>{setAdminSearch("");setAdminFilter("all")}}>Limpar busca e filtros</button>}</div>
+        <input type="search" maxLength="120" className="admin-search" value={adminSearch} onChange={e=>setAdminSearch(e.target.value)} placeholder={es ? 'Buscar por negocio, ciudad o teléfono...' : 'Buscar por negócio, cidade ou telefone...'} aria-label={es ? 'Buscar registros' : 'Buscar cadastros'} />
+        <div className="admin-search-summary" role="status" aria-live="polite" aria-atomic="true"><span>{filteredAdminBusinesses.length} {filteredAdminBusinesses.length === 1 ? (es ? 'registro encontrado' : 'cadastro encontrado') : (es ? 'registros encontrados' : 'cadastros encontrados')}</span>{(adminSearch.trim() || adminFilter !== "all") && <button type="button" onClick={()=>{setAdminSearch("");setAdminFilter("all")}}>{es ? 'Limpiar búsqueda y filtros' : 'Limpar busca e filtros'}</button>}</div>
         {adminError && <div className="form-error" role="alert">{adminError}</div>}
-         {!planSchemaReady && <div className="form-notice" role="status"><strong>Controle de planos aguardando configuração.</strong><br/>Execute uma vez o arquivo <code>supabase/plans.sql</code> no SQL Editor do Supabase para habilitar ativação, vencimento e renovação.</div>}
+         {!planSchemaReady && <div className="form-notice" role="status"><strong>{es ? 'Control de planes pendiente de configuración.' : 'Controle de planos aguardando configuração.'}</strong><br/>{es ? 'Ejecuta una vez el archivo' : 'Execute uma vez o arquivo'} <code>supabase/plans.sql</code> {es ? 'en el SQL Editor de Supabase para habilitar la activación, el vencimiento y la renovación.' : 'no SQL Editor do Supabase para habilitar ativação, vencimento e renovação.'}</div>}
         {editingBusiness && <form className="admin-edit-form" onSubmit={saveBusinessEdit}>
           <h3>{es ? 'Editar anuncio' : 'Editar anúncio'}</h3>
-          <label>Nome<input required maxLength="100" value={editingBusiness.name} onChange={e=>setEditingBusiness({...editingBusiness,name:e.target.value})}/></label>
+          <label>{es ? 'Nombre' : 'Nome'}<input required maxLength="100" value={editingBusiness.name} onChange={e=>setEditingBusiness({...editingBusiness,name:e.target.value})}/></label>
           <label>{es ? "Descripción" : "Descrição"}<textarea rows="3" maxLength="600" value={editingBusiness.description || ''} onChange={e=>setEditingBusiness({...editingBusiness,description:e.target.value})}/><small className="character-count">{(editingBusiness.description || '').length}/600 caracteres</small></label>
           <div className="form-row"><label>{es ? "Ciudad" : "Cidade"}<input maxLength="80" value={editingBusiness.city || ''} onChange={e=>setEditingBusiness({...editingBusiness,city:e.target.value})}/></label><label>{market.regionLabel}<input maxLength={market.code === "PY" ? 80 : 2} pattern={market.code === "PY" ? "[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .-]{1,79}" : "[A-Za-z]{2}"} title={market.code === "PY" ? "Indica el departamento" : "Informe a sigla com duas letras"} value={editingBusiness.state || ''} onChange={e=>setEditingBusiness({...editingBusiness,state:e.target.value.toUpperCase()})}/></label></div>
           <label>{es ? "Teléfono / WhatsApp" : "Telefone / WhatsApp"}<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={editingBusiness.phone || ''} onChange={e=>setEditingBusiness({...editingBusiness,phone:e.target.value})}/></label>
           <LocationFields market={market} item={editingBusiness} onChange={patch=>setEditingBusiness({...editingBusiness,...patch})}/>
           <div className="admin-actions"><button type="submit" className="approve-action" disabled={formBusy}>{es ? "Guardar cambios" : "Salvar alterações"}</button><button type="button" disabled={formBusy} onClick={()=>setEditingBusiness(null)}>{es ? "Cancelar" : "Cancelar"}</button></div>
         </form>}
-        {adminLoading ? <div className="empty-state">Carregando cadastros...</div> : <div className="admin-list">
+        {adminLoading ? <div className="empty-state">{es ? 'Cargando registros...' : 'Carregando cadastros...'}</div> : <div className="admin-list">
           {filteredAdminBusinesses.length ? filteredAdminBusinesses.map(item=><article className="admin-business" key={item.id}>
             <div className="admin-business-head"><div><h3>{item.name}</h3><span>{item.business_type} · {[item.city,item.state].filter(Boolean).join('/')}</span></div><small className={'status-badge status-'+item.status}>{({pending:'Pendente',approved:'Aprovado',rejected:'Rejeitado',suspended:'Suspenso'})[item.status] || item.status}</small></div>
             <p>{item.description || (es ? 'Sin descripción.' : 'Sem descrição informada.')}</p>
             {(item.logo_url || item.gallery_urls?.length) && <div className="admin-image-preview">{item.logo_url && <img loading="lazy" src={item.logo_url} alt={`Logo ${item.name}`}/>} {(item.gallery_urls || []).map((url,index)=><img key={url} loading="lazy" src={url} alt={`Foto ${index+1} de ${item.name}`}/>)}</div>}
             <div className="admin-meta"><span>{item.business_categories?.[0]?.categories?.name || (es ? 'Sin categoría' : 'Sem categoria')}</span>{item.phone && <span>{item.phone}</span>}<span>{new Date(item.created_at).toLocaleDateString('pt-BR')}</span></div>
-            <div className="admin-meta" aria-label="Desempenho do anúncio"><span>👁 {Number(item.views_count || 0).toLocaleString('pt-BR')} visualizações</span><span>WhatsApp: {Number(item.whatsapp_clicks || 0).toLocaleString('pt-BR')} cliques</span></div>
+            <div className="admin-meta" aria-label={es ? 'Rendimiento del anuncio' : 'Desempenho do anúncio'}><span>👁 {Number(item.views_count || 0).toLocaleString('pt-BR')} {es ? 'visualizaciones' : 'visualizações'}</span><span>WhatsApp: {Number(item.whatsapp_clicks || 0).toLocaleString('pt-BR')} {es ? 'clics' : 'cliques'}</span></div>
              <div className="admin-plan-box" style={{margin:'12px 0',padding:12,border:'1px solid #dce6ec',borderRadius:12,background:'#f7fafc'}}>
                <div style={{display:'flex',justifyContent:'space-between',gap:8,flexWrap:'wrap',alignItems:'center'}}>
                  <strong>Plano: {({gratuito:'Gratuito',destaque:'Destaque',parceiro:'Parceiro'})[item.plan_type] || (item.featured?'Destaque legado':'Gratuito')}</strong>
