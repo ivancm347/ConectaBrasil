@@ -1691,7 +1691,7 @@ function App({ market }) {
           </button>
           {marketAssignmentMessage && <p role="status" style={{color:'#18794e',marginTop:10}}>{marketAssignmentMessage}</p>}
           {marketAssignmentError && <p role="alert" style={{color:'#b42318',marginTop:10}}>{marketAssignmentError}</p>}
-          <small>{es ? 'Esta acción solo funcionará cuando ENABLE_OWNER_MARKET_ASSIGNMENT esté autorizado en el servidor.' : 'A alteração de mercado depende de uma autorização de segurança do servidor.'}</small>
+          <small>{es ? 'El cambio de mercado requiere una autorización de seguridad del servidor.' : 'A alteração de mercado depende de uma autorização de segurança do servidor.'}</small>
         </section>
         <section className="admin-category-manager" style={{margin:"16px 0",padding:16,border:"1px solid #dbe6ed",borderRadius:16,background:"#fff"}}>
           <h3>{es ? 'Reseñas de negocios' : 'Avaliações dos negócios'}</h3><p>{es ? 'Revisa los comentarios antes de publicarlos. Solo las reseñas aprobadas aparecen en los perfiles.' : 'Revise os comentários antes de publicá-los. Somente avaliações aprovadas aparecem nos perfis.'}</p>
