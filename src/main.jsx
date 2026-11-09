@@ -1639,7 +1639,7 @@ function App({ market }) {
     {showForm && <div className="modal-backdrop" onClick={()=>setShowForm(false)}><div className="modal" role="dialog" aria-modal="true" aria-label={es ? "Área de registro y administración de Conecta Paraguay" : "Área de cadastro e administração do Conecta Brasil"} onClick={e=>e.stopPropagation()}>
       <button type="button" className="modal-close" onClick={()=>setShowForm(false)} aria-label="Fechar janela"><X/></button>
       {isAdmin ? <>
-        <div className="eyebrow dark">ÁREA RESTRITA</div>
+        <div className="eyebrow dark">{es ? 'ÁREA RESTRINGIDA' : 'ÁREA RESTRITA'}</div>
         <div className="admin-panel-heading">
           <div><h2>Painel administrativo</h2>
           <p>Revise os anúncios enviados e escolha quais podem aparecer publicamente na vitrine.</p></div>
@@ -1658,7 +1658,7 @@ function App({ market }) {
           <small>Esta ação só funcionará quando ENABLE_OWNER_MARKET_ASSIGNMENT estiver autorizado no servidor.</small>
         </section>
         <section className="admin-category-manager" style={{margin:"16px 0",padding:16,border:"1px solid #dbe6ed",borderRadius:16,background:"#fff"}}>
-          <h3>Avaliações dos negócios</h3><p>Revise os comentários antes de publicá-los. Somente avaliações aprovadas aparecem nos perfis.</p>
+          <h3>{es ? 'Reseñas de negocios' : 'Avaliações dos negócios'}</h3><p>{es ? 'Revisa los comentarios antes de publicarlos. Solo las reseñas aprobadas aparecen en los perfiles.' : 'Revise os comentários antes de publicá-los. Somente avaliações aprovadas aparecem nos perfis.'}</p>
           {adminReviewsError && <p role="alert">{adminReviewsError}</p>}
           {adminReviewsLoading ? <p>Carregando avaliações...</p> : adminReviews.length ? adminReviews.map(review=><article key={review.id} style={{padding:"12px 0",borderTop:"1px solid #e5edf2"}}><strong>{review.businesses?.name || "Negócio"} · <span style={{color:"#d58a12"}}>{"★".repeat(review.rating)}{"☆".repeat(5-review.rating)}</span></strong><p>{review.comment}</p><small>{new Date(review.created_at).toLocaleString("pt-BR")} · {({pending:"Aguardando análise",approved:"Aprovada",rejected:"Rejeitada"})[review.status] || review.status}</small><div className="admin-actions">{review.status !== "approved" && <button type="button" className="approve-action" disabled={formBusy} onClick={()=>moderateReview(review,"approved")}>Aprovar</button>}{review.status !== "rejected" && <button type="button" disabled={formBusy} onClick={()=>moderateReview(review,"rejected")}>Rejeitar</button>}</div></article>) : <p>Nenhuma avaliação recebida até agora.</p>}
         </section>
@@ -1714,7 +1714,7 @@ function App({ market }) {
         {adminError && <div className="form-error" role="alert">{adminError}</div>}
          {!planSchemaReady && <div className="form-notice" role="status"><strong>Controle de planos aguardando configuração.</strong><br/>Execute uma vez o arquivo <code>supabase/plans.sql</code> no SQL Editor do Supabase para habilitar ativação, vencimento e renovação.</div>}
         {editingBusiness && <form className="admin-edit-form" onSubmit={saveBusinessEdit}>
-          <h3>Editar anúncio</h3>
+          <h3>{es ? 'Editar anuncio' : 'Editar anúncio'}</h3>
           <label>Nome<input required maxLength="100" value={editingBusiness.name} onChange={e=>setEditingBusiness({...editingBusiness,name:e.target.value})}/></label>
           <label>{es ? "Descripción" : "Descrição"}<textarea rows="3" maxLength="600" value={editingBusiness.description || ''} onChange={e=>setEditingBusiness({...editingBusiness,description:e.target.value})}/><small className="character-count">{(editingBusiness.description || '').length}/600 caracteres</small></label>
           <div className="form-row"><label>{es ? "Ciudad" : "Cidade"}<input maxLength="80" value={editingBusiness.city || ''} onChange={e=>setEditingBusiness({...editingBusiness,city:e.target.value})}/></label><label>{market.regionLabel}<input maxLength={market.code === "PY" ? 80 : 2} pattern={market.code === "PY" ? "[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .-]{1,79}" : "[A-Za-z]{2}"} title={market.code === "PY" ? "Indica el departamento" : "Informe a sigla com duas letras"} value={editingBusiness.state || ''} onChange={e=>setEditingBusiness({...editingBusiness,state:e.target.value.toUpperCase()})}/></label></div>
@@ -1756,12 +1756,12 @@ function App({ market }) {
             {(adminSearch.trim() || adminFilter !== 'all') && <button type="button" onClick={()=>{setAdminSearch('');setAdminFilter('all')}}>Limpar busca e filtros</button>}
           </div>}
         </div>}
-        <section className="admin-category-manager"><h3>Gerenciar categorias</h3><p>Cadastre novas categorias ou desative as que não devem aparecer no formulário de anunciantes.</p>
+        <section className="admin-category-manager"><h3>{es ? 'Administrar categorías' : 'Gerenciar categorias'}</h3><p>{es ? 'Añade categorías o desactiva las que no deben aparecer en el formulario de anunciantes.' : 'Cadastre novas categorias ou desative as que não devem aparecer no formulário de anunciantes.'}</p>
           <form onSubmit={addAdminCategory}><input aria-label="Nome da nova categoria" maxLength="60" value={newCategory} onChange={e=>setNewCategory(e.target.value)} maxLength="60" placeholder="Nome da nova categoria" required/><button type="submit" className="approve-action" disabled={formBusy}>Adicionar</button></form>
           <div className="admin-category-list">{adminCategories.length ? adminCategories.map(cat=><div key={cat.id}><span>{displayCategoryName(cat.name, market)}<small>{cat.active ? (es ? 'Activa' : 'Ativa') : (es ? 'Inactiva' : 'Inativa')}</small></span><button type="button" disabled={formBusy} onClick={()=>toggleCategory(cat)}>{cat.active ? (es ? 'Desactivar' : 'Desativar') : (es ? 'Activar' : 'Ativar')}</button></div>) : <div className="admin-inline-empty">{es ? 'Todavía no hay categorías registradas.' : 'Nenhuma categoria cadastrada ainda.'}</div>}</div>
         </section>
         <section className="admin-category-manager" style={{marginTop:18}}>
-          <h3>Desempenho da vitrine</h3>
+          <h3>{es ? 'Rendimiento de la vitrina' : 'Desempenho da vitrine'}</h3>
           <p>Indicadores aproximados dos anúncios aprovados. Visualizações contam aberturas do perfil; cliques contam acionamentos do botão de WhatsApp.</p>
           <div className="admin-stats" style={{margin:'12px 0'}}>
             <div className="admin-stat-button"><b>{adminOverview.views.toLocaleString('pt-BR')}</b><span>Visualizações acumuladas</span></div>
@@ -1785,7 +1785,7 @@ function App({ market }) {
           <small style={{display:'block',marginTop:10,color:'#64748b'}}>Os dados são aproximados e começam a compor o histórico mensal após a migração. Os totais acumulados já existentes são preservados; interações antigas não podem ser distribuídas retroativamente por mês.</small>
         </section>
         <section className="admin-category-manager" style={{marginTop:18}}>
-          <h3>Relatório financeiro dos planos</h3>
+          <h3>{es ? 'Informe financiero de los planes' : 'Relatório financeiro dos planos'}</h3>
           <p>Consulte as ativações registradas por mês e exporte os dados para arquivo.</p>
           <label style={{display:'block',maxWidth:240,margin:'12px 0'}}>Mês de referência<input type="month" value={selectedReportMonth} onChange={event=>setSelectedReportMonth(event.target.value)}/></label>
           <div className="admin-stats" style={{margin:'12px 0'}}>
@@ -1805,7 +1805,7 @@ function App({ market }) {
           </article>)}</div> : <div className="empty-state">Nenhuma ativação de plano registrada neste mês.</div>}
           <small style={{display:'block',marginTop:10,color:'#64748b'}}>O PDF é gerado pela opção de impressão do navegador. A planilha CSV abre no Excel. Os dados vêm das últimas 100 ações carregadas no histórico e usam os preços atuais (Destaque R$ 29,90 e Parceiro R$ 49,90); não representam confirmação bancária.</small>
         </section>
-        <section className="admin-category-manager admin-audit"><h3>Histórico administrativo</h3><p>Últimas 100 ações realizadas no painel, com data e responsável.</p>
+        <section className="admin-category-manager admin-audit"><h3>{es ? 'Historial administrativo' : 'Histórico administrativo'}</h3><p>{es ? 'Últimas 100 acciones realizadas en el panel, con fecha y responsable.' : 'Últimas 100 ações realizadas no painel, com data e responsável.'}</p>
           {auditLoading ? <div className="empty-state">Carregando histórico...</div> : adminAuditLogs.length ? <div className="audit-list">{adminAuditLogs.map(log=><article className="audit-item" key={log.id}><div><b>{log.entity_name || log.entity_type}</b><span>{log.action} · {log.entity_type}</span></div><small>{log.actor_email || 'Administrador'}<br/>{new Date(log.created_at).toLocaleString('pt-BR')}</small></article>)}</div> : <div className="empty-state">Nenhuma ação registrada ainda.</div>}
           <button type="button" className="text-switch" disabled={auditLoading} onClick={loadAdminAuditLogs}>Atualizar histórico</button>
         </section>
