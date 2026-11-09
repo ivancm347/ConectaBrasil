@@ -577,7 +577,7 @@ function App({ market }) {
       setMarketingCopied(true);
     } catch {
       setMarketingCopied(false);
-      setFormError('Não foi possível copiar automaticamente. Selecione o texto e copie manualmente.');
+      setFormError(es ? 'No fue posible copiar automáticamente. Selecciona el texto y cópialo manualmente.' : 'Não foi possível copiar automaticamente. Selecione o texto e copie manualmente.');
     }
   }
 
@@ -721,7 +721,7 @@ function App({ market }) {
       if (error) throw error;
       setAdminAuditLogs(data || []);
     } catch {
-      setAdminError('Não foi possível carregar o histórico. Verifique sua conexão e as permissões de auditoria no Supabase.');
+      setAdminError(es ? 'No fue posible cargar el historial. Verifica tu conexión y los permisos de auditoría en Supabase.' : 'Não foi possível carregar o histórico. Verifique sua conexão e as permissões de auditoria no Supabase.');
     } finally {
       setAuditLoading(false);
     }
@@ -733,7 +733,7 @@ function App({ market }) {
       entity_name: entityName, actor_email: authUser?.email || null, details
     });
     if (error) {
-      setAdminError('A ação foi concluída, mas não foi possível registrar no histórico. Confira o SQL de auditoria no Supabase.');
+      setAdminError(es ? 'La acción se completó, pero no fue posible registrarla en el historial. Revisa los permisos y la configuración de auditoría en Supabase.' : 'A ação foi concluída, mas não foi possível registrar no histórico. Confira o SQL de auditoria no Supabase.');
       return;
     }
     await loadAdminAuditLogs();
@@ -741,7 +741,7 @@ function App({ market }) {
 
   async function loadAdminBusinesses() {
     if (!isAdmin || adminLoading) return;
-    if (!navigator.onLine) { setAdminError('Sem conexão com a internet. Reconecte-se para atualizar a administração.'); return; }
+    if (!navigator.onLine) { setAdminError(es ? 'No tienes conexión a internet. Reconéctate para actualizar la administración.' : 'Sem conexão com a internet. Reconecte-se para atualizar a administração.'); return; }
     setAdminLoading(true);
     setAdminError('');
     try {
@@ -829,12 +829,12 @@ function App({ market }) {
     try {
       const { error } = await supabase.from('businesses').update(payload).eq('id', editingBusiness.id);
       if (error) {
-        setAdminError('Não foi possível salvar a edição: ' + error.message);
+        setAdminError((es ? 'No fue posible guardar la edición: ' : 'Não foi possível salvar a edição: ') + error.message);
         return;
       }
       setAdminBusinesses(rows => rows.map(row => row.id === editingBusiness.id ? { ...row, ...payload } : row));
       try { await recordAdminAction('editado', 'anúncio', editingBusiness.id, payload.name, payload); }
-      catch { setAdminError('A edição foi salva, mas o histórico administrativo não pôde ser atualizado.'); }
+      catch { setAdminError(es ? 'La edición se guardó, pero no fue posible actualizar el historial administrativo.' : 'A edição foi salva, mas o histórico administrativo não pôde ser atualizado.'); }
       if (String(selectedBusiness?.id) === String(editingBusiness.id)) {
         setSelectedBusiness(current => current ? { ...current, ...payload } : current);
       }
@@ -846,7 +846,7 @@ function App({ market }) {
         setLoadError('A edição foi salva, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
       }
     } catch (error) {
-      setAdminError('Falha de conexão ao salvar a edição. Tente novamente. ' + (error?.message || ''));
+      setAdminError((es ? 'Error de conexión al guardar la edición. Inténtalo de nuevo. ' : 'Falha de conexão ao salvar a edição. Tente novamente. ') + (error?.message || ''));
     } finally {
       setFormBusy(false);
     }
@@ -868,7 +868,7 @@ function App({ market }) {
         const message = error.code === '23505'
           ? 'Já existe uma categoria com esse nome ou endereço. Escolha outro nome.'
           : error.message;
-        setAdminError('Não foi possível criar a categoria: ' + message);
+        setAdminError((es ? 'No fue posible crear la categoría: ' : 'Não foi possível criar a categoria: ') + message);
         return;
       }
       setAdminCategories(rows => [...rows, data].sort((a,b)=>a.name.localeCompare(b.name)));
@@ -876,7 +876,7 @@ function App({ market }) {
       setAvailableCategories(rows => [...rows, {id:data.id,name:data.name}].sort((a,b)=>a.name.localeCompare(b.name)));
       await recordAdminAction('criada', 'categoria', data.id, data.name);
     } catch (error) {
-      setAdminError('Falha de conexão ao criar categoria. ' + (error?.message || 'Tente novamente.'));
+      setAdminError((es ? 'Error de conexión al crear la categoría. ' : 'Falha de conexão ao criar categoria. ') + (error?.message || (es ? 'Inténtalo de nuevo.' : 'Tente novamente.')));
     } finally {
       setFormBusy(false);
     }
@@ -890,7 +890,7 @@ function App({ market }) {
       const { error } = await supabase.from('categories')
         .update({ active: !category.active }).eq('id', category.id);
       if (error) {
-        setAdminError('Não foi possível alterar a categoria: ' + error.message);
+        setAdminError((es ? 'No fue posible cambiar la categoría: ' : 'Não foi possível alterar a categoria: ') + error.message);
         return;
       }
       setAdminCategories(rows => rows.map(row => row.id === category.id ? {...row,active:!category.active} : row));
@@ -899,7 +899,7 @@ function App({ market }) {
         : [...rows,{id:category.id,name:category.name}]);
       await recordAdminAction(category.active ? 'desativada' : 'ativada', 'categoria', category.id, category.name);
     } catch (error) {
-      setAdminError('Falha de conexão ao alterar categoria. ' + (error?.message || 'Tente novamente.'));
+      setAdminError((es ? 'Error de conexión al cambiar la categoría. ' : 'Falha de conexão ao alterar categoria. ') + (error?.message || (es ? 'Inténtalo de nuevo.' : 'Tente novamente.')));
     } finally {
       setFormBusy(false);
     }
@@ -922,7 +922,7 @@ function App({ market }) {
         setLoadError('O selo foi salvo, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
       }
     } catch (error) {
-      setAdminError('Não foi possível alterar o selo de verificação: ' + (error?.message || 'verifique a conexão e a migração de inovações.'));
+      setAdminError((es ? 'No fue posible cambiar la verificación: ' : 'Não foi possível alterar o selo de verificação: ') + (error?.message || (es ? 'Verifica la conexión y las migraciones necesarias.' : 'verifique a conexão e as migrações necessárias.')));
     } finally {
       setFormBusy(false);
     }
@@ -930,9 +930,9 @@ function App({ market }) {
 
   async function setBusinessPlan(item, planType) {
     if (formBusy) return;
-    if (!navigator.onLine) { setAdminError('Sem conexão. Reconecte-se antes de alterar ou renovar planos.'); return; }
+    if (!navigator.onLine) { setAdminError(es ? 'Sin conexión. Reconéctate antes de cambiar o renovar planes.' : 'Sem conexão. Reconecte-se antes de alterar ou renovar planos.'); return; }
     if (planType !== 'gratuito' && item.status !== 'approved') {
-      setAdminError('Aprove o cadastro antes de ativar um plano pago.');
+      setAdminError(es ? 'Aprueba el registro antes de activar un plan de pago.' : 'Aprove o cadastro antes de ativar um plano pago.');
       return;
     }
     const isRenewal = planType !== 'gratuito' && (item.plan_type || (item.featured ? 'destaque' : 'gratuito')) === planType;
@@ -963,7 +963,7 @@ function App({ market }) {
         setLoadError('O plano foi salvo, mas a vitrine ainda não foi atualizada. Atualize os anúncios.');
       }
     } catch (error) {
-      setAdminError('Não foi possível salvar o plano. Confira se executou supabase/plans.sql. ' + (error?.message || ''));
+      setAdminError((es ? 'No fue posible guardar el plan. Verifica si ejecutaste supabase/plans.sql. ' : 'Não foi possível salvar o plano. Confira se executou supabase/plans.sql. ') + (error?.message || ''));
     } finally {
       setFormBusy(false);
     }
@@ -971,13 +971,13 @@ function App({ market }) {
 
   async function toggleFeatured(item) {
     if (formBusy) return;
-    if (!navigator.onLine) { setAdminError('Sem conexão. Reconecte-se antes de alterar o destaque.'); return; }
+    if (!navigator.onLine) { setAdminError(es ? 'Sin conexión. Reconéctate antes de cambiar el destacado.' : 'Sem conexão. Reconecte-se antes de alterar o destaque.'); return; }
     setFormBusy(true);
     setAdminError('');
     try {
       const { error } = await supabase.from('businesses').update({ featured: !item.featured }).eq('id', item.id);
       if (error) {
-        setAdminError('Não foi possível alterar o destaque: ' + error.message);
+        setAdminError((es ? 'No fue posible cambiar el destacado: ' : 'Não foi possível alterar o destaque: ') + error.message);
         return;
       }
       setAdminBusinesses(items => items.map(row => row.id === item.id ? { ...row, featured: !item.featured } : row));
@@ -989,14 +989,14 @@ function App({ market }) {
         setLoadError('O destaque foi salvo, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
       }
     } catch (error) {
-      setAdminError('Falha de conexão ao alterar destaque. ' + (error?.message || 'Tente novamente.'));
+      setAdminError((es ? 'Error de conexión al cambiar el destacado. ' : 'Falha de conexão ao alterar destaque. ') + (error?.message || (es ? 'Inténtalo de nuevo.' : 'Tente novamente.')));
     } finally {
       setFormBusy(false);
     }
   }
 
   async function deleteBusiness(item) {
-    if (!navigator.onLine) { setAdminError('Sem conexão. Reconecte-se antes de excluir um anúncio.'); return; }
+    if (!navigator.onLine) { setAdminError(es ? 'Sin conexión. Reconéctate antes de eliminar un anuncio.' : 'Sem conexão. Reconecte-se antes de excluir um anúncio.'); return; }
     const confirmed = window.confirm("Excluir definitivamente o anúncio \"" + item.name + "\"? Esta ação não pode ser desfeita.");
     if (!confirmed || formBusy) return;
     setFormBusy(true);
@@ -1004,12 +1004,12 @@ function App({ market }) {
     try {
       const { error } = await supabase.from('businesses').delete().eq('id', item.id);
       if (error) {
-        setAdminError('Não foi possível excluir o anúncio: ' + error.message);
+        setAdminError((es ? 'No fue posible eliminar el anuncio: ' : 'Não foi possível excluir o anúncio: ') + error.message);
         return;
       }
       setAdminBusinesses(items => items.filter(row => row.id !== item.id));
       try { await recordAdminAction('excluído', 'anúncio', item.id, item.name, { status_anterior: item.status }); }
-      catch { setAdminError('O anúncio foi excluído, mas o histórico administrativo não pôde ser atualizado.'); }
+      catch { setAdminError(es ? 'El anuncio se eliminó, pero no fue posible actualizar el historial administrativo.' : 'O anúncio foi excluído, mas o histórico administrativo não pôde ser atualizado.'); }
       if (editingBusiness?.id === item.id) setEditingBusiness(null);
       if (selectedBusiness?.id === item.id) setSelectedBusiness(null);
       try {
@@ -1019,7 +1019,7 @@ function App({ market }) {
         setLoadError('O anúncio foi excluído, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
       }
     } catch (error) {
-      setAdminError('Falha de conexão ao excluir o anúncio. ' + (error?.message || ''));
+      setAdminError((es ? 'Error de conexión al eliminar el anuncio. ' : 'Falha de conexão ao excluir o anúncio. ') + (error?.message || ''));
     } finally {
       setFormBusy(false);
     }
@@ -1027,17 +1027,17 @@ function App({ market }) {
 
   async function moderateBusiness(id, status) {
     if (!['pending', 'approved', 'rejected', 'suspended'].includes(status)) {
-      setAdminError('Situação inválida para moderar o anúncio.');
+      setAdminError(es ? 'Estado no válido para moderar el anuncio.' : 'Situação inválida para moderar o anúncio.');
       return;
     }
     if (formBusy) return;
-    if (!navigator.onLine) { setAdminError('Sem conexão. Reconecte-se antes de moderar este cadastro.'); return; }
+    if (!navigator.onLine) { setAdminError(es ? 'Sin conexión. Reconéctate antes de moderar este registro.' : 'Sem conexão. Reconecte-se antes de moderar este cadastro.'); return; }
     setFormBusy(true);
     setAdminError('');
     try {
       const { error } = await supabase.from('businesses').update({ status }).eq('id', id);
       if (error) {
-        setAdminError('Não foi possível atualizar este cadastro: ' + error.message);
+        setAdminError((es ? 'No fue posible actualizar este registro: ' : 'Não foi possível atualizar este cadastro: ') + error.message);
         return;
       }
       const changed = adminBusinesses.find(item => item.id === id);
@@ -1045,7 +1045,7 @@ function App({ market }) {
       try {
         await recordAdminAction(status === 'approved' ? 'aprovado' : status === 'rejected' ? 'rejeitado' : status === 'suspended' ? 'suspenso' : 'retornado para análise', 'anúncio', id, changed?.name || 'Anúncio', { status_novo: status, status_anterior: changed?.status || null });
       } catch {
-        setAdminError('A moderação foi salva, mas o histórico administrativo não pôde ser atualizado.');
+        setAdminError(es ? 'La moderación se guardó, pero no fue posible actualizar el historial administrativo.' : 'A moderação foi salva, mas o histórico administrativo não pôde ser atualizado.');
       }
       if (String(selectedBusiness?.id) === String(id) && status !== 'approved') closeBusinessDetails();
       try {
@@ -1055,7 +1055,7 @@ function App({ market }) {
         setLoadError('A moderação foi salva, mas a vitrine não pôde ser atualizada agora. Use “Atualizar anúncios” para sincronizar.');
       }
     } catch (error) {
-      setAdminError('Falha de conexão ao atualizar o cadastro. Tente novamente. ' + (error?.message || ''));
+      setAdminError((es ? 'Error de conexión al actualizar el registro. Inténtalo de nuevo. ' : 'Falha de conexão ao atualizar o cadastro. Tente novamente. ') + (error?.message || ''));
     } finally {
       setFormBusy(false);
     }
@@ -1063,7 +1063,7 @@ function App({ market }) {
 
   async function loadOwnerBusinesses() {
     if (!authUser || isAdmin || ownerLoading) return;
-    if (!navigator.onLine) { setOwnerError('Sem conexão com a internet. Seus anúncios salvos continuam disponíveis quando carregados anteriormente.'); return; }
+    if (!navigator.onLine) { setOwnerError(es ? 'No tienes conexión a internet. Tus anuncios guardados seguirán disponibles si ya se habían cargado.' : 'Sem conexão com a internet. Seus anúncios salvos continuam disponíveis quando carregados anteriormente.'); return; }
     setOwnerLoading(true);
     setOwnerError('');
     try {
@@ -1156,8 +1156,8 @@ function App({ market }) {
       }
       setOwnerEditing(null);
       setFormMessage(originalStatus === 'approved'
-        ? 'Alterações enviadas! Seu anúncio ficará temporariamente em análise até a nova aprovação.'
-        : 'Alterações salvas. Seu anúncio continua aguardando aprovação.');
+        ? (es ? '¡Cambios enviados! Tu anuncio quedará temporalmente en revisión hasta que vuelva a aprobarse.' : 'Alterações enviadas! Seu anúncio ficará temporariamente em análise até a nova aprovação.')
+        : (es ? 'Cambios guardados. Tu anuncio sigue pendiente de aprobación.' : 'Alterações salvas. Seu anúncio continua aguardando aprovação.'));
     } catch (error) {
       setOwnerError((es ? 'Ocurrió un error al guardar. Verifica tu conexión e inténtalo de nuevo.' : 'Ocorreu uma falha ao salvar. Verifique sua conexão e tente novamente.') + (error?.message ? ' ' + error.message : ''));
     } finally {
@@ -1188,7 +1188,7 @@ function App({ market }) {
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
       setFormMessage(es ? 'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña. Revisa también la carpeta de spam.' : 'Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha. Confira também a caixa de spam.');
-    } catch (error) { setFormError(error.message || 'Não foi possível solicitar a recuperação.'); }
+    } catch (error) { setFormError(error.message || (es ? 'No fue posible solicitar la recuperación.' : 'Não foi possível solicitar a recuperação.')); }
     finally { setFormBusy(false); }
   }
 
@@ -1201,7 +1201,7 @@ function App({ market }) {
       if (error) throw error;
       setPasswordRecovery(false); setNewPassword(''); setAuthPassword('');
       setFormMessage(es ? '¡Contraseña actualizada! Tu cuenta ya está lista para usar.' : 'Senha alterada com sucesso! Sua conta já está pronta para uso.');
-    } catch (error) { setFormError(error.message || 'Não foi possível alterar a senha.'); }
+    } catch (error) { setFormError(error.message || (es ? 'No fue posible cambiar la contraseña.' : 'Não foi possível alterar a senha.')); }
     finally { setFormBusy(false); }
   }
 
@@ -1225,7 +1225,7 @@ function App({ market }) {
         setAuthUser(data.user);
         setFormMessage(es ? 'Acceso confirmado. Completa los datos de tu negocio.' : 'Acesso confirmado. Preencha os dados do seu negócio.');
       }
-    } catch (error) { setFormError(error.message || 'Não foi possível concluir o acesso.'); }
+    } catch (error) { setFormError(error.message || (es ? 'No fue posible completar el acceso.' : 'Não foi possível concluir o acesso.')); }
     finally { setFormBusy(false); }
   }
 
@@ -1508,7 +1508,7 @@ function App({ market }) {
       return;
     }
     const printWindow = window.open('', '_blank');
-    if (!printWindow) { setAdminError('Permita a abertura de janelas para gerar o PDF.'); return; }
+    if (!printWindow) { setAdminError(es ? 'Permite las ventanas emergentes para generar el PDF.' : 'Permita a abertura de janelas para gerar o PDF.'); return; }
     const safe = value => String(value ?? '').replace(/[&<>"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[char]));
     const body = rows.map(row => '<tr><td>'+safe(row.negocio)+'</td><td>'+safe(row.plano)+'</td><td>R$ '+safe(row.valor)+'</td><td>'+safe(row.data)+'</td><td>'+safe(row.responsavel)+'</td></tr>').join('');
     printWindow.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório Conecta Brasil - '+safe(monthLabel)+'</title><style>body{font:14px Arial,sans-serif;padding:28px;color:#172b3a}h1{font-size:22px}p{color:#526575}.summary{display:flex;gap:28px;margin:22px 0;font-weight:bold}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #d8e1e8;padding:9px;text-align:left}th{background:#eef3f7}@media print{button{display:none}}</style></head><body><h1>Conecta Brasil — Relatório de planos</h1><p>Referência: '+safe(monthLabel)+'</p><div class="summary"><span>Total registrado: R$ '+financeSummary.total.toLocaleString('pt-BR',{minimumFractionDigits:2})+'</span><span>Ativações: '+financeSummary.count+'</span></div><table><thead><tr><th>Negócio</th><th>Plano</th><th>Valor</th><th>Data</th><th>Responsável</th></tr></thead><tbody>'+body+'</tbody></table><p>Relatório estimativo com base nas ativações administrativas registradas. Não representa confirmação bancária.</p><script>window.onload=()=>window.print();</script></body></html>');
