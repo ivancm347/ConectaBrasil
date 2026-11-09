@@ -1606,13 +1606,13 @@ function App({ market }) {
             <p style={{margin:'0 0 12px',fontSize:12,lineHeight:1.5,color:'#617286'}}>{es ? "Elige lo que necesitas. La guía completa la búsqueda con términos relacionados con los negocios disponibles." : "Escolha uma necessidade. O guia preenche a busca com termos relacionados aos cadastros disponíveis — sem inventar empresas ou resultados."}</p>
             <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
               {[
-                ['Reformar ou construir','pedreiro reforma construção'],
-                ['Instalação elétrica ou hidráulica','eletricista encanador instalação'],
-                ['Gesso, forro ou drywall','gesseiro gesso forro drywall'],
-                ['Limpeza e serviços domésticos','diarista limpeza faxina'],
-                ['Lojas e produtos','loja comércio produtos'],
-                ['Alimentação e restaurantes','restaurante mercado alimentação'],
-                ['Serviços profissionais','advogado dentista profissional']
+                [es ? 'Reformar o construir' : 'Reformar ou construir',es ? 'albañil reforma construcción' : 'pedreiro reforma construção'],
+                [es ? 'Instalación eléctrica o sanitaria' : 'Instalação elétrica ou hidráulica',es ? 'electricista plomero instalación' : 'eletricista encanador instalação'],
+                [es ? 'Yeso, cielorraso o drywall' : 'Gesso, forro ou drywall',es ? 'yesero yeso cielorraso drywall' : 'gesseiro gesso forro drywall'],
+                [es ? 'Limpieza y servicios domésticos' : 'Limpeza e serviços domésticos',es ? 'limpieza doméstica limpieza' : 'diarista limpeza faxina'],
+                [es ? 'Tiendas y productos' : 'Lojas e produtos',es ? 'tienda comercio productos' : 'loja comércio produtos'],
+                [es ? 'Alimentación y restaurantes' : 'Alimentação e restaurantes',es ? 'restaurante mercado alimentos' : 'restaurante mercado alimentação'],
+                [es ? 'Servicios profesionales' : 'Serviços profissionais',es ? 'abogado dentista profesional' : 'advogado dentista profissional']
               ].map(([label,term])=><button key={term} type="button" onClick={()=>{setQuery(term);setGuideOpen(false);document.getElementById('explorar')?.scrollIntoView({behavior:'smooth'});}} style={{border:'1px solid #dce7ed',borderRadius:999,padding:'8px 11px',background:'#f5f9fb',color:'#17466b',font:'700 11px inherit',cursor:'pointer'}}>{label}</button>)}
             </div>
           </div>}
@@ -1907,7 +1907,7 @@ function App({ market }) {
             <label>{es ? "Nombre del negocio" : "Nome do negócio"}<input required maxLength="100" value={businessForm.name} onChange={e=>setBusinessForm({...businessForm,name:e.target.value})}/></label>
             <label>{es ? "Tipo" : "Tipo"}<select value={businessForm.business_type} onChange={e=>setBusinessForm({...businessForm,business_type:e.target.value})}><option value="empresa">{es ? "Empresa" : "Empresa"}</option><option value="profissional">{es ? "Profesional" : "Profissional"}</option><option value="loja">{es ? "Tienda / comercio" : "Loja / comércio"}</option><option value="servico">{es ? "Proveedor de servicios" : "Prestador de serviço"}</option></select></label>
             <label>{es ? "Descripción" : "Descrição"}<textarea rows="3" maxLength="600" value={businessForm.description} onChange={e=>setBusinessForm({...businessForm,description:e.target.value})} placeholder={es ? "Describe brevemente lo que ofreces." : "Conte brevemente o que você oferece."}/><small className="character-count">{businessForm.description.length}/600 {es ? 'caracteres' : 'caracteres'}</small></label>
-            <label>{es ? "Categoría" : "Categoria"}<select value={businessForm.category_id} onChange={e=>setBusinessForm({...businessForm,category_id:e.target.value})}><option value="">{es ? "Selecciona una categoría" : "Selecione uma categoria"}</option>{availableCategories.map(cat=><option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label>
+            <label>{es ? "Categoría" : "Categoria"}<select value={businessForm.category_id} onChange={e=>setBusinessForm({...businessForm,category_id:e.target.value})}><option value="">{es ? "Selecciona una categoría" : "Selecione uma categoria"}</option>{availableCategories.map(cat=><option key={cat.id} value={cat.id}>{displayCategoryName(cat.name, market)}</option>)}</select></label>
             <div className="form-row"><label>{es ? "Ciudad" : "Cidade"}<input required maxLength="80" autoComplete="address-level2" value={businessForm.city} onChange={e=>setBusinessForm({...businessForm,city:e.target.value})}/></label><label>{market.regionLabel}<input required maxLength={market.code === "PY" ? 80 : 2} pattern={market.code === "PY" ? "[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .-]{1,79}" : "[A-Za-z]{2}"} title={market.code === "PY" ? "Indica el departamento" : "Informe a sigla com duas letras"} value={businessForm.state} onChange={e=>setBusinessForm({...businessForm,state:e.target.value.toUpperCase()})}/></label></div>
             <LocationFields market={market} item={businessForm} onChange={patch=>setBusinessForm({...businessForm,...patch})}/>
             <label>{es ? "Teléfono / WhatsApp" : "Telefone / WhatsApp"}<input type="tel" inputMode="tel" autoComplete="tel" maxLength="20" value={businessForm.phone} onChange={e=>setBusinessForm({...businessForm,phone:e.target.value})}/></label>
