@@ -1135,7 +1135,18 @@ function App({ market }) {
     setFormBusy(true);
     setOwnerError('');
     try {
-      const originalStatus = ownerEditing.status;
+      // Reconsulta o estado real no banco: o estado do cartão pode estar desatualizado.
+      const { data: currentBusiness, error: currentBusinessError } = await supabase.from('businesses')
+        .select('id,status')
+        .eq('id', ownerEditing.id)
+        .eq('owner_id', authUser.id)
+        .eq('country_code', market.code)
+        .maybeSingle();
+      if (currentBusinessError || !currentBusiness) {
+        setOwnerError((es ? 'No fue posible confirmar el estado actual del anuncio. Actualiza la lista e inténtalo de nuevo.' : 'Não foi possível confirmar a situação atual do anúncio. Atualize a lista e tente novamente.') + (currentBusinessError?.message ? ' ' + currentBusinessError.message : ''));
+        return;
+      }
+      const originalStatus = currentBusiness.status;
       const cleanName = String(ownerEditing.name || '').trim();
       const cleanCity = String(ownerEditing.city || '').trim();
       const cleanState = String(ownerEditing.state || '').trim().toUpperCase();
@@ -1180,9 +1191,9 @@ function App({ market }) {
       }
       const { data, error } = await supabase.from('businesses').update(payload)
         .eq('id', ownerEditing.id).eq('owner_id', authUser.id).eq('country_code', market.code).eq('status', originalStatus)
-        .select('id').maybeSingle();
-      if (error || !data) {
-        setOwnerError((es ? 'No fue posible guardar. Revisa tu conexión e inténtalo de nuevo.' : 'Não foi possível salvar. Confira sua conexão e tente novamente.') + (error?.message ? ' ' + error.message : ''));
+        .select('id,status,featured').maybeSingle();
+      if (error || !data || (originalStatus === 'approved' && (data.status !== 'pending' || data.featured !== false))) {
+        setOwnerError((es ? 'No fue posible confirmar el cambio. El anuncio no se marcó como pendiente; actualiza la lista antes de volver a intentarlo.' : 'Não foi possível confirmar a alteração. O anúncio não foi marcado como pendente; atualize a lista antes de tentar novamente.') + (error?.message ? ' ' + error.message : ''));
         return;
       }
       const chosenCategory = availableCategories.find(category => String(category.id) === String(ownerEditing.category_id || ownerEditing.business_categories?.[0]?.category_id || ''));
