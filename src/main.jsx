@@ -1166,6 +1166,18 @@ function App({ market }) {
         service_cities: String(ownerEditing.service_cities || '').trim(),
         ...(originalStatus === 'approved' ? { status: 'pending', featured: false } : {})
       };
+      const selectedCategoryId = String(ownerEditing.category_id || ownerEditing.business_categories?.[0]?.category_id || '');
+      if (selectedCategoryId) {
+        const { data: currentCategory, error: categoryReadError } = await supabase.from('business_categories')
+          .select('category_id').eq('business_id', ownerEditing.id).maybeSingle();
+        if (categoryReadError) throw categoryReadError;
+        if (String(currentCategory?.category_id || '') !== selectedCategoryId) {
+          const categoryWrite = currentCategory
+            ? await supabase.from('business_categories').update({ category_id: selectedCategoryId }).eq('business_id', ownerEditing.id)
+            : await supabase.from('business_categories').insert({ business_id: ownerEditing.id, category_id: selectedCategoryId });
+          if (categoryWrite.error) throw categoryWrite.error;
+        }
+      }
       const { data, error } = await supabase.from('businesses').update(payload)
         .eq('id', ownerEditing.id).eq('owner_id', authUser.id).eq('country_code', market.code).eq('status', originalStatus)
         .select('id').maybeSingle();
@@ -1173,7 +1185,8 @@ function App({ market }) {
         setOwnerError((es ? 'No fue posible guardar. Revisa tu conexión e inténtalo de nuevo.' : 'Não foi possível salvar. Confira sua conexão e tente novamente.') + (error?.message ? ' ' + error.message : ''));
         return;
       }
-      setOwnerBusinesses(rows => rows.map(row => row.id === ownerEditing.id ? { ...row, ...payload, updated_at: new Date().toISOString() } : row));
+      const chosenCategory = availableCategories.find(category => String(category.id) === String(ownerEditing.category_id || ownerEditing.business_categories?.[0]?.category_id || ''));
+      setOwnerBusinesses(rows => rows.map(row => row.id === ownerEditing.id ? { ...row, ...payload, ...(chosenCategory ? { business_categories: [{ category_id: chosenCategory.id, categories: { name: chosenCategory.name } }] } : {}), updated_at: new Date().toISOString() } : row));
       if (originalStatus === 'approved') {
         setBusinesses(rows => {
           const next = rows.filter(row => String(row.id) !== String(ownerEditing.id));
