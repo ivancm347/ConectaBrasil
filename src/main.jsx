@@ -371,7 +371,7 @@ function App({ market }) {
     let active = true;
     setMetricsLoading(true);
     setMetricsError('');
-    supabase.rpc('get_admin_business_metrics', { p_month: `${selectedReportMonth}-01` })
+    supabase.rpc('get_admin_business_metrics_by_market', { p_month: `${selectedReportMonth}-01`, p_country_code: market.code })
       .then(({ data, error }) => {
         if (!active) return;
         if (error) throw error;
@@ -380,7 +380,7 @@ function App({ market }) {
       .catch(() => { if (active) { setMonthlyBusinessMetrics([]); setMetricsError('O relatório mensal de desempenho ainda não está disponível. Execute a migração de métricas no Supabase.'); } })
       .finally(() => { if (active) setMetricsLoading(false); });
     return () => { active = false; };
-  }, [isAdmin, selectedReportMonth]);
+  }, [isAdmin, selectedReportMonth, market.code]);
 
   // Restaura a sessão do Supabase ao abrir ou atualizar o app.
   // A inscrição também mantém a interface sincronizada com login, logout e renovação de sessão.
@@ -760,22 +760,26 @@ function App({ market }) {
     try {
       let result = await supabase.from('businesses')
         .select('id,name,description,business_type,phone,city,state,postal_code,street,street_number,neighborhood,address_complement,location_visibility,service_cities,status,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,views_count,whatsapp_clicks,created_at,logo_url,gallery_urls,business_categories(categories(name))')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .eq('country_code', market.code);
       if (result.error && /postal_code|street_number|address_complement|location_visibility|service_cities|column/i.test(result.error.message || '')) {
         result = await supabase.from('businesses')
           .select('id,name,description,business_type,phone,city,state,status,featured,featured_expires_at,plan_type,plan_started_at,plan_expires_at,verified,views_count,whatsapp_clicks,created_at,logo_url,gallery_urls,business_categories(categories(name))')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+        .eq('country_code', market.code);
       }
       if (result.error && /plan_type|plan_started_at|plan_expires_at|featured_expires_at|column/i.test(result.error.message || '')) {
           setPlanSchemaReady(false);
           result = await supabase.from('businesses')
             .select('id,name,description,business_type,phone,city,state,status,featured,verified,views_count,whatsapp_clicks,created_at,logo_url,gallery_urls,business_categories(categories(name))')
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+        .eq('country_code', market.code);
         }
         if (result.error && /verified|views_count|whatsapp_clicks|column/i.test(result.error.message || '')) {
         result = await supabase.from('businesses')
           .select('id,name,description,business_type,phone,city,state,status,featured,created_at,logo_url,gallery_urls,business_categories(categories(name))')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+        .eq('country_code', market.code);
       }
       if (result.error) throw result.error;
       setPlanSchemaReady(Boolean(result.data?.length === 0 || Object.prototype.hasOwnProperty.call(result.data?.[0] || {}, 'plan_type')));
