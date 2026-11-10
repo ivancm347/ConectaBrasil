@@ -884,9 +884,10 @@ function App({ market }) {
       service_cities: String(editingBusiness.service_cities || '').trim()
     };
     try {
-      const { error } = await supabase.from('businesses').update(payload).eq('id', editingBusiness.id);
-      if (error) {
-        setAdminError((es ? 'No fue posible guardar la edición: ' : 'Não foi possível salvar a edição: ') + error.message);
+      const { data: savedBusiness, error } = await supabase.from('businesses').update(payload)
+        .eq('id', editingBusiness.id).select('id,description').single();
+      if (error || !savedBusiness || String(savedBusiness.description || '') !== payload.description) {
+        setAdminError((es ? 'No fue posible confirmar que la descripción y los demás cambios se guardaron: ' : 'Não foi possível confirmar que a descrição e as demais alterações foram salvas: ') + (error?.message || 'O banco retornou um valor diferente do enviado.'));
         return;
       }
       setAdminBusinesses(rows => rows.map(row => row.id === editingBusiness.id ? { ...row, ...payload } : row));
@@ -1229,8 +1230,8 @@ function App({ market }) {
       }
       const { data, error } = await supabase.from('businesses').update(payload)
         .eq('id', ownerEditing.id).eq('owner_id', authUser.id).eq('country_code', market.code).eq('status', originalStatus)
-        .select('id,status,featured').maybeSingle();
-      if (error || !data || (originalStatus === 'approved' && (data.status !== 'pending' || data.featured !== false))) {
+        .select('id,status,featured,description').maybeSingle();
+      if (error || !data || String(data.description || '') !== payload.description || (originalStatus === 'approved' && (data.status !== 'pending' || data.featured !== false))) {
         setOwnerError((es ? 'No fue posible confirmar el cambio. El anuncio no se marcó como pendiente; actualiza la lista antes de volver a intentarlo.' : 'Não foi possível confirmar a alteração. O anúncio não foi marcado como pendente; atualize a lista antes de tentar novamente.') + (error?.message ? ' ' + error.message : ''));
         return;
       }
