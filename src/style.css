@@ -763,4 +763,26 @@ body :where(.admin-actions button, .admin-filters button,
   .admin-refresh-button, .listing-pagination button) {
   font-weight: 700;
 }
-\n\n/* Atalho de acessibilidade para navegação por teclado */\n.skip-link {\n  position: fixed;\n  z-index: 10000;\n  top: 12px;\n  left: 12px;\n  padding: 12px 18px;\n  border: 2px solid #ffffff;\n  border-radius: 8px;\n  background: #102a43;\n  color: #ffffff;\n  font-size: 16px;\n  font-weight: 800;\n  text-decoration: underline;\n  transform: translateY(-160%);\n}\n.skip-link:focus,\n.skip-link:focus-visible {\n  transform: translateY(0);\n  outline: 3px solid #f0b429;\n  outline-offset: 3px;\n}\n#main-content:focus { outline: none; }\n
+\n\n/* Atalho de acessibilidade para navegação por teclado */
+.skip-link {
+  position: fixed;
+  z-index: 10000;
+  top: 12px;
+  left: 12px;
+  padding: 12px 18px;
+  border: 2px solid #ffffff;
+  border-radius: 8px;
+  background: #102a43;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+  text-decoration: underline;
+  transform: translateY(-160%);
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 3px solid #f0b429;
+  outline-offset: 3px;
+}
+#main-content:focus { outline: none; }
