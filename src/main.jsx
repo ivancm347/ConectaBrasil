@@ -379,8 +379,18 @@ function App({ market }) {
       });
       if (error) {
         const status = error?.context?.status;
+        let serverDetail = '';
+        try {
+          const response = error?.context;
+          const payload = response && typeof response.clone === 'function'
+            ? await response.clone().json()
+            : null;
+          serverDetail = payload?.error || payload?.message || '';
+        } catch {
+          // Algumas respostas do gateway não possuem corpo JSON legível.
+        }
         throw new Error(status
-          ? `A Edge Function respondeu com HTTP ${status}. Confira se a versão atual está implantada e se a autorização de segurança está habilitada no servidor.`
+          ? `A Edge Function respondeu com HTTP ${status}.${serverDetail ? ` Motivo informado pelo servidor: ${serverDetail}.` : ' O servidor não informou o motivo no corpo da resposta.'}`
           : `Falha ao comunicar com a Edge Function. Verifique a implantação da função e a configuração CORS. Detalhe: ${error.message || 'erro de rede'}`);
       }
       if (!data?.ok || data?.market_code !== targetMarket || data?.audit_recorded !== true) {
