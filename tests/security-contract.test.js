@@ -80,12 +80,17 @@ test('novo anúncio grava country_code do mercado e preserva o país legado', ()
 });
 
 
-test('painel administrativo global não limita anúncios ao mercado da rota', () => {
+test('painel administrativo lista anúncios somente do mercado selecionado em todas as consultas e fallbacks', () => {
   const start = appSource.indexOf('async function loadAdminBusinesses()');
   const end = appSource.indexOf('\n  async function ', start + 10);
   assert.ok(start >= 0 && end > start, 'Função administrativa não encontrada');
   const adminQuery = appSource.slice(start, end);
-  assert.doesNotMatch(adminQuery, /\.eq\('country_code',\s*market\.code\)/);
+  assert.equal((adminQuery.match(/\.eq\('country_code',\s*market\.code\)/g) || []).length, 4);
+});
+
+test('relatório mensal administrativo usa RPC com filtro explícito BR/PY', () => {
+  assert.match(appSource, /get_admin_business_metrics_by_market'[\s\S]*?p_country_code:\s*market\.code/);
+  assert.match(appSource, /\[isAdmin,\s*selectedReportMonth,\s*market\.code\]/);
 });
 
 test('consultas de anúncios usam country_code como filtro operacional BR/PY', () => {
