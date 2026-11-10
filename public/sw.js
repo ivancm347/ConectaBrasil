@@ -1,4 +1,4 @@
-const CACHE_NAME = 'conecta-brasil-shell-v3';
+const CACHE_NAME = 'conecta-brasil-shell-v4';
 const APP_BASE = new URL('./', self.registration.scope);
 const INDEX_URL = new URL('index.html', APP_BASE).toString();
 const APP_ASSETS = [
