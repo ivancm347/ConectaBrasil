@@ -1420,18 +1420,24 @@ function App({ market }) {
       }
       const slugBase = businessForm.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const slug = slugBase + '-' + crypto.randomUUID().slice(0, 8);
+      const submittedDescription = String(businessForm.description || '').trim();
       const { data, error } = await supabase.from('businesses').insert({
         owner_id: authUser.id, name, slug, country: market.legacyCountry, country_code: market.code,
-        description: businessForm.description.trim(), business_type: businessForm.business_type,
+        description: submittedDescription, business_type: businessForm.business_type,
         phone: businessForm.phone.trim(), city,
         state, postal_code: postalCode, street: businessForm.street.trim(),
         street_number: businessForm.street_number.trim(), neighborhood: businessForm.neighborhood.trim(),
         address_complement: businessForm.address_complement.trim(),
         location_visibility: visibility, service_cities: businessForm.service_cities.trim(),
         status: 'pending', featured: false
-      }).select('id').single();
+      }).select('id,description').single();
       if (error) throw error;
       createdBusinessId = data.id;
+      if (String(data.description || '').trim() !== submittedDescription) {
+        throw new Error(es
+          ? 'El anuncio fue creado, pero no se pudo confirmar que la descripción se guardó. Intenta nuevamente o contacta al soporte.'
+          : 'O anúncio foi criado, mas não foi possível confirmar que a descrição foi salva. Tente novamente ou entre em contato com o suporte.');
+      }
       const uploadedPhotos = [];
       const uploadImage = async (file, label) => {
         if (!file) return null;
