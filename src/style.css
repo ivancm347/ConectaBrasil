@@ -700,3 +700,66 @@ button, a, input, select, textarea, summary {
     outline: 3px solid Highlight !important;
   }
 }
+
+
+/* Reforço de contraste: textos secundários e informativos */
+:root {
+  --a11y-muted: #394b60;
+  --a11y-text: #101d2d;
+}
+body { color: #101d2d; }
+body :where(p, li, dd, dt, label, small, figcaption, .admin-meta,
+  .admin-stats span, .admin-business-head span, .admin-category-manager p,
+  .admin-category-list small, .audit-item span, .audit-item small,
+  .owner-dashboard-head p, .owner-new-listing p, .owner-business-head small,
+  .owner-updated, .owner-business > p, .owner-status-help, .owner-metrics span,
+  .owner-stats span, .owner-search small, .owner-sort-label,
+  .upload-help, .selected-files span, .character-count,
+  .admin-search-summary, .admin-empty-state p, .admin-inline-empty,
+  .results-summary, .filters > span, .demo-label, .empty-state,
+  .category-card small, .listing-body p, .listing-foot > span,
+  .listing-foot .coming, .modal p, .modal-preview small,
+  .trust-strip span, footer > span, .plans-disclaimer, .plan-label,
+  .plan-card li, .plan-price small, .business-detail-content > p,
+  .business-detail-location, .business-qr-card small, .sync-indicator,
+  .marketing-assistant > p, .marketing-output > small) {
+  color: #394b60;
+}
+body :where(.listing-body > small, .business-detail-content > small,
+  .eyebrow.dark, .clear-city-filter, .listing-refresh-feedback,
+  .business-map-link, .share-feedback, .verified-badge,
+  .owner-share-link, .text-switch, .reset-search-button) {
+  color: #086447;
+}
+body :where(input, select, textarea) {
+  color: #101d2d;
+}
+body :where(input, textarea)::placeholder {
+  color: #4b596b;
+  opacity: 1;
+}
+body :where(.brand small, .nav a, .hero-content > p, .hero-note,
+  .voice-search-status, .nearby-map-result, .photo-lightbox-content) {
+  color: #d8e2ee;
+}
+body :where(.hero-content > p, .hero-note, .voice-search-status) {
+  opacity: 1;
+}
+body :where(.float-card small, .map-center small) {
+  color: #405168;
+}
+body :where(.status-pending, .listing-featured, .detail-featured,
+  .admin-actions button.featured-action) {
+  color: #684500;
+}
+body :where(.status-approved, .status-rejected, .status-suspended) {
+  font-weight: 800;
+}
+body :where(.form-notice) { color: #075b3f; }
+body :where(.form-error, [role="alert"]) { color: #8b1e18; }
+body :where(.admin-actions button, .admin-filters button,
+  .filter-pills button, .favorites-filter, .listing-details-button,
+  .listing-contact, .plan-button, .owner-refresh, .owner-edit-button,
+  .admin-refresh-button, .listing-pagination button) {
+  font-weight: 700;
+}
