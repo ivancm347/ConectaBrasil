@@ -333,10 +333,6 @@ function App({ market }) {
   const [adminFilter, setAdminFilter] = useState('pending');
   const [adminSearch, setAdminSearch] = useState('');
   const [adminError, setAdminError] = useState('');
-  const [marketAssignmentBusy, setMarketAssignmentBusy] = useState(false);
-  const [marketAssignmentTarget, setMarketAssignmentTarget] = useState('BR');
-  const [marketAssignmentMessage, setMarketAssignmentMessage] = useState('');
-  const [marketAssignmentError, setMarketAssignmentError] = useState('');
   const [editingBusiness, setEditingBusiness] = useState(null);
   const [adminCategories, setAdminCategories] = useState([]);
   const [newCategory, setNewCategory] = useState('');
@@ -366,53 +362,6 @@ function App({ market }) {
     // Navega entre as vitrines sem alterar a conta proprietária nem os metadados do usuário.
     // A sessão Supabase permanece no mesmo domínio e é reutilizada pelo mercado de destino.
     window.location.assign(`${getMarketPath(targetMarket)}/`);
-  }
-
-  async function assignOwnerMarket() {
-    if (!isAdmin || !supabase || marketAssignmentBusy) return;
-    const targetMarket = marketAssignmentTarget;
-    if (!['BR', 'PY'].includes(targetMarket)) return;
-    const marketName = targetMarket === 'PY' ? 'Paraguai (PY)' : 'Brasil (BR)';
-    const confirmed = window.confirm(
-      `Confirma alterar a conta proprietária magicfilly347@gmail.com para ${marketName}? A sessão da conta deverá ser renovada.`
-    );
-    if (!confirmed) return;
-    setMarketAssignmentBusy(true);
-    setMarketAssignmentMessage('');
-    setMarketAssignmentError('');
-    try {
-      const { data, error } = await supabase.functions.invoke('assign-owner-market', {
-        body: { market_code: targetMarket, confirm: `ASSIGN_OWNER_MARKET:${targetMarket}` },
-      });
-      if (error) {
-        const status = error?.context?.status;
-        let serverDetail = '';
-        try {
-          const response = error?.context;
-          const payload = response && typeof response.clone === 'function'
-            ? await response.clone().json()
-            : null;
-          serverDetail = payload?.error || payload?.message || '';
-        } catch {
-          // Algumas respostas do gateway não possuem corpo JSON legível.
-        }
-        throw new Error(status
-          ? `A Edge Function respondeu com HTTP ${status}.${serverDetail ? ` Motivo informado pelo servidor: ${serverDetail}.` : ' O servidor não informou o motivo no corpo da resposta.'}`
-          : `Falha ao comunicar com a Edge Function. Verifique a implantação da função e a configuração CORS. Detalhe: ${error.message || 'erro de rede'}`);
-      }
-      if (!data?.ok || data?.market_code !== targetMarket || data?.audit_recorded !== true) {
-        throw new Error(data?.error || 'A função não confirmou a alteração e o registro de auditoria.');
-      }
-      setMarketAssignmentMessage(
-        data.unchanged
-          ? `A conta já estava vinculada a ${marketName}. Auditoria conferida.`
-          : `Mercado da conta alterado para ${marketName} e registrado na auditoria. A conta proprietária deve entrar novamente para renovar a sessão.`
-      );
-    } catch (error) {
-      setMarketAssignmentError(error?.message || 'Não foi possível alterar o mercado da conta.');
-    } finally {
-      setMarketAssignmentBusy(false);
-    }
   }
 
   useEffect(() => { try { localStorage.setItem(getMarketStorageKey('favorites'), JSON.stringify(favoriteIds)); } catch { /* Favoritos continuam disponíveis durante esta sessão. */ } }, [favoriteIds]);
@@ -1770,21 +1719,6 @@ function App({ market }) {
             <span aria-hidden="true">↻</span> {adminLoading ? (es ? 'Actualizando...' : 'Atualizando...') : (es ? 'Actualizar' : 'Atualizar')}
           </button>
         </div>
-        <section className="admin-category-manager" style={{margin:"16px 0",padding:16,border:"1px solid #dbe6ed",borderRadius:16,background:"#fff"}}>
-          <h3>{es ? 'Configuración internacional — cuenta propietaria' : 'Configuração internacional — conta proprietária'}</h3>
-          <p>{es ? 'Operación restringida al administrador global. La función del servidor valida la identidad de la cuenta y registra el cambio en la auditoría.' : 'Operação restrita ao administrador global. A função no servidor valida a identidade da conta e registra a alteração na auditoria.'}</p>
-          <label htmlFor="owner-market-target" style={{display:'block',fontWeight:600,margin:'12px 0 6px'}}>{es ? 'Mercado de destino' : 'Mercado de destino'}</label>
-          <select id="owner-market-target" value={marketAssignmentTarget} onChange={event=>setMarketAssignmentTarget(event.target.value)} disabled={marketAssignmentBusy} style={{width:'100%',padding:'12px',border:'1px solid #cbd5e1',borderRadius:10,marginBottom:10,background:'#fff',color:'#172b4d'}}>
-            <option value="BR">Brasil (BR)</option>
-            <option value="PY">Paraguai (PY)</option>
-          </select>
-          <button type="button" className="btn" onClick={assignOwnerMarket} disabled={marketAssignmentBusy}>
-            {marketAssignmentBusy ? (es ? 'Procesando...' : 'Processando...') : (es ? 'Cambiar el mercado de la cuenta propietaria' : 'Alterar mercado da conta proprietária')}
-          </button>
-          {marketAssignmentMessage && <p role="status" style={{color:'#18794e',marginTop:10}}>{marketAssignmentMessage}</p>}
-          {marketAssignmentError && <p role="alert" style={{color:'#b42318',marginTop:10}}>{marketAssignmentError}</p>}
-          <small>{es ? 'El cambio de mercado requiere una autorización de seguridad del servidor.' : 'A alteração de mercado depende de uma autorização de segurança do servidor.'}</small>
-        </section>
         <section className="admin-category-manager" style={{margin:"16px 0",padding:16,border:"1px solid #dbe6ed",borderRadius:16,background:"#fff"}}>
           <h3>{es ? 'Reseñas de negocios' : 'Avaliações dos negócios'}</h3><p>{es ? 'Revisa los comentarios antes de publicarlos. Solo las reseñas aprobadas aparecen en los perfiles.' : 'Revise os comentários antes de publicá-los. Somente avaliações aprovadas aparecem nos perfis.'}</p>
           {adminReviewsError && <p role="alert">{adminReviewsError}</p>}
