@@ -544,17 +544,55 @@ function App({ market }) {
   useEffect(() => {
     if (!selectedPhoto && !selectedBusiness && !showForm) return;
     const previousOverflow = document.body.style.overflow;
+    const previouslyFocused = document.activeElement;
     document.body.style.overflow = 'hidden';
+
+    const activeDialog = selectedPhoto
+      ? document.querySelector('.photo-lightbox[role="dialog"]')
+      : selectedBusiness
+        ? document.querySelector('.business-detail-backdrop[role="dialog"]')
+        : document.querySelector('.modal-backdrop [role="dialog"]');
+
+    const getFocusableElements = () => activeDialog
+      ? [...activeDialog.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+          .filter(element => element.getAttribute('aria-hidden') !== 'true' && element.offsetParent !== null)
+      : [];
+
+    const firstFocusable = getFocusableElements()[0];
+    if (firstFocusable) firstFocusable.focus();
+
     const handleKeyDown = event => {
-      if (event.key !== 'Escape') return;
-      if (selectedPhoto) setSelectedPhoto(null);
-      else if (selectedBusiness) closeBusinessDetails();
-      else setShowForm(false);
+      if (event.key === 'Escape') {
+        if (selectedPhoto) setSelectedPhoto(null);
+        else if (selectedBusiness) closeBusinessDetails();
+        else setShowForm(false);
+        return;
+      }
+      if (event.key !== 'Tab' || !activeDialog) return;
+      const focusable = getFocusableElements();
+      if (!focusable.length) {
+        event.preventDefault();
+        activeDialog.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !activeDialog.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleKeyDown);
+      if (previouslyFocused?.isConnected && typeof previouslyFocused.focus === 'function') {
+        previouslyFocused.focus();
+      }
     };
   }, [selectedPhoto, selectedBusiness, showForm]);
 
