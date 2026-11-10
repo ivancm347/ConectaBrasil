@@ -543,3 +543,160 @@ button,a{touch-action:manipulation}
   .listing-foot>span,.listing-foot .coming{font-size:14px}
   .listing-details-button,.listing-contact{font-size:14px;min-height:44px}
 }
+
+
+/* Camada de acessibilidade visual — revisão geral de legibilidade */
+:root {
+  font-size: 16px;
+  color-scheme: light;
+  --a11y-text: #172b43;
+  --a11y-muted: #46586d;
+  --a11y-border: #8a9bad;
+  --a11y-focus: #075fbd;
+}
+body {
+  color: var(--a11y-text);
+  font-size: 16px;
+  line-height: 1.6;
+}
+p, li, dd, dt {
+  line-height: 1.65;
+}
+label {
+  color: #263b50;
+}
+input, select, textarea {
+  color: #172b43;
+  font-size: 16px;
+}
+input::placeholder, textarea::placeholder {
+  color: #596b80;
+  opacity: 1;
+}
+button, a, input, select, textarea, summary {
+  -webkit-tap-highlight-color: rgba(7,95,189,.16);
+}
+:where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--a11y-focus) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 2px #fff !important;
+}
+:where(button, .btn, .plan-button, .admin-actions button, .filter-pills button,
+.listing-pagination button, .text-switch, .owner-edit-button, .owner-refresh,
+.listing-details-button, .listing-contact, .business-detail-contact,
+.business-share-button, .modal-close) {
+  min-height: 44px;
+  font-size: 14px;
+}
+:where(.business-form, .admin-edit-form, .admin-category-manager,
+.owner-edit-form, .auth-form, .login-form, .business-review-form) label,
+:where(.business-form, .admin-edit-form, .admin-category-manager,
+.owner-edit-form, .auth-form, .login-form, .business-review-form) .review-field {
+  color: #263b50;
+  font-size: 15px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+:where(.business-form, .admin-edit-form, .admin-category-manager,
+.owner-edit-form, .auth-form, .login-form) input,
+:where(.business-form, .admin-edit-form, .admin-category-manager,
+.owner-edit-form, .auth-form, .login-form) select,
+:where(.business-form, .admin-edit-form, .admin-category-manager,
+.owner-edit-form, .auth-form, .login-form) textarea {
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1.5px solid #8496a9;
+  border-radius: 10px;
+  background: #fff;
+  color: #172b43;
+  font: 500 16px/1.45 'DM Sans', sans-serif;
+}
+:where(.business-form, .admin-edit-form, .admin-category-manager,
+.owner-edit-form, .auth-form, .login-form) textarea {
+  min-height: 120px;
+}
+:where(.business-form, .admin-edit-form, .admin-category-manager,
+.owner-edit-form, .auth-form, .login-form) input:focus,
+:where(.business-form, .admin-edit-form, .admin-category-manager,
+.owner-edit-form, .auth-form, .login-form) select:focus,
+:where(.business-form, .admin-edit-form, .admin-category-manager,
+.owner-edit-form, .auth-form, .login-form) textarea:focus {
+  border-color: #075fbd;
+  outline: 3px solid rgba(7,95,189,.18);
+}
+:where(.business-form, .admin-edit-form, .admin-category-manager,
+.owner-edit-form, .auth-form, .login-form) small,
+.upload-help, .character-count {
+  color: #46586d;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.form-notice, .form-error, [role="alert"], [role="status"] {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.form-notice { color: #105b42; }
+.form-error { color: #8d211b; }
+:where(.admin-business-head span, .admin-meta, .status-badge,
+.owner-metrics span, .audit-item span, .audit-item small,
+.sync-indicator, .results-summary, .filters>span) {
+  font-size: 13px;
+  line-height: 1.5;
+}
+:where(.listing-body>small, .listing-foot>span, .listing-foot .coming,
+.category-card small, .plan-label, .plans-disclaimer,
+.modal p, .modal-preview small, .trust-strip span) {
+  color: #46586d;
+  font-size: 13px;
+  line-height: 1.55;
+}
+:where(.admin-stats span, .admin-business>p, .admin-business-head span,
+.admin-meta, .admin-actions button, .admin-filters button,
+.admin-category-list span, .admin-category-list small) {
+  font-size: 13px;
+}
+:where(.admin-search, .owner-search input, .owner-sort-label select,
+.marketing-assistant select, .marketing-output textarea) {
+  min-height: 48px;
+  font-size: 16px;
+  color: #172b43;
+  border: 1.5px solid #8496a9;
+}
+:where(.category-card, .listing-card, .plan-card, .admin-business,
+.admin-edit-form, .admin-category-manager) {
+  border-color: #c4d0dc;
+}
+:where(.nav a, footer>span, .hero-note, .section-heading>p,
+.listing-foot>span, .admin-category-manager p, .business-detail-content p) {
+  line-height: 1.65;
+}
+.modal h2, .business-detail-content h2 {
+  line-height: 1.25;
+}
+@media (min-width: 701px) {
+  .modal { width: min(100%, 620px); }
+  .business-form { gap: 17px; }
+}
+@media (max-width: 700px) {
+  :where(button, .btn, .plan-button, .admin-actions button,
+  .filter-pills button, .listing-pagination button,
+  .text-switch, .owner-edit-button, .owner-refresh) {
+    min-height: 48px;
+  }
+  .business-form, .admin-edit-form { gap: 16px; }
+  .business-form label, .admin-edit-form label { gap: 8px; }
+}
+@media (prefers-contrast: more) {
+  :root {
+    --a11y-text: #000;
+    --a11y-muted: #202020;
+    --a11y-border: #333;
+  }
+  body, p, small, label, span { color: #17202b; }
+  input, select, textarea, button { border-width: 2px; }
+}
+@media (forced-colors: active) {
+  :where(button, a, input, select, textarea, summary):focus-visible {
+    outline: 3px solid Highlight !important;
+  }
+}
