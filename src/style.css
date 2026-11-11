@@ -786,3 +786,16 @@ body :where(.admin-actions button, .admin-filters button,
   outline-offset: 3px;
 }
 #main-content:focus { outline: none; }
+
+
+/* Navegação em telas separadas para Meus anúncios */
+.owner-dashboard-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.owner-add-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:10px 14px;border:1px solid #176b55;border-radius:9px;background:#176b55;color:#fff;font:800 13px 'DM Sans',sans-serif;cursor:pointer}
+.owner-add-button:hover{background:#125741}
+.owner-form-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:8px}
+.owner-form-heading h3{margin:5px 0;color:#172943;font:800 20px Manrope,sans-serif}
+.owner-form-heading p{margin:4px 0;color:#46586d;font-size:13px;line-height:1.5}
+.owner-back-button{flex:0 0 auto;min-height:44px;padding:9px 14px;border:1px solid #cbd8e3;border-radius:9px;background:#fff;color:#263b50;font:700 14px 'DM Sans',sans-serif;cursor:pointer}
+.owner-edit-form,.owner-create-form{margin:18px 0;padding:20px;border:1px solid #dce9e5;border-radius:14px;background:#f9fcfb}
+.owner-business-gallery img{width:76px;height:76px;object-fit:cover;border-radius:10px}
+@media(max-width:560px){.owner-dashboard-actions{width:100%;display:grid;grid-template-columns:1fr}.owner-dashboard-head{flex-wrap:wrap}.owner-add-button,.owner-refresh{width:100%;min-height:48px}.owner-form-heading{flex-direction:column}.owner-back-button{width:100%}.owner-edit-form,.owner-create-form{padding:14px}}
