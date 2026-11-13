@@ -6,6 +6,7 @@ import { MARKETS, formatMarketCurrency } from '../src/lib/market.js';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const imageMigration = read('../supabase/migrations/20261106150000_secure_business_image_storage_policies.sql');
+const imageOwnershipMigration = read('../supabase/migrations/20261106120000_secure_business_image_ownership.sql');
 const bucketSetup = read('../supabase/business_images.sql');
 const imageAccess = imageMigration;
 const countryMigration = read('../supabase/migrations/20261106090000_add_business_country_code.sql');
@@ -26,6 +27,21 @@ test('Paraguai continua bloqueado até a aprovação dos testes de isolamento', 
 
 test('bucket business-images é configurado como privado', () => {
   assert.match(bucketSetup, /values\s*\(\s*'business-images'\s*,\s*'business-images'\s*,\s*false/i);
+});
+
+test('migração 06120000 vincula upload, alteração e exclusão ao proprietário do anúncio', () => {
+  const upload = imageOwnershipMigration.match(/create policy "Owners upload business images"[\s\S]*?;/i)?.[0] ?? '';
+  const update = imageOwnershipMigration.match(/create policy "Owners update business images"[\s\S]*?;/i)?.[0] ?? '';
+  const remove = imageOwnershipMigration.match(/create policy "Owners delete business images"[\s\S]*?;/i)?.[0] ?? '';
+
+  for (const policy of [upload, update, remove]) {
+    assert.match(policy, /bucket_id = 'business-images'/i);
+    assert.match(policy, /storage\.foldername\(name\)\)\[1\] = auth\.uid\(\)::text/i);
+    assert.match(policy, /b\.id::text = \(storage\.foldername\(name\)\)\[2\]/i);
+    assert.match(policy, /b\.owner_id = auth\.uid\(\)/i);
+  }
+  assert.match(update, /using\s*\([\s\S]*?b\.owner_id = auth\.uid\(\)/i);
+  assert.match(update, /with\s+check\s*\([\s\S]*?b\.owner_id = auth\.uid\(\)/i);
 });
 
 test('upload exige UID da pasta e anúncio pertencente ao usuário', () => {
@@ -160,6 +176,7 @@ test('vitrine pública respeita o mercado selecionado sem usar o cabeçalho como
   assert.ok(policy.includes("'x-market-code'"));
   assert.ok(policy.includes("auth.jwt() -> 'app_metadata' ->> 'market_code'"));
   assert.ok(policy.includes("country_code IN ('BR', 'PY')"));
+  assert.match(publicMarketMigration, /DROP POLICY IF EXISTS "Approved businesses are public"/i, 'A policy permissiva antiga precisa ser removida; policies PERMISSIVE se combinam por OR');
   assert.ok(supabaseClientSource.includes('const selectedMarketCode = getMarketFromPath().code'));
   assert.ok(supabaseClientSource.includes("'x-market-code': selectedMarketCode"));
 });
