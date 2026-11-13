@@ -3,6 +3,7 @@
 -- It is NOT an authorization claim and is never used for owner writes or private data.
 -- Signed app_metadata.market_code remains authoritative for owner operations.
 
+DROP POLICY IF EXISTS "Approved businesses are public" ON public.businesses;
 DROP POLICY IF EXISTS "Market public read approved businesses" ON public.businesses;
 
 CREATE POLICY "Market public read approved businesses"
