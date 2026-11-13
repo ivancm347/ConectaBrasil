@@ -1,73 +1,89 @@
 # Plano de testes de segurança — ConectaBrasil
 
-Escopo: branch `feature/arquitetura-internacional`, mercados BR/PY e bucket privado `business-images`.
+Escopo: branch `feature/arquitetura-internacional`, mercados BR/PY, RLS e bucket privado `business-images`.
 
-## Estado da automação
+## Estado da branch em 13/11/2026
 
-No estado inspecionado desta branch:
-- `package.json` contém somente `dev`, `build` e `preview`; não há script de testes.
-- Não foram encontrados `vitest.config.js` ou `playwright.config.js` nos caminhos verificados.
-- Não foi encontrado `.github/workflows/ci.yml`.
-- Não há evidência, nesta inspeção, de suíte automatizada para RLS, Storage ou isolamento entre países.
-- O build não foi executado nesta revisão; não declarar aprovação.
+- `package.json` possui `npm test` (`node --test`).
+- `.github/workflows/security-tests.yml` executa testes e build em pushes nesta branch e em pull requests direcionados a `main`.
+- `tests/security-contract.test.js` verifica contratos textuais das migrações, policies, funções e trechos da aplicação.
+- Última execução verificada: GitHub Actions run [#162](https://github.com/ivancm347/ConectaBrasil/actions/runs/43472109261), concluída com sucesso em 13/11/2026: 31 testes registrados, 27 aprovados, 4 marcados como `TODO`, 0 falhas; `npm run build` também concluiu.
+- **Limitação importante:** os testes aprovados são verificações estáticas de arquivos. Não executam PostgreSQL RLS nem operações reais no Supabase Storage. Os quatro casos de integração continuam pendentes; portanto, o sucesso do CI não comprova isolamento real no banco.
 
-## Regras de segurança que os testes devem provar
+## Distinção entre vitrine pública e autorização
+
+Anúncios aprovados foram definidos como conteúdo público. O cabeçalho `x-market-code` seleciona a vitrine consultada (BR ou PY), mas é fornecido pelo cliente e não é uma credencial nem uma barreira de confidencialidade. Um visitante pode escolher outra vitrine ou enviar outro cabeçalho e consultar anúncios aprovados daquele mercado.
+
+Assim:
+- Testar que uma requisição de vitrine com `x-market-code: BR` retorna anúncios aprovados BR e que `PY` retorna anúncios aprovados PY.
+- Não afirmar que anúncios aprovados de PY são inacessíveis a um visitante que esteja na vitrine BR.
+- Usar claim assinada e confiável de `app_metadata.market_code` para operações privadas de proprietário.
+- Se a regra de produto mudar para tornar anúncios aprovados inacessíveis entre mercados, será necessária uma arquitetura pública server-side; filtro React, rota ou cabeçalho arbitrário não bastam.
+
+## Regras que os testes devem provar
 
 ### RLS de anúncios
-1. Visitante anônimo lê anúncio aprovado do mercado solicitado.
-2. Visitante não lê anúncio pendente/rejeitado, salvo comportamento explicitamente autorizado.
-3. Proprietário lê seus próprios anúncios pendentes.
-4. Proprietário A não lê nem altera anúncios do proprietário B.
-5. Usuário do mercado BR não acessa registros PY e vice-versa.
-6. Administrador autorizado consegue consultar os dois mercados.
-7. Tentativa de criar anúncio com país diferente do contexto confiável é recusada.
-8. Alterar URL, caminho ou parâmetro de mercado no navegador não concede acesso ao outro país.
 
-### Storage — bucket business-images
-1. Upload é permitido somente quando a primeira pasta é o UID autenticado e a segunda pasta identifica anúncio existente do mesmo proprietário.
-2. Upload para anúncio de outro proprietário é recusado.
-3. Upload para ID inexistente é recusado.
-4. Upload com UID de pasta diferente do usuário autenticado é recusado.
-5. Update preserva as mesmas validações em USING e WITH CHECK; tentar mover objeto para pasta de outro usuário/anúncio é recusado.
-6. Delete é permitido somente ao proprietário do anúncio vinculado.
-7. Leitura de imagem aprovada respeita o país do anúncio e o contexto autorizado.
-8. Leitura de imagem pendente é permitida somente ao proprietário e à administração autorizada.
-9. URL pública não deve expor objetos do bucket privado; URLs assinadas devem expirar e ser geradas após autorização.
-10. Caminhos antigos e URLs históricas continuam funcionando conforme política de compatibilidade, sem tornar o bucket público.
+1. Visitante anônimo consulta anúncios aprovados da vitrine selecionada pelo cabeçalho BR/PY.
+2. Anúncios pendentes/rejeitados não aparecem na consulta pública.
+3. Proprietário autenticado consulta seus próprios anúncios pendentes.
+4. Proprietário A não lê, altera nem exclui anúncios privados do proprietário B.
+5. Proprietário BR não cria nem altera anúncios PY; proprietário PY não cria nem altera anúncios BR.
+6. Trocar rota, localStorage, cabeçalho ou `user_metadata` não muda a autorização de operações de proprietário.
+7. Ausência de claim confiável ou claim inválida não concede operações privadas.
+8. Administrador global autorizado administra os dois mercados e mantém auditoria.
+
+### Storage — bucket `business-images`
+
+1. O bucket permanece privado.
+2. Upload exige UID autenticado na primeira pasta e anúncio existente, na segunda pasta, pertencente ao mesmo usuário.
+3. Upload para anúncio de outro proprietário, ID inexistente ou UID de pasta divergente é recusado.
+4. Update exige as mesmas condições em `USING` e `WITH CHECK`, inclusive ao tentar mover o objeto.
+5. Delete exige propriedade do anúncio associado.
+6. O caminho do objeto deve corresponder ao proprietário real do anúncio também na leitura.
+7. Imagens de anúncios aprovados são públicas conforme a regra de produto; isso não deve ser descrito como isolamento confidencial entre países. Imagens de anúncios pendentes ficam restritas ao proprietário autorizado e à administração.
+8. URLs assinadas devem ser geradas somente após autorização; não tornar o bucket público como atalho.
 
 ### Avaliações e métricas
-1. Inserção de avaliação exige usuário autenticado e anúncio aprovado no mercado correto.
-2. Usuário não altera/modera avaliação de terceiros.
+
+1. Inserção de avaliação exige usuário autenticado e anúncio aprovado no mercado confiável da sessão.
+2. Usuário não altera nem modera avaliação de terceiros.
 3. Eventos de métricas não podem ser lidos por usuários comuns.
-4. RPC de métricas só incrementa anúncio aprovado e não permite manipulação de outro mercado.
-5. Relatório administrativo respeita o escopo global do administrador autorizado.
+4. RPC pública de incremento aceita somente métricas permitidas e anúncios aprovados.
+5. RPC de relatório administrativo exige administrador e permite filtrar BR/PY.
 
-## Observações sobre a migração atual de Storage
+## Migrações sob revisão
 
-Arquivo: `supabase/migrations/20261106120000_secure_business_image_ownership.sql`.
+### `20261106120000_secure_business_image_ownership.sql`
 
-A migração restringe INSERT/UPDATE/DELETE verificando UID da pasta e vínculo com `businesses.owner_id`. Ela não implementa isolamento BR/PY e depende da política RLS de `businesses` permitir que a consulta correlacionada enxergue o anúncio do proprietário. Não aplicar em produção antes de testar no projeto de desenvolvimento com usuários e anúncios de teste de ambos os mercados.
+É a primeira camada de proteção de INSERT/UPDATE/DELETE no Storage: valida UID da pasta e vínculo entre `business_id` e `businesses.owner_id`. Não implementa isolamento por mercado; é sucedida pela migração `20261106150000_secure_business_image_storage_policies.sql`, que acrescenta o contexto confiável e a função de leitura. O teste de contrato agora referencia diretamente este arquivo para evitar que ele fique fora da suíte.
 
-A política de SELECT ainda depende de `can_view_business_image(name)`; essa função precisa ser revisada separadamente para escopo de país. Não tornar o bucket público como atalho.
+### `20261106150000_secure_business_image_storage_policies.sql`
 
-## Pré-requisitos para testes executáveis
+Substitui as policies de Storage e define `can_view_business_image` como `SECURITY DEFINER` com `search_path` vazio. A função valida que o ID do anúncio e a pasta do proprietário correspondem ao registro real. Operações privadas do proprietário exigem `app_metadata.market_code`; a leitura de imagens aprovadas continua pública conforme a regra de produto.
 
-- Ambiente Supabase de desenvolvimento isolado, sem dados de produção.
-- Dois usuários proprietários distintos e um administrador de teste.
-- Pelo menos um anúncio aprovado e um pendente em cada mercado.
-- JWTs de teste obtidos por autenticação normal; nunca armazenar tokens ou segredos no repositório.
-- Testes de integração executados com credenciais de teste restritas. Não usar `service_role` para simular chamadas de usuários, pois ela pode contornar RLS.
-- Asserções negativas explícitas (esperar 401/403/nenhuma linha) e positivas (acesso permitido ao dono/mercado correto).
+### `20261107110000_scope_public_business_listing_by_market_header.sql`
+
+Substitui a policy pública antiga por uma policy que filtra a vitrine com `x-market-code`. É essencial remover também a policy legada `Approved businesses are public`: policies RLS permissivas se combinam por `OR`, então manter a policy antiga anularia o filtro novo. A migração e a suíte estática agora verificam essa remoção.
+
+## Pré-requisitos para testes de integração
+
+- Projeto Supabase de desenvolvimento separado, sem dados de produção; ainda não há evidência de que um ambiente assim esteja configurado.
+- Dois proprietários distintos (um BR e um PY), um administrador de teste e anúncios aprovados/pendentes nos dois mercados.
+- JWTs obtidos por autenticação normal, sem guardar tokens ou segredos no repositório.
+- Executar as operações com clientes anon/authenticated reais. Não usar `service_role` para simular usuários, pois pode contornar RLS.
+- Asserções negativas e positivas para SELECT/INSERT/UPDATE/DELETE, upload, update, download/URL assinada e delete.
+- Testar a emissão e renovação da claim de mercado; a ausência dela deve negar operações privadas.
 
 ## Critério para liberar Paraguay
 
 Manter `MARKETS.PY.enabled = false` até que:
-- o contexto do país seja confiável e validado no servidor/banco;
-- RLS, Storage, avaliações e métricas estejam escopados por país;
-- todos os casos negativos e positivos acima passem no ambiente de desenvolvimento;
-- a compatibilidade do mercado BR seja validada;
-- build e suíte automatizada estejam verdes.
+- o contexto confiável de mercado esteja validado;
+- as policies RLS antigas e novas estejam reconciliadas;
+- os testes de integração RLS e Storage passem em ambiente de desenvolvimento;
+- a vitrine BR e a compatibilidade de imagens existentes sejam verificadas;
+- avaliações, métricas, build e suíte automatizada estejam aprovados.
 
 ## Segurança operacional
 
-Este documento é um plano de teste, não prova de que os testes foram executados. Não aplicar migrações, alterar dados/permissões de produção, fazer merge ou deploy como parte desta revisão.
+Este plano não autoriza alterações em produção. Não aplicar migrações, alterar dados/permissões, fazer merge ou deploy durante as revisões. O CI verde de testes estáticos não substitui a validação real no Supabase.
