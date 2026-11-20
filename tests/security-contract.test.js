@@ -211,55 +211,55 @@ function extractPolicy(sql, policyName) {
 }
 
 test('migração RLS remove todas as políticas legadas antes de recriar as regras de mercado', () => {
-  assert.match(businessMarketRlsMigration, /from pg_policies[\\s\\S]*?tablename in \\(\s*'businesses',\\s*'business_categories'\\s*\\)[\\s\\S]*?drop policy if exists/i);
+  assert.match(businessMarketRlsMigration, /from pg_policies[\s\S]*?tablename in \(\s*'businesses',\s*'business_categories'\s*\)[\s\S]*?drop policy if exists/i);
 });
 
 test('SELECT privado do proprietário exige UID e mercado confiável', () => {
   const policy = extractPolicy(businessMarketRlsMigration, 'Owners read own businesses in assigned market');
-  assert.match(policy, /owner_id = auth\\.uid\\(\\)/i);
-  assert.match(policy, /country_code = \\(auth\\.jwt\\(\\) -> 'app_metadata' ->> 'market_code'\\)/i);
+  assert.match(policy, /owner_id = auth\.uid\(\)/i);
+  assert.match(policy, /country_code = \(auth\.jwt\(\) -> 'app_metadata' ->> 'market_code'\)/i);
 });
 
 test('INSERT de anúncio exige proprietário, estado pendente e mercado BR/PY confiável', () => {
   const policy = extractPolicy(businessMarketRlsMigration, 'Owners create pending businesses in assigned market');
-  assert.match(policy, /owner_id = auth\\.uid\\(\\)/i);
+  assert.match(policy, /owner_id = auth\.uid\(\)/i);
   assert.match(policy, /status = 'pending'/i);
   assert.match(policy, /featured = false/i);
-  assert.match(policy, /country_code = \\(auth\\.jwt\\(\\) -> 'app_metadata' ->> 'market_code'\\)/i);
-  assert.match(policy, /country_code in \\('BR', 'PY'\\)/i);
+  assert.match(policy, /country_code = \(auth\.jwt\(\) -> 'app_metadata' ->> 'market_code'\)/i);
+  assert.match(policy, /country_code in \('BR', 'PY'\)/i);
 });
 
 test('UPDATE do proprietário verifica o mercado tanto no registro atual quanto no novo', () => {
   const policy = extractPolicy(businessMarketRlsMigration, 'Owners update own businesses in assigned market');
-  assert.match(policy, /using\\s*\\([\\s\\S]*?owner_id = auth\\.uid\\(\\)[\\s\\S]*?country_code = \\(auth\\.jwt\\(\\) -> 'app_metadata' ->> 'market_code'\\)/i);
-  assert.match(policy, /with check\\s*\\([\\s\\S]*?owner_id = auth\\.uid\\(\\)[\\s\\S]*?country_code = \\(auth\\.jwt\\(\\) -> 'app_metadata' ->> 'market_code'\\)/i);
+  assert.match(policy, /using\s*\([\s\S]*?owner_id = auth\.uid\(\)[\s\S]*?country_code = \(auth\.jwt\(\) -> 'app_metadata' ->> 'market_code'\)/i);
+  assert.match(policy, /with check\s*\([\s\S]*?owner_id = auth\.uid\(\)[\s\S]*?country_code = \(auth\.jwt\(\) -> 'app_metadata' ->> 'market_code'\)/i);
 });
 
 test('DELETE do proprietário é limitado ao próprio anúncio pendente e ao mercado atribuído', () => {
   const policy = extractPolicy(businessMarketRlsMigration, 'Owners delete own pending businesses in assigned market');
-  assert.match(policy, /owner_id = auth\\.uid\\(\\)/i);
-  assert.match(policy, /country_code = \\(auth\\.jwt\\(\\) -> 'app_metadata' ->> 'market_code'\\)/i);
+  assert.match(policy, /owner_id = auth\.uid\(\)/i);
+  assert.match(policy, /country_code = \(auth\.jwt\(\) -> 'app_metadata' ->> 'market_code'\)/i);
   assert.match(policy, /status = 'pending'/i);
 });
 
 test('categorias vinculadas só podem ser administradas pelo dono do anúncio pendente no mercado atribuído', () => {
   const policy = extractPolicy(businessMarketRlsMigration, 'Owners manage categories on own pending businesses in assigned market');
-  assert.match(policy, /b\\.owner_id = auth\\.uid\\(\\)/i);
-  assert.match(policy, /b\\.status = 'pending'/i);
-  assert.match(policy, /b\\.country_code = \\(auth\\.jwt\\(\\) -> 'app_metadata' ->> 'market_code'\\)/i);
-  assert.match(policy, /using\\s*\\([\\s\\S]*?exists\\s*\\(/i);
-  assert.match(policy, /with check\\s*\\([\\s\\S]*?exists\\s*\\(/i);
+  assert.match(policy, /b\.owner_id = auth\.uid\(\)/i);
+  assert.match(policy, /b\.status = 'pending'/i);
+  assert.match(policy, /b\.country_code = \(auth\.jwt\(\) -> 'app_metadata' ->> 'market_code'\)/i);
+  assert.match(policy, /using\s*\([\s\S]*?exists\s*\(/i);
+  assert.match(policy, /with check\s*\([\s\S]*?exists\s*\(/i);
 });
 
 test('Custom Access Token Hook deriva a claim somente de app_metadata e aceita BR/PY', () => {
-  assert.match(marketClaimMigration, /trusted_app_metadata := coalesce\\(claims -> 'app_metadata'/i);
+  assert.match(marketClaimMigration, /trusted_app_metadata := coalesce\(claims -> 'app_metadata'/i);
   assert.match(marketClaimMigration, /trusted_market_code := trusted_app_metadata ->> 'market_code'/i);
   assert.match(marketClaimMigration, /claims := claims - 'market_code'/i);
-  assert.match(marketClaimMigration, /trusted_market_code in \\('BR', 'PY'\\)/i);
+  assert.match(marketClaimMigration, /trusted_market_code in \('BR', 'PY'\)/i);
   assert.doesNotMatch(marketClaimMigration, /user_metadata/i);
 });
 
 test('migração de Storage força bucket privado e remove policy pública legada', () => {
-  assert.match(imageMigration, /update storage\\.buckets\\s+set public = false\\s+where id = 'business-images'/i);
-  assert.match(imageMigration, /drop policy if exists "Public can view business images" on storage\\.objects/i);
+  assert.match(imageMigration, /update storage\.buckets\s+set public = false\s+where id = 'business-images'/i);
+  assert.match(imageMigration, /drop policy if exists "Public can view business images" on storage\.objects/i);
 });
