@@ -4,6 +4,14 @@
 -- folder matches the business ID.
 begin;
 
+-- A flag public=true faz o Storage ignorar a policy SELECT.
+-- Reforça o bucket privado e remove também a policy pública legada conhecida.
+update storage.buckets
+set public = false
+where id = 'business-images';
+
+drop policy if exists "Public can view business images" on storage.objects;
+
 create or replace function public.can_view_business_image(object_name text)
 returns boolean
 language sql
