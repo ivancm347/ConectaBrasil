@@ -2,13 +2,15 @@
 
 Escopo: branch `feature/arquitetura-internacional`, mercados BR/PY, RLS e bucket privado `business-images`.
 
-## Estado da branch em 13/11/2026
+## Estado da branch em 20/11/2026
 
 - `package.json` possui `npm test` (`node --test`).
 - `.github/workflows/security-tests.yml` executa testes e build em pushes nesta branch e em pull requests direcionados a `main`.
 - `tests/security-contract.test.js` verifica contratos textuais das migrações, policies, funções e trechos da aplicação.
-- Última execução verificada: GitHub Actions run [#162](https://github.com/ivancm347/ConectaBrasil/actions/runs/43472109261), concluída com sucesso em 13/11/2026: 31 testes registrados, 27 aprovados, 4 marcados como `TODO`, 0 falhas; `npm run build` também concluiu.
+- Última execução verificada: GitHub Actions run [#44782781249](https://github.com/ivancm347/ConectaBrasil/actions/runs/44782781249), concluída com sucesso em 20/11/2026: 39 testes registrados, 35 aprovados, 4 marcados como `TODO`, 0 falhas; `npm run build` também concluiu.
+- A migração `20261106150000_secure_business_image_storage_policies.sql` agora reforça `business-images` como bucket privado e remove a policy legada `Public can view business images`, que poderia contornar as novas verificações de leitura.
 - **Limitação importante:** os testes aprovados são verificações estáticas de arquivos. Não executam PostgreSQL RLS nem operações reais no Supabase Storage. Os quatro casos de integração continuam pendentes; portanto, o sucesso do CI não comprova isolamento real no banco.
+- A branch ainda está sem proteção/required status checks no GitHub; o CI executa, mas o repositório não está configurado para exigir esses checks antes de um merge.
 
 ## Distinção entre vitrine pública e autorização
 
