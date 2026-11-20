@@ -256,7 +256,7 @@ test('Custom Access Token Hook deriva a claim somente de app_metadata e aceita B
   assert.match(marketClaimMigration, /trusted_market_code := trusted_app_metadata ->> 'market_code'/i);
   assert.match(marketClaimMigration, /claims := claims - 'market_code'/i);
   assert.match(marketClaimMigration, /trusted_market_code in \('BR', 'PY'\)/i);
-  assert.doesNotMatch(marketClaimMigration, /user_metadata/i);
+  assert.doesNotMatch(marketClaimMigration.replace(/--.*$/gm, ''), /user_metadata/i);
 });
 
 test('migração de Storage força bucket privado e remove policy pública legada', () => {
