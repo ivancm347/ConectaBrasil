@@ -118,8 +118,12 @@ Commits desta revisão:
 - `d174d1d5f155212c68e013cbbd0c4cc3595a6ddc` — remove policies do script de preparação.
 - `c65c3162d8da502919da6f2d9b63f14d3410da7d` — desativa o script antigo de correção de leitura.
 - `150c193adf3b874aa059ef0ccb4e197dcc836a84` — adiciona teste de regressão para scripts legados.
+- `268a15e5f43c9e4a98727e2fed840773ee0da177` — corrige o escape das expressões regulares do novo teste.
 
 **Atenção:** o novo teste ainda precisa ser executado pelo CI após esses commits. Não considerar a melhoria aprovada até existir execução verde.
+- A suíte passou a conter 40 declarações de teste por inspeção do arquivo (36 testes executáveis e 4 `TODO`); isso é contagem estática, não execução.
+- A tentativa de clonar a branch para executar `npm test` e `npm run build` neste ambiente falhou por indisponibilidade de resolução DNS para `github.com`. O status combinado do novo commit não retornou checks e a consulta de execuções disponível não listou uma execução associada; portanto, o CI dos novos commits permanece **não confirmado**.
+
 
 ### Riscos ainda abertos
 
