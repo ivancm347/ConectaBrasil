@@ -8,6 +8,7 @@ const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const imageMigration = read('../supabase/migrations/20261106150000_secure_business_image_storage_policies.sql');
 const imageOwnershipMigration = read('../supabase/migrations/20261106120000_secure_business_image_ownership.sql');
 const bucketSetup = read('../supabase/business_images.sql');
+const legacyImageFix = read('../supabase/fix_business_image_access.sql');
 const imageAccess = imageMigration;
 const countryMigration = read('../supabase/migrations/20261106090000_add_business_country_code.sql');
 const reviewMigration = read('../supabase/migrations/20261106160000_scope_business_reviews_by_market.sql');
@@ -27,6 +28,30 @@ test('Paraguai continua bloqueado até a aprovação dos testes de isolamento', 
 
 test('bucket business-images é configurado como privado', () => {
   assert.match(bucketSetup, /values\s*\(\s*'business-images'\s*,\s*'business-images'\s*,\s*false/i);
+});
+
+test('scripts SQL legados não recriam policies ou função de imagem menos restritivas', () => {
+  for (const [name, sql] of [
+    ['business_images.sql', bucketSetup],
+    ['fix_business_image_access.sql', legacyImageFix],
+  ]) {
+    assert.doesNotMatch(
+      sql,
+      /create\\s+policy[\\s\\S]*?\\bon\\s+storage\\.objects\\b/i,
+      `${name} não deve criar policies de Storage`,
+    );
+    assert.doesNotMatch(
+      sql,
+      /create\\s+or\\s+replace\\s+function\\s+public\\.can_view_business_image/i,
+      `${name} não deve redefinir a função de leitura`,
+    );
+  }
+  assert.match(bucketSetup, /policies[\\s\\S]*exclusivamente pelas migrations/i);
+  assert.match(legacyImageFix, /script descontinuado/i);
+  assert.match(
+    legacyImageFix,
+    /20261106150000_secure_business_image_storage_policies\\.sql/i,
+  );
 });
 
 test('migração 06120000 vincula upload, alteração e exclusão ao proprietário do anúncio', () => {
