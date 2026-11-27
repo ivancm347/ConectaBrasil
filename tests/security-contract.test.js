@@ -37,20 +37,20 @@ test('scripts SQL legados não recriam policies ou função de imagem menos rest
   ]) {
     assert.doesNotMatch(
       sql,
-      /create\\s+policy[\\s\\S]*?\\bon\\s+storage\\.objects\\b/i,
+      /create\s+policy[\s\S]*?\bon\s+storage\.objects\b/i,
       `${name} não deve criar policies de Storage`,
     );
     assert.doesNotMatch(
       sql,
-      /create\\s+or\\s+replace\\s+function\\s+public\\.can_view_business_image/i,
+      /create\s+or\s+replace\s+function\s+public\.can_view_business_image/i,
       `${name} não deve redefinir a função de leitura`,
     );
   }
-  assert.match(bucketSetup, /policies[\\s\\S]*exclusivamente pelas migrations/i);
+  assert.match(bucketSetup, /policies[\s\S]*exclusivamente pelas migrations/i);
   assert.match(legacyImageFix, /script descontinuado/i);
   assert.match(
     legacyImageFix,
-    /20261106150000_secure_business_image_storage_policies\\.sql/i,
+    /20261106150000_secure_business_image_storage_policies\.sql/i,
   );
 });
 
