@@ -1,37 +1,19 @@
--- Corrige a autorização de leitura das imagens sem tornar o bucket público.
--- A função verifica somente se o arquivo pertence a um anúncio aprovado,
--- ao próprio proprietário ou a um administrador. Não altera nem apaga imagens.
+-- SCRIPT DESCONTINUADO — NÃO EXECUTAR.
+--
+-- Esta versão antiga recriava can_view_business_image sem validar:
+--   1. se a primeira pasta corresponde ao proprietário real do anúncio;
+--   2. se o proprietário autenticado pertence ao mercado do anúncio;
+--   3. se as policies de upload/alteração/exclusão validam o anúncio associado.
+--
+-- Executá-la depois das migrations de segurança pode reabrir acesso indevido.
+-- A implementação mantida está em:
+--   supabase/migrations/20261106150000_secure_business_image_storage_policies.sql
+--
+-- Este bloco falha intencionalmente e não altera função, policy, bucket ou dados.
 
-create or replace function public.can_view_business_image(object_name text)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public, storage, pg_temp
-as $$
-  select exists (
-    select 1
-    from public.businesses b
-    where b.id::text = (storage.foldername(object_name))[2]
-      and (
-        b.status = 'approved'
-        or b.owner_id = auth.uid()
-        or coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') = 'admin'
-      )
-  );
+DO $$
+BEGIN
+  RAISE EXCEPTION
+    'Script descontinuado. Não execute. Consulte supabase/migrations/20261106150000_secure_business_image_storage_policies.sql e valide primeiro em ambiente Supabase de desenvolvimento.';
+END
 $$;
-
-revoke all on function public.can_view_business_image(text) from public;
-grant execute on function public.can_view_business_image(text) to anon, authenticated;
-
-drop policy if exists "Approved businesses and owners can view business images" on storage.objects;
-drop policy if exists "Public can view business images" on storage.objects;
-
-create policy "Approved businesses and owners can view business images"
-on storage.objects
-for select
-to anon, authenticated
-using (
-  bucket_id = 'business-images'
-  and public.can_view_business_image(name)
-);
