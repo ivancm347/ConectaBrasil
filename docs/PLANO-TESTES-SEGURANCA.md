@@ -121,7 +121,7 @@ Commits desta revisão:
 - `268a15e5f43c9e4a98727e2fed840773ee0da177` — corrige o escape das expressões regulares do novo teste.
 
 **Atenção:** o novo teste ainda precisa ser executado pelo CI após esses commits. Não considerar a melhoria aprovada até existir execução verde.
-- A suíte passou a conter 40 declarações de teste por inspeção do arquivo (36 testes executáveis e 4 `TODO`); isso é contagem estática, não execução.
+- A suíte contém 40 declarações nos dois arquivos de teste: 6 em `tests/market.test.js` e 34 em `tests/security-contract.test.js`; são 36 testes executáveis e 4 `TODO`. Essa é uma contagem estática, não uma execução.
 - A tentativa de clonar a branch para executar `npm test` e `npm run build` neste ambiente falhou por indisponibilidade de resolução DNS para `github.com`. O status combinado do novo commit não retornou checks e a consulta de execuções disponível não listou uma execução associada; portanto, o CI dos novos commits permanece **não confirmado**.
 
 
