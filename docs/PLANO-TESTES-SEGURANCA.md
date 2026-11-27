@@ -89,3 +89,49 @@ Manter `MARKETS.PY.enabled = false` até que:
 ## Segurança operacional
 
 Este plano não autoriza alterações em produção. Não aplicar migrações, alterar dados/permissões, fazer merge ou deploy durante as revisões. O CI verde de testes estáticos não substitui a validação real no Supabase.
+
+
+## Revisão automatizada de 27/11/2026
+
+### Estado verificado
+
+- No início desta revisão, a branch estava no commit `3767cbc0dbdc4eeed4f4c711f290c1c7c6c46a84`; a comparação com a referência da branch não indicava commits posteriores.
+- Última execução de Actions localizada: [run #44782781249](https://github.com/ivancm347/ConectaBrasil/actions/runs/44782781249), em 20/11/2026. O job `checks` terminou com sucesso.
+- Logs: `npm test` registrou 39 testes, 35 aprovados, 4 `TODO`, 0 falhas; `npm run build` concluiu. `npm install` reportou 0 vulnerabilidades.
+- O build emitiu aviso de chunk JavaScript acima de 500 kB; não impediu a conclusão.
+- Limitação de rastreabilidade: o log dessa execução fez checkout do SHA `56677a3f8c782653d0572ff7e0ae1cc23c47e916` (referência do evento do workflow). Não foi localizada execução associada diretamente ao commit da branch consultado. Portanto, esse resultado não deve ser apresentado como execução confirmada do novo conteúdo desta revisão.
+
+### Regressão encontrada e corrigida na branch
+
+Os scripts SQL manuais legados podiam desfazer as proteções das migrations:
+
+- `supabase/business_images.sql` recriava policies de Storage mais permissivas: leitura sem validar a pasta do proprietário e escrita baseada apenas no UID da primeira pasta.
+- `supabase/fix_business_image_access.sql` substituía `can_view_business_image` por uma versão antiga, sem validar a pasta do proprietário e sem exigir mercado confiável para leitura privada.
+
+Alterações preparadas somente nesta branch:
+
+- `business_images.sql` agora prepara colunas e bucket privado; não cria nem substitui policies. As policies ficam exclusivamente nas migrations versionadas.
+- `fix_business_image_access.sql` foi marcado como descontinuado e falha intencionalmente com mensagem explicativa, sem alterar banco, função ou policies.
+- `tests/security-contract.test.js` ganhou um contrato estático para impedir que esses scripts voltem a criar policies de Storage ou redefinir a função de leitura.
+
+Commits desta revisão:
+- `d174d1d5f155212c68e013cbbd0c4cc3595a6ddc` — remove policies do script de preparação.
+- `c65c3162d8da502919da6f2d9b63f14d3410da7d` — desativa o script antigo de correção de leitura.
+- `150c193adf3b874aa059ef0ccb4e197dcc836a84` — adiciona teste de regressão para scripts legados.
+
+**Atenção:** o novo teste ainda precisa ser executado pelo CI após esses commits. Não considerar a melhoria aprovada até existir execução verde.
+
+### Riscos ainda abertos
+
+1. Os quatro testes de integração continuam como `TODO`: RLS entre proprietários, operações reais de Storage, isolamento BR/PY e visibilidade pública correta dos anúncios aprovados.
+2. Os testes atuais são majoritariamente estáticos; não provam o comportamento real do PostgreSQL nem do Supabase Storage.
+3. A policy de leitura de imagens permite leitura pública de imagens de anúncios aprovados, independentemente do mercado da sessão. Isso é coerente com a regra atual de conteúdo público, mas significa que a separação da vitrine não é confidencialidade entre países para URLs de imagens aprovadas. Se o requisito for restringir também a leitura direta de imagens por mercado, será necessária uma decisão de produto e uma alteração/teste específico.
+4. O Custom Access Token Hook emite uma claim de primeiro nível `market_code`, enquanto as policies RLS/Storage leem `app_metadata.market_code`. O valor de origem é confiável, mas a claim de primeiro nível emitida pelo hook não é consumida pelas policies atuais. Confirmar no ambiente de desenvolvimento se o hook será usado como redundância ou se a arquitetura deve padronizar um único caminho de claim.
+5. A configuração efetiva do hook no Supabase e os JWTs reais de usuários BR/PY ainda não foram validados nesta revisão.
+
+### Próximo passo e bloqueios
+
+- Aguardar CI para os três commits desta revisão.
+- Preparar ambiente Supabase de desenvolvimento separado e implementar os quatro testes de integração com usuários reais de teste, sem usar `service_role` para simular proprietários.
+- Não aplicar migrations, alterar dados/permissões de produção, fazer merge ou deploy.
+- Manter `MARKETS.PY.enabled = false` até aprovação dos testes reais de isolamento.
